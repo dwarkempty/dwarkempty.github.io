@@ -6,7 +6,7 @@
     /* 基础样式 */
     html {
       height: 100%;
-      background: #333; /* 深色备用背景 */
+      background: #f0f0f0; /* 统一背景色 */
     }
 
     body {
@@ -14,31 +14,18 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background-image: url("https://github.com/dwarkempty/dwarkempty.github.io/blob/main/dwarkempty/mashiro/images/background.jpg?raw=true");
+      background-image: url("你的背景图地址.jpg");
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       background-attachment: fixed;
     }
 
-    /* 暗化覆盖层 */
-    body::after {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.35); /* 调整这个值控制暗度 */
-      z-index: 0;
-    }
-    
     /* 智能滚动容器 */
     .scroll-container {
       flex: 1;
       position: relative;
       overflow-y: auto;
-      color: #fff; /* 文字反白 */
     }
 
     /* 内容区域 */
@@ -49,7 +36,7 @@
 
     /* 底部样式 */
     footer {
-      width: 100%;
+      width: 50%;
       margin: 0 auto;
       background: rgba(255, 255, 255, 0.6);
       backdrop-filter: blur(3px);

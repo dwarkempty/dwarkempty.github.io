@@ -1,9 +1,9 @@
-html>
+<html>
 <head>
   <meta charset="utf-8">
   <title>Mashiro</title>
   <style>
-    /* 基础布局 */
+    /* 基础样式 */
     html {
       height: 100%;
       background: #f0f0f0; /* 统一背景色 */
@@ -14,42 +14,42 @@ html>
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background-image: url("https://github.com/dwarkempty/dwarkempty.github.io/blob/main/dwarkempty/mashiro/images/background.jpg?raw=true");
+      background-image: url("你的背景图地址.jpg");
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       background-attachment: fixed;
     }
 
-    /* 内容容器 */
-    .content {
+    /* 智能滚动容器 */
+    .scroll-container {
       flex: 1;
-      padding: 20px;
       position: relative;
-      z-index: 1;
+      overflow-y: auto;
     }
 
-    /* 底部区域 */
+    /* 内容区域 */
+    .content {
+      padding: 20px;
+      min-height: calc(100vh - 60px); /* 60px是底部高度 */
+    }
+
+    /* 底部样式 */
     footer {
-      background: rgba(255, 255, 255, 0.8); /* 半透明背景 */
+      background: rgba(255, 255, 255, 0.8);
       padding: 20px;
       text-align: center;
+      flex-shrink: 0;
     }
 
     /* 滚动锁定机制 */
-    @media (min-height: 100vh) {
-      body {
-        overflow: hidden;
-      }
-      .scroll-wrapper {
-        max-height: 100vh;
-        overflow-y: auto;
-      }
+    .no-scroll .scroll-container {
+      overflow: hidden;
     }
   </style>
 </head>
 <body>
-  <div class="scroll-wrapper">
+  <div class="scroll-container">
     <div class="content">
 <p class="MsoNormal" align="center" style="mso-margin-top-alt:auto;mso-margin-bottom-alt:
 auto;text-align:center;mso-pagination:widow-orphan"><b><span style="font-size:
@@ -164,9 +164,31 @@ mso-bidi-font-family:宋体;color:#FFC000;mso-themecolor:accent4;mso-font-kernin
 0pt">FIN</span></i><i><span lang="EN-US" style="font-size:22.0pt;color:#FFC000;mso-themecolor:accent4"><o:p></o:p></span></i></p>
       <div style="height: 1500px; border: 1px dashed #ccc"></div>
     </div>
-    <footer>
-      <p>© 2023 Your Website</p>
-    </footer>
   </div>
+  <footer>
+    <p>© 2023 Your Website</p>
+  </footer>
+
+  <script>
+    // 智能滚动控制逻辑
+    function checkScroll() {
+      const container = document.querySelector('.scroll-container');
+      const contentHeight = container.scrollHeight;
+      const viewportHeight = window.innerHeight;
+      const footerHeight = document.querySelector('footer').offsetHeight;
+
+      // 当内容高度 <= 可视区域高度 - 底部高度时
+      if (contentHeight <= (viewportHeight - footerHeight)) {
+        document.body.classList.add('no-scroll');
+      } else {
+        document.body.classList.remove('no-scroll');
+      }
+    }
+
+    // 初始化检测
+    checkScroll();
+    // 窗口变化时重新检测
+    window.addEventListener('resize', checkScroll);
+  </script>
 </body>
 </html>

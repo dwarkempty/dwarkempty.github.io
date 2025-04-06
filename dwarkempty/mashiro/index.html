@@ -1,67 +1,56 @@
-<html>
+html>
 <head>
   <meta charset="utf-8">
   <title>Mashiro</title>
   <style>
-    /* 基础背景系统 */
+    /* 基础布局 */
     html {
-      background: #f0f0f0; /* 统一底色 */
       height: 100%;
+      background: #f0f0f0; /* 统一背景色 */
     }
+
     body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
       background-image: url("https://github.com/dwarkempty/dwarkempty.github.io/blob/main/dwarkempty/mashiro/images/background.jpg?raw=true");
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       background-attachment: fixed;
-      background-color: #f0f0f0; /* 新增过渡层 */
-      margin: 0;
-      min-height: 100vh;
     }
 
-    /* 内容区域增强 */
+    /* 内容容器 */
     .content {
+      flex: 1;
       padding: 20px;
-      color: white;
-      background: rgba(0, 0, 0, 0.5);
-      box-sizing: border-box;
-      min-height: 100vh; 
-      
-      /* 滚动优化 */
-      overflow-anchor: none; /* 防止滚动跳动 */
-      overscroll-behavior-y: contain; /* 阻止滚动链 */
+      position: relative;
+      z-index: 1;
     }
 
-    /* 智能滚动控制 */
+    /* 底部区域 */
+    footer {
+      background: rgba(255, 255, 255, 0.8); /* 半透明背景 */
+      padding: 20px;
+      text-align: center;
+    }
+
+    /* 滚动锁定机制 */
     @media (min-height: 100vh) {
       body {
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
       }
-      .content {
-        flex: 1;
-        min-height: auto; /* 禁用双保险 */
-    /* 移动端增强方案 */
-    @supports (-webkit-touch-callout: none) {
-      .content {
-        min-height: -webkit-fill-available;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: inherit;
-        z-index: -1;
+      .scroll-wrapper {
+        max-height: 100vh;
+        overflow-y: auto;
       }
     }
   </style>
 </head>
 <body>
-  <div class="content">
+  <div class="scroll-wrapper">
+    <div class="content">
 <p class="MsoNormal" align="center" style="mso-margin-top-alt:auto;mso-margin-bottom-alt:
 auto;text-align:center;mso-pagination:widow-orphan"><b><span style="font-size:
 26.0pt;font-family:宋体;mso-bidi-font-family:宋体;color:#33CCFF;mso-font-kerning:
@@ -170,58 +159,14 @@ mso-font-kerning:0pt">苍之彼方的四重奏<span lang="EN-US">EXTRA1</span>�
 宋体;color:#2A74D0;mso-font-kerning:0pt">蒼の彼方のフォーリズム<span lang="EN-US"> Mashiro
 Route<o:p></o:p></span></span></p><p class="MsoNormal" align="center" style="mso-margin-top-alt:auto;mso-margin-bottom-alt:
 auto;text-align:center;mso-pagination:widow-orphan">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </p><p class="MsoNormal" align="center" style="text-align:center"><i><span lang="EN-US" style="font-size:22.0pt;font-family:&quot;Noto Sans SC&quot;,&quot;sans-serif&quot;;
 mso-bidi-font-family:宋体;color:#FFC000;mso-themecolor:accent4;mso-font-kerning:
 0pt">FIN</span></i><i><span lang="EN-US" style="font-size:22.0pt;color:#FFC000;mso-themecolor:accent4"><o:p></o:p></span></i></p>
+      <div style="height: 1500px; border: 1px dashed #ccc"></div>
+    </div>
+    <footer>
+      <p>© 2023 Your Website</p>
+    </footer>
   </div>
 </body>
 </html>

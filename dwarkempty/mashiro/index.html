@@ -3,24 +3,46 @@
   <meta charset="utf-8">
   <title>Mashiro</title>
   <style>
+    /* 基础背景系统 */
+    html {
+      background: #f0f0f0; /* 统一底色 */
+      height: 100%;
+    }
     body {
-      background-image: url("https://github.com/dwarkempty/dwarkempty.github.io/blob/main/dwarkempty/mashiro/images/background.jpg?raw=true");
-      background-size: cover;      /* 全屏覆盖且不变形 */
-      background-position: center; /* 图片居中 */
-      background-repeat: no-repeat;/* 禁止重复 */
-      background-attachment: fixed; /* 固定背景不滚动 */
-      margin: 0;                  /* 移除默认边距 */
-      min-height: 100vh;          /* 至少撑满整个视口高度 */
-      background-color: #f0f0f0; /* 示例：#f0f0f0 */
+      background-image: url("https://.../background.jpg?raw=true");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-color: #f0f0f0; /* 新增过渡层 */
+      margin: 0;
+      min-height: 100vh;
     }
 
+    /* 内容区域增强 */
     .content {
       padding: 20px;
       color: white;
       background: rgba(0, 0, 0, 0.5);
-      /* 新增防御性代码 */
-      box-sizing: border-box; /* 包含padding在高度计算内 */
-      min-height: 100vh;      /* 与body的min-height同步 */
+      box-sizing: border-box;
+      min-height: 100vh; 
+      
+      /* 滚动优化 */
+      overflow-anchor: none; /* 防止滚动跳动 */
+      overscroll-behavior-y: contain; /* 阻止滚动链 */
+    }
+
+    /* 智能滚动控制 */
+    @media (min-height: 100vh) {
+      body {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .content {
+        flex: 1;
+        min-height: auto; /* 禁用双保险 */
+      }
     }
   </style>
 </head>

@@ -42,6 +42,20 @@
       .content {
         flex: 1;
         min-height: auto; /* 禁用双保险 */
+    /* 移动端增强方案 */
+    @supports (-webkit-touch-callout: none) {
+      .content {
+        min-height: -webkit-fill-available;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: inherit;
+        z-index: -1;
       }
     }
   </style>

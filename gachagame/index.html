@@ -23,10 +23,12 @@
     .draw-shine { animation: shine 1.8s ease infinite; }
     @keyframes shine { 0% { filter: brightness(1); } 50% { filter: brightness(1.6); } 100% { filter: brightness(1); } }
     .locked { filter: grayscale(1) brightness(0.7); }
+    .ms-cell { width: 42px; height: 42px; font-size: 22px; display: flex; align-items: center; justify-content: center; user-select: none; border: 2px solid #374151; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
   <div class="max-w-6xl mx-auto p-3 sm:p-4 lg:p-6">
+    <!-- 头部 -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold flex items-center gap-3">
         <i class="fas fa-dragon text-orange-400"></i> 抽卡养成大冒险
@@ -37,6 +39,7 @@
       </div>
     </div>
 
+    <!-- Tab 导航 -->
     <div class="flex flex-wrap gap-2 bg-gray-900 p-2 rounded-3xl mb-8 w-fit mx-auto">
       <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🃏 抽卡</button>
       <button onclick="switchTab(1)" id="tab1" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🏠 养成</button>
@@ -55,7 +58,7 @@
       </div>
     </div>
 
-    <!-- 养成界面（同名分组 + 锁定） -->
+    <!-- 养成界面 -->
     <div id="panel1" class="panel hidden">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
@@ -86,11 +89,10 @@
       <div id="inventory" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
     </div>
 
-    <!-- 探索界面（三大功能） -->
+    <!-- 探索界面 -->
     <div id="panel2" class="panel hidden text-center py-8 sm:py-12">
       <h2 class="text-3xl font-bold mb-8">🔍 探索</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
-        <!-- 获取钻石 -->
         <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
           <i class="fas fa-gem text-5xl"></i>
           <div>
@@ -99,8 +101,6 @@
             <div id="diamondCooldown" class="text-xs text-emerald-300 mt-2"></div>
           </div>
         </button>
-
-        <!-- 赌博 -->
         <button onclick="openGambling()" class="bg-amber-600 hover:bg-amber-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
           <i class="fas fa-dice text-5xl"></i>
           <div>
@@ -108,8 +108,6 @@
             <div class="text-sm text-amber-200">老虎机</div>
           </div>
         </button>
-
-        <!-- 扫雷 -->
         <button onclick="openMinesweeper()" class="bg-red-600 hover:bg-red-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
           <i class="fas fa-bomb text-5xl"></i>
           <div>
@@ -137,7 +135,7 @@
     </div>
   </div>
 
-  <!-- 赌博Modal（老虎机） -->
+  <!-- 赌博Modal -->
   <div id="gamblingModal" onclick="if(event.target.id==='gamblingModal')hideGambling()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
     <div class="bg-gray-900 rounded-3xl max-w-md w-full p-6">
       <h3 class="text-2xl font-bold text-center mb-6">🎰 老虎机</h3>
@@ -152,7 +150,7 @@
     </div>
   </div>
 
-  <!-- 扫雷Modal -->
+  <!-- 扫雷Modal（已完全修复） -->
   <div id="minesweeperModal" onclick="if(event.target.id==='minesweeperModal')hideMinesweeper()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
     <div class="bg-gray-900 rounded-3xl w-full max-w-2xl">
       <div class="p-6">
@@ -174,8 +172,7 @@
   </div>
 
   <script>
-    // ==================== 数据 ====================
-    const characterPool = [ /* 15个角色数据（保持不变） */ 
+    const characterPool = [
       {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
       {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
       {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
@@ -204,9 +201,10 @@
 
     let diamondCooldownEnd = 0;
     let currentMinesweeperScore = 0;
+    let minesweeperBoard = [];
+    let mineRows = 0, mineCols = 0, mineCount = 0;
 
     function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
-
     function loadGame() {
       const saved = localStorage.getItem("gachaGame");
       if (saved) {
@@ -256,7 +254,7 @@
       if (!document.getElementById("panel1").classList.contains("hidden")) renderInventory();
     }
 
-    function showDrawAnimation(results) { /* 保持原抽卡动画 */ 
+    function showDrawAnimation(results) {
       const modal = document.getElementById("drawModal");
       const container = document.getElementById("drawResults");
       const title = document.getElementById("drawTitle");
@@ -275,13 +273,11 @@
 
     function hideDrawModal() { document.getElementById("drawModal").classList.add("hidden"); }
 
-    // ==================== 排序 + 同名分组 ====================
     function sortOwned(list) {
       const copy = [...list];
       copy.sort((a, b) => {
         const charA = characterPool.find(c => c.id === a.charId);
         const charB = characterPool.find(c => c.id === b.charId);
-        // 先按名称分组（同名靠在一起）
         if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
         if (currentSort === "rarity") {
           const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
@@ -335,7 +331,6 @@
           </div>
         `;
 
-        // 锁定按钮
         html = `<button onclick="event.stopImmediatePropagation();toggleLock(${originalIndex});" class="absolute top-4 left-4 text-xl ${item.locked ? 'text-red-400' : 'text-gray-400'}">🔒</button>` + html;
 
         if (decomposeMode && !item.locked) {
@@ -358,7 +353,7 @@
       renderInventory();
     }
 
-    function toggleDecomposeMode() { /* 保持原逻辑 */ 
+    function toggleDecomposeMode() {
       decomposeMode = !decomposeMode;
       const btn = document.getElementById("decomposeBtn");
       btn.innerHTML = decomposeMode ? `<i class="fas fa-times"></i> 退出分解` : `<i class="fas fa-recycle"></i> 分解角色`;
@@ -373,7 +368,7 @@
       updateDecomposeBar();
     }
 
-    function updateDecomposeBar() { /* 保持原逻辑 */ 
+    function updateDecomposeBar() {
       const count = selected.length;
       let value = 0;
       selected.forEach(i => {
@@ -385,7 +380,7 @@
       document.getElementById("decomposeValue").textContent = `预计获得 ${value} 钻石`;
     }
 
-    function selectAll() { /* 保持原逻辑 */ 
+    function selectAll() {
       selected = [];
       const checkboxes = document.querySelectorAll('#inventory input[type="checkbox"]');
       const maxSelect = Math.min(checkboxes.length, 300);
@@ -417,7 +412,6 @@
       renderInventory();
     }
 
-    // ==================== 角色详情（锁定角色不可升星） ====================
     let currentIndex = null;
     function showCharacterDetail(index, char, item) {
       currentIndex = index;
@@ -462,7 +456,7 @@
       renderInventory();
     }
 
-    function levelUp() { /* 原逻辑 */ 
+    function levelUp() {
       if (currentIndex === null) return;
       const item = player.owned[currentIndex];
       const cost = item.level * 30;
@@ -488,7 +482,6 @@
       showCharacterDetail(currentIndex, char, item);
     }
 
-    // ==================== 探索新功能 ====================
     function getDiamonds() {
       if (Date.now() < diamondCooldownEnd) return;
       const amount = Math.floor(Math.random() * 101) + 100;
@@ -516,9 +509,7 @@
       document.getElementById("gamblingResult").innerHTML = "";
     }
 
-    function hideGambling() {
-      document.getElementById("gamblingModal").classList.add("hidden");
-    }
+    function hideGambling() { document.getElementById("gamblingModal").classList.add("hidden"); }
 
     function spinSlots() {
       const bet = parseInt(document.getElementById("betAmount").value);
@@ -546,17 +537,13 @@
       saveGame();
     }
 
-    let minesweeperBoard = [];
-    let mineRows = 0, mineCols = 0, mineCount = 0;
-
     function startMinesweeper(rows, cols, mines) {
       mineRows = rows; mineCols = cols; mineCount = mines;
       currentMinesweeperScore = 0;
       document.getElementById("mineScore").textContent = "0 钻石";
 
-      minesweeperBoard = Array(rows).fill().map(() => Array(cols).fill({revealed: false, mine: false, flagged: false, adjacent: 0}));
+      minesweeperBoard = Array(rows).fill().map(() => Array(cols).fill().map(() => ({revealed: false, mine: false, flagged: false, adjacent: 0})));
 
-      // 随机放置地雷
       let placed = 0;
       while (placed < mines) {
         const r = Math.floor(Math.random() * rows);
@@ -567,7 +554,6 @@
         }
       }
 
-      // 计算相邻雷数
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (minesweeperBoard[r][c].mine) continue;
@@ -582,29 +568,30 @@
           minesweeperBoard[r][c].adjacent = count;
         }
       }
-
       renderMinesweeperBoard();
     }
 
     function renderMinesweeperBoard() {
       const boardEl = document.getElementById("minesweeperBoard");
       boardEl.innerHTML = "";
-      boardEl.style.gridTemplateColumns = `repeat(${mineCols}, 32px)`;
+      boardEl.style.gridTemplateColumns = `repeat(${mineCols}, 42px)`;
 
       for (let r = 0; r < mineRows; r++) {
         for (let c = 0; c < mineCols; c++) {
           const cell = document.createElement("div");
-          cell.className = "w-8 h-8 flex items-center justify-center text-xl bg-gray-600 hover:bg-gray-500 border border-gray-400 rounded cursor-pointer select-none";
+          cell.className = "ms-cell bg-gray-600 border border-gray-400 hover:bg-gray-500 rounded cursor-pointer flex items-center justify-center text-xl font-bold";
           cell.dataset.r = r;
           cell.dataset.c = c;
-          cell.onclick = (e) => handleMineClick(e, r, c);
-          cell.oncontextmenu = (e) => { e.preventDefault(); handleMineFlag(r, c); };
+          cell.addEventListener("click", handleMineClick);
+          cell.addEventListener("contextmenu", (e) => { e.preventDefault(); handleMineFlag(r, c); });
           boardEl.appendChild(cell);
         }
       }
     }
 
-    function handleMineClick(e, r, c) {
+    function handleMineClick(e) {
+      const r = parseInt(e.target.dataset.r);
+      const c = parseInt(e.target.dataset.c);
       const cellData = minesweeperBoard[r][c];
       if (cellData.revealed || cellData.flagged) return;
       if (cellData.mine) {
@@ -612,11 +599,31 @@
         hideMinesweeper();
         return;
       }
+      floodFill(r, c);
+    }
+
+    function floodFill(r, c) {
+      if (r < 0 || r >= mineRows || c < 0 || c >= mineCols) return;
+      const cellData = minesweeperBoard[r][c];
+      if (cellData.revealed || cellData.flagged || cellData.mine) return;
+
       cellData.revealed = true;
-      e.target.classList.add("bg-gray-800");
-      e.target.textContent = cellData.adjacent > 0 ? cellData.adjacent : "";
+      const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cellEl) {
+        cellEl.classList.add("bg-gray-800");
+        if (cellData.adjacent > 0) {
+          cellEl.textContent = cellData.adjacent;
+          cellEl.style.color = ["#1e90ff","#00b700","#ff0000","#800080","#ffa500","#00ffff","#000000","#808080"][cellData.adjacent-1];
+        }
+      }
+
       if (cellData.adjacent === 0) {
-        // 自动展开（简化版）
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            floodFill(r + dr, c + dc);
+          }
+        }
       }
     }
 
@@ -625,7 +632,7 @@
       if (cellData.revealed) return;
       cellData.flagged = !cellData.flagged;
       const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-      cellEl.textContent = cellData.flagged ? "🚩" : "";
+      if (cellEl) cellEl.textContent = cellData.flagged ? "🚩" : "";
       if (cellData.flagged && cellData.mine) {
         currentMinesweeperScore += 500;
         document.getElementById("mineScore").textContent = `${currentMinesweeperScore} 钻石`;
@@ -647,7 +654,6 @@
 
     function openMinesweeper() {
       document.getElementById("minesweeperModal").classList.remove("hidden");
-      // 默认打开简单模式
       startMinesweeper(8, 8, 10);
     }
 
@@ -663,9 +669,7 @@
       }
     }
 
-    window.addEventListener('beforeunload', () => {
-      localStorage.removeItem("gachaGame");
-    });
+    window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });
 
     window.onload = () => {
       loadGame();

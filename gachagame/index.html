@@ -60,7 +60,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
         <div class="flex items-center gap-4 w-full sm:w-auto">
-          <select id="sortSelect" onchange="currentSort = this.value; renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
+          <select id="sortSelect" onchange="renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
             <option value="rarity">排序：稀有度优先</option>
             <option value="stars">排序：星级优先</option>
             <option value="level">排序：等级优先</option>
@@ -169,7 +169,7 @@
   </div>
 
   <script>
-    const characterPool = [
+    const characterPool = [ /* 15个角色数据不变 */ 
       {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
       {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
       {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
@@ -194,7 +194,6 @@
     let player = { diamonds: 1000, owned: [] };
     let decomposeMode = false;
     let selected = [];
-    let currentSort = "rarity";   // 默认排序
 
     let diamondCooldownEnd = 0;
     let currentMinesweeperScore = 0;
@@ -272,16 +271,17 @@
 
     function sortOwned(list) {
       const copy = [...list];
+      const sortType = document.getElementById("sortSelect").value;   // 实时读取当前选项
       copy.sort((a, b) => {
         const charA = characterPool.find(c => c.id === a.charId);
         const charB = characterPool.find(c => c.id === b.charId);
         if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
-        if (currentSort === "rarity") {
+        if (sortType === "rarity") {
           const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
           if (rDiff !== 0) return rDiff;
           if (a.stars !== b.stars) return b.stars - a.stars;
           return b.level - a.level;
-        } else if (currentSort === "stars") {
+        } else if (sortType === "stars") {
           if (a.stars !== b.stars) return b.stars - a.stars;
           const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
           if (rDiff !== 0) return rDiff;
@@ -462,9 +462,7 @@
       const item = player.owned[currentIndex];
       if (item.stars >= 5) return alert("已经满星！");
       const duplicateIndex = player.owned.findIndex(o => 
-        o.charId === item.charId && 
-        o.id !== item.id && 
-        o.stars <= item.stars
+        o.charId === item.charId && o.id !== item.id && o.stars <= item.stars
       );
       if (duplicateIndex === -1) return alert("没有可用的相同角色材料！");
       player.owned.splice(duplicateIndex, 1);

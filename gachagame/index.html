@@ -49,7 +49,7 @@
       <button onclick="switchTab(2)" id="tab2" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🔍 探索</button>
     </div>
 
-    <!-- 抽卡界面（新增角色池/武器池切换） -->
+    <!-- 抽卡界面 -->
     <div id="panel0" class="panel">
       <div class="text-center py-8 sm:py-12">
         <div class="flex justify-center gap-3 mb-6">
@@ -71,7 +71,7 @@
       </div>
     </div>
 
-    <!-- 养成界面（新增仓库切换） -->
+    <!-- 养成界面 -->
     <div id="panel1" class="panel hidden">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div class="flex gap-2">
@@ -144,7 +144,7 @@
     </div>
   </div>
 
-  <!-- 角色详情弹窗（新增武器装备功能） -->
+  <!-- 角色详情弹窗 -->
   <div id="modal" onclick="if(event.target===this)hideModal()" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[10000] p-4">
     <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-full sm:max-w-lg w-full mx-auto overflow-hidden">
       <div id="modalContent" class="p-6"></div>
@@ -259,8 +259,8 @@
     // ====================== 玩家数据 ======================
     let player = { 
       diamonds: 1000, 
-      owned: [],           // 角色 [{id, charId, level, stars, equippedWeapon: null}]
-      weapons: [],         // 武器 [{id, weaponId}]
+      owned: [],           // 角色
+      weapons: [],         // 武器
       totalCharDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0,
       totalWeaponDraws: 0, wR: 0, wSR: 0, wSSR: 0, wUR: 0,
       charSsrPity: 0, charUrPity: 0,
@@ -270,15 +270,15 @@
     let decomposeMode = false;
     let selected = [];
     let currentSort = "rarity";
-    let currentDrawPool = "char";     // 'char' 或 'weapon'
-    let currentInventoryTab = 0;      // 0=角色 1=武器
+    let currentDrawPool = "char";
+    let currentInventoryTab = 0;
     let currentRecordTab = 0;
+    let currentModalIndex = null;
 
     let diamondCooldownEnd = 0;
     let currentMinesweeperScore = 0;
     let minesweeperBoard = [];
     let mineRows = 0, mineCols = 0, mineCount = 0;
-    let currentModalIndex = null;
 
     function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
 
@@ -289,7 +289,6 @@
         if (data.gold !== undefined) data.diamonds = data.gold;
         player = data;
       }
-      // 默认值
       if (!player.diamonds) player.diamonds = 1000;
       if (!player.owned) player.owned = [];
       if (!player.weapons) player.weapons = [];
@@ -304,7 +303,7 @@
       return "card-r";
     }
 
-    // ====================== 保底抽卡（角色/武器独立） ======================
+    // ====================== 抽卡保底 ======================
     function drawOne(poolType) {
       const isChar = poolType === "char";
       if (isChar) {
@@ -346,7 +345,6 @@
         }
       }
 
-      // 普通出货重置保底
       if (item.rarity === "SSR" || item.rarity === "UR") {
         if (isChar) player.charSsrPity = 0;
         else player.weaponSsrPity = 0;
@@ -401,7 +399,7 @@
         const div = document.createElement("div");
         div.style.animationDelay = delay + "ms";
         const pool = poolType === "char" ? characterPool : weaponPool;
-        const data = pool.find(x => x.id === (poolType === "char" ? item.charId || item.id : item.weaponId || item.id));
+        const data = pool.find(x => x.id === item.id);
         div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
         div.innerHTML = `<img src="${data.image}" class="character-img w-full rounded-2xl mx-auto draw-shine"><div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div><div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div><div class="text-xs text-gray-400">${data.enName || data.type}</div>`;
         container.appendChild(div);
@@ -410,19 +408,16 @@
 
     function hideDrawModal() { document.getElementById("drawModal").classList.add("hidden"); }
 
-    // ====================== 库存渲染 ======================
+    // ====================== 库存渲染（已修复所有显示问题） ======================
     function sortOwned(list, isChar) {
       const copy = [...list];
       copy.sort((a, b) => {
         const pool = isChar ? characterPool : weaponPool;
         const charA = pool.find(c => c.id === (isChar ? a.charId : a.weaponId));
         const charB = pool.find(c => c.id === (isChar ? b.charId : b.weaponId));
-
         const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
         if (rDiff !== 0) return rDiff;
-
         if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
-
         if (isChar) {
           if (a.stars !== b.stars) return b.stars - a.stars;
           return b.level - a.level;
@@ -449,12 +444,23 @@
         div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(data.rarity)} hover:scale-105 transition`;
 
         let html = '';
+
         if (isChar) {
+          // === 修复1：角色卡正确显示已装备武器 ===
+          let equippedName = "无";
+          if (item.equippedWeapon) {
+            const equippedObj = player.weapons.find(w => w.id === item.equippedWeapon);
+            if (equippedObj) {
+              const wpData = weaponPool.find(wp => wp.id === equippedObj.weaponId);
+              equippedName = wpData ? wpData.name : "无";
+            }
+          }
+
           const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
           const hp = Math.floor(data.baseHP * statMult);
           const atk = Math.floor(data.baseATK * statMult);
           const def = Math.floor(data.baseDEF * statMult);
-          const weaponName = item.equippedWeapon ? weaponPool.find(w => w.id === item.equippedWeapon)?.name || "无" : "无";
+
           html = `
             <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
             <div class="text-center">
@@ -465,14 +471,25 @@
                 <span class="text-lg font-bold">Lv.${item.level}</span>
                 <span class="star-${Math.min(item.stars + 1, 5)} text-2xl">★</span><span class="text-sm text-gray-400">(${item.stars}/5)</span>
               </div>
-              <div class="text-xs text-emerald-400">装备：${weaponName}</div>
+              <div class="text-xs text-emerald-400">装备：${equippedName}</div>
               <div class="flex justify-between text-sm mt-4">
                 <div>❤️ ${hp}</div><div>⚔️ ${atk}</div><div>🛡️ ${def}</div>
               </div>
             </div>
           `;
         } else {
+          // === 修复2：武器卡右上角显示“已被XXX装备” ===
+          let equippedBy = "";
+          for (let char of player.owned) {
+            if (char.equippedWeapon === item.id) {
+              const charData = characterPool.find(c => c.id === char.charId);
+              equippedBy = `<div class="absolute top-4 right-4 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-xl">已被${charData.name}装备</div>`;
+              break;
+            }
+          }
+
           html = `
+            ${equippedBy}
             <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
             <div class="text-center">
               <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
@@ -522,7 +539,8 @@
         }
       });
 
-      const equippedWp = item.equippedWeapon ? weaponPool.find(w => w.id === item.equippedWeapon) : null;
+      const equippedObj = item.equippedWeapon ? player.weapons.find(w => w.id === item.equippedWeapon) : null;
+      const equippedWp = equippedObj ? weaponPool.find(wp => wp.id === equippedObj.weaponId) : null;
 
       document.getElementById("modalContent").innerHTML = `
         <div class="text-center">
@@ -560,19 +578,14 @@
     function equipWeapon() {
       if (currentModalIndex === null) return;
       const select = document.getElementById("equipSelect");
-      const weaponId = parseInt(select.value);
-      if (!weaponId) {
-        player.owned[currentModalIndex].equippedWeapon = null;
-      } else {
-        player.owned[currentModalIndex].equippedWeapon = weaponId;
-      }
+      const weaponUniqueId = parseInt(select.value);
+      player.owned[currentModalIndex].equippedWeapon = weaponUniqueId || null;
       saveGame();
       hideModal();
       renderInventory();
     }
 
     function showWeaponDetail(index) {
-      // 武器暂无额外详情（可自行扩展）
       alert("武器暂不支持单独升级，可直接装备到对应角色！");
     }
 
@@ -606,7 +619,7 @@
       renderInventory();
     }
 
-    // ====================== 分解逻辑（角色/武器通用） ======================
+    // ====================== 分解逻辑 ======================
     function toggleDecomposeMode() {
       decomposeMode = !decomposeMode;
       const btn = document.getElementById("decomposeBtn");
@@ -679,7 +692,7 @@
       document.getElementById("poolTitle").textContent = type === "char" ? "角色池抽取" : "武器池抽取";
     }
 
-    // ====================== 记录查询 ======================
+    // ====================== 记录查询（已恢复运气评价） ======================
     function setRecordTab(n) {
       currentRecordTab = n;
       document.querySelectorAll('.record-tab').forEach((b,i) => b.classList.toggle('active', i===n));
@@ -687,47 +700,40 @@
     }
 
     function showRecordModal() {
-      const totalChar = player.totalCharDraws || 0;
-      const totalWeapon = player.totalWeaponDraws || 0;
+      const isCharTab = currentRecordTab === 0;
+      const total = isCharTab ? (player.totalCharDraws || 0) : (player.totalWeaponDraws || 0);
+      const ur = isCharTab ? player.urCount : player.wUR;
+      const ssrRate = total ? ((isCharTab ? player.ssrCount : player.wSSR) / total * 100).toFixed(2) : 0;
+      const urRate = total ? (ur / total * 100).toFixed(2) : 0;
 
-      let html = '';
-      if (currentRecordTab === 0) {
-        const ssrRate = totalChar ? (player.ssrCount / totalChar * 100).toFixed(2) : 0;
-        const urRate = totalChar ? (player.urCount / totalChar * 100).toFixed(2) : 0;
-        html = `
-          <div class="space-y-6">
-            <div class="flex justify-between text-xl"><span>角色总抽卡次数</span><span class="font-bold">${totalChar}</span></div>
-            <div class="grid grid-cols-2 gap-6">
-              <div class="text-center"><div class="text-sm text-gray-400">R</div><div class="text-4xl font-bold text-blue-400">${player.rCount}</div></div>
-              <div class="text-center"><div class="text-sm text-gray-400">SR</div><div class="text-4xl font-bold text-purple-400">${player.srCount}</div></div>
-              <div class="text-center"><div class="text-sm text-gray-400">SSR</div><div class="text-4xl font-bold text-yellow-400">${player.ssrCount}</div></div>
-              <div class="text-center"><div class="text-sm text-gray-400">UR</div><div class="text-4xl font-bold text-orange-400">${player.urCount}</div></div>
-            </div>
-            <div class="pt-4 border-t border-gray-700">
-              <div class="flex justify-between"><span>SSR获得率</span><span class="font-bold">${ssrRate}%</span></div>
-              <div class="flex justify-between"><span>UR获得率</span><span class="font-bold">${urRate}%</span></div>
-              <div class="flex justify-between mt-3"><span>UR大保底进度</span><span class="font-bold text-amber-400">${player.charUrPity || 0}/80</span></div>
-            </div>
-          </div>`;
-      } else {
-        const ssrRate = totalWeapon ? (player.wSSR / totalWeapon * 100).toFixed(2) : 0;
-        const urRate = totalWeapon ? (player.wUR / totalWeapon * 100).toFixed(2) : 0;
-        html = `
-          <div class="space-y-6">
-            <div class="flex justify-between text-xl"><span>武器总抽卡次数</span><span class="font-bold">${totalWeapon}</span></div>
-            <div class="grid grid-cols-2 gap-6">
-              <div class="text-center"><div class="text-sm text-gray-400">R</div><div class="text-4xl font-bold text-blue-400">${player.wR}</div></div>
-              <div class="text-center"><div class="text-sm text-gray-400">SR</div><div class="text-4xl font-bold text-purple-400">${player.wSR}</div></div>
-              <div class="text-center"><div class="text-sm text-gray-400">SSR</div><div class="text-4xl font-bold text-yellow-400">${player.wSSR}</div></div>
-              <div class="text-center"><div class="text-sm text-gray-400">UR</div><div class="text-4xl font-bold text-orange-400">${player.wUR}</div></div>
-            </div>
-            <div class="pt-4 border-t border-gray-700">
-              <div class="flex justify-between"><span>SSR获得率</span><span class="font-bold">${ssrRate}%</span></div>
-              <div class="flex justify-between"><span>UR获得率</span><span class="font-bold">${urRate}%</span></div>
-              <div class="flex justify-between mt-3"><span>UR大保底进度</span><span class="font-bold text-amber-400">${player.weaponUrPity || 0}/80</span></div>
-            </div>
-          </div>`;
-      }
+      let html = `
+        <div class="space-y-6">
+          <div class="flex justify-between text-xl"><span>${isCharTab ? '角色' : '武器'}总抽卡次数</span><span class="font-bold">${total}</span></div>
+          <div class="grid grid-cols-2 gap-6">
+            <div class="text-center"><div class="text-sm text-gray-400">R</div><div class="text-4xl font-bold text-blue-400">${isCharTab ? player.rCount : player.wR}</div></div>
+            <div class="text-center"><div class="text-sm text-gray-400">SR</div><div class="text-4xl font-bold text-purple-400">${isCharTab ? player.srCount : player.wSR}</div></div>
+            <div class="text-center"><div class="text-sm text-gray-400">SSR</div><div class="text-4xl font-bold text-yellow-400">${isCharTab ? player.ssrCount : player.wSSR}</div></div>
+            <div class="text-center"><div class="text-sm text-gray-400">UR</div><div class="text-4xl font-bold text-orange-400">${ur}</div></div>
+          </div>
+          <div class="pt-4 border-t border-gray-700">
+            <div class="flex justify-between"><span>SSR获得率</span><span class="font-bold">${ssrRate}%</span></div>
+            <div class="flex justify-between"><span>UR获得率</span><span class="font-bold">${urRate}%</span></div>
+            <div class="flex justify-between mt-3"><span>UR大保底进度</span><span class="font-bold text-amber-400">${isCharTab ? (player.charUrPity || 0) : (player.weaponUrPity || 0)}/80</span></div>
+          </div>
+        </div>`;
+
+      // === 修复3：恢复运气评价 ===
+      const luckRate = parseFloat(urRate);
+      let luckText = "", luckClass = "";
+      if (luckRate <= 1) { luckText = "大非酋"; luckClass = "bg-gradient-to-r from-red-900 to-red-700 text-white"; }
+      else if (luckRate <= 2) { luckText = "非酋"; luckClass = "bg-gradient-to-r from-red-700 to-red-500 text-white"; }
+      else if (luckRate <= 3) { luckText = "正常玩家"; luckClass = "bg-gray-700 text-white"; }
+      else if (luckRate <= 4) { luckText = "小欧皇"; luckClass = "bg-gradient-to-r from-yellow-300 to-yellow-500 text-black"; }
+      else if (luckRate <= 5) { luckText = "欧皇"; luckClass = "bg-gradient-to-r from-yellow-400 to-amber-500 text-black"; }
+      else { luckText = "欧气满满"; luckClass = "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 text-white animate-pulse"; }
+
+      html += `<div id="luckBox" class="mt-6 p-6 rounded-3xl text-center text-2xl font-bold transition-all"><span class="${luckClass} px-8 py-4 rounded-3xl inline-block">${luckText}（UR概率 ${luckRate}%）</span></div>`;
+
       document.getElementById("recordContent").innerHTML = html;
       document.getElementById("recordModal").classList.remove("hidden");
     }
@@ -765,8 +771,8 @@
       e.target.value = "";
     }
 
-    // ====================== 其他功能（探索、小游戏） ======================
-    function getDiamonds() {
+    // ====================== 其他功能 ======================
+    function getDiamonds() { /* 原逻辑不变 */ 
       if (Date.now() < diamondCooldownEnd) return;
       const amount = Math.floor(Math.random() * 201) + 300;
       player.diamonds += amount;
@@ -790,7 +796,7 @@
 
     function openGambling() { document.getElementById("gamblingModal").classList.remove("hidden"); document.getElementById("gamblingResult").innerHTML = ""; }
     function hideGambling() { document.getElementById("gamblingModal").classList.add("hidden"); }
-    function spinSlots() { /* 原逻辑保持不变 */ 
+    function spinSlots() { 
       const bet = parseInt(document.getElementById("betAmount").value);
       if (bet < 100 || bet > 10000 || bet > player.diamonds) return alert("下注金额不正确！");
       player.diamonds -= bet;
@@ -815,7 +821,7 @@
 
     function openMinesweeper() { document.getElementById("minesweeperModal").classList.remove("hidden"); startMinesweeper(8,8,10); }
     function hideMinesweeper() { document.getElementById("minesweeperModal").classList.add("hidden"); currentMinesweeperScore = 0; }
-    function startMinesweeper(rows, cols, mines) { /* 原扫雷逻辑保持不变 */ 
+    function startMinesweeper(rows, cols, mines) { /* 原扫雷逻辑 */ 
       mineRows = rows; mineCols = cols; mineCount = mines;
       currentMinesweeperScore = 0;
       document.getElementById("mineScore").textContent = "0 钻石";
@@ -840,7 +846,7 @@
       }
       renderMinesweeperBoard();
     }
-    function renderMinesweeperBoard() { /* 原逻辑 */ 
+    function renderMinesweeperBoard() { 
       const boardEl = document.getElementById("minesweeperBoard");
       boardEl.innerHTML = "";
       boardEl.style.gridTemplateColumns = `repeat(${mineCols}, 42px)`;
@@ -855,14 +861,14 @@
         }
       }
     }
-    function handleMineClick(e) { /* 原逻辑 */ 
+    function handleMineClick(e) { 
       const r = parseInt(e.target.dataset.r); const c = parseInt(e.target.dataset.c);
       const cellData = minesweeperBoard[r][c];
       if (cellData.revealed || cellData.flagged) return;
       if (cellData.mine) { alert("💥 踩雷了！"); hideMinesweeper(); return; }
       floodFill(r, c);
     }
-    function floodFill(r, c) { /* 原逻辑 */ 
+    function floodFill(r, c) { 
       if (r < 0 || r >= mineRows || c < 0 || c >= mineCols) return;
       const cellData = minesweeperBoard[r][c];
       if (cellData.revealed || cellData.flagged || cellData.mine) return;
@@ -882,7 +888,7 @@
         }
       }
     }
-    function handleMineFlag(r, c) { /* 原逻辑 */ 
+    function handleMineFlag(r, c) { 
       const cellData = minesweeperBoard[r][c];
       if (cellData.revealed) return;
       cellData.flagged = !cellData.flagged;
@@ -913,7 +919,6 @@
       }
     }
 
-    // ====================== 初始化 ======================
     window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });
 
     window.onload = () => {

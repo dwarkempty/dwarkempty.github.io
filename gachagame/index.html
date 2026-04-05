@@ -92,14 +92,21 @@
       </div>
     </div>
 
-    <!-- 养成界面 -->
+    <!-- 养成界面（新增排序 + 分解300上限） -->
     <div id="panel1" class="panel hidden">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
-        <button onclick="toggleDecomposeMode()" id="decomposeBtn"
-          class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2">
-          <i class="fas fa-recycle"></i> 分解角色
-        </button>
+        <div class="flex items-center gap-4">
+          <select id="sortSelect" onchange="renderInventory()" class="bg-gray-800 text-white px-4 py-2 rounded-2xl border border-gray-700 focus:outline-none">
+            <option value="rarity">排序：稀有度优先</option>
+            <option value="stars">排序：星级优先</option>
+            <option value="level">排序：等级优先</option>
+          </select>
+          <button onclick="toggleDecomposeMode()" id="decomposeBtn"
+            class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2">
+            <i class="fas fa-recycle"></i> 分解角色
+          </button>
+        </div>
       </div>
 
       <div id="decomposeBar" class="hidden bg-red-900/50 border border-red-500 rounded-3xl p-4 mb-6 flex items-center justify-between">
@@ -108,7 +115,7 @@
           <span id="decomposeValue" class="text-yellow-300 font-bold">预计获得 0 钻石</span>
         </div>
         <div class="flex gap-3">
-          <button onclick="selectAll()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">全选（最多100个）</button>
+          <button onclick="selectAll()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">全选（最多300个）</button>
           <button onclick="decomposeSelected()" class="px-8 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-bold">确认分解</button>
           <button onclick="toggleDecomposeMode()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">取消</button>
         </div>
@@ -150,7 +157,7 @@
 
   <script>
     // ==================== 角色数据 ====================
-    const characterPool = [
+    const characterPool = [ /* 15个角色数据保持不变 */ 
       {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
       {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
       {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
@@ -170,10 +177,12 @@
 
     const rarityWeights = { R: 60, SR: 25, SSR: 12, UR: 3 };
     const decomposeValue = { R: 10, SR: 50, SSR: 200, UR: 1000 };
+    const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 
     let player = { diamonds: 1000, owned: [] };
     let decomposeMode = false;
     let selected = [];
+    let currentSort = "rarity";
 
     function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
 
@@ -181,16 +190,12 @@
       const saved = localStorage.getItem("gachaGame");
       if (saved) {
         let data = JSON.parse(saved);
-        // 修复旧存档：gold → diamonds
-        if (data.gold !== undefined) {
-          data.diamonds = data.gold;
-          delete data.gold;
-        }
+        if (data.gold !== undefined) { data.diamonds = data.gold; delete data.gold; }
         player = data;
-        if (!player.diamonds || isNaN(player.diamonds)) player.diamonds = 1000;
       }
+      if (!player.diamonds || isNaN(player.diamonds)) player.diamonds = 1000;
       document.getElementById("diamonds").textContent = player.diamonds;
-      saveGame(); // 保存修复后的存档
+      saveGame();
     }
 
     function getRarityColor(r) {
@@ -257,12 +262,43 @@
       document.getElementById("drawModal").classList.add("hidden");
     }
 
+    // ==================== 排序函数 ====================
+    function sortOwned(list) {
+      const copy = [...list];
+      copy.sort((a, b) => {
+        const charA = characterPool.find(c => c.id === a.charId);
+        const charB = characterPool.find(c => c.id === b.charId);
+
+        if (currentSort === "rarity") {
+          const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
+          if (rDiff !== 0) return rDiff;
+          if (a.stars !== b.stars) return b.stars - a.stars;
+          return b.level - a.level;
+        } else if (currentSort === "stars") {
+          if (a.stars !== b.stars) return b.stars - a.stars;
+          const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
+          if (rDiff !== 0) return rDiff;
+          return b.level - a.level;
+        } else { // level
+          if (a.level !== b.level) return b.level - a.level;
+          const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
+          if (rDiff !== 0) return rDiff;
+          return b.stars - a.stars;
+        }
+      });
+      return copy;
+    }
+
+    // ==================== 仓库渲染 ====================
     function renderInventory() {
       const container = document.getElementById("inventory");
       container.innerHTML = "";
       selected = [];
 
-      player.owned.forEach((item, index) => {
+      const sortedOwned = sortOwned(player.owned);
+
+      sortedOwned.forEach((item) => {
+        const originalIndex = player.owned.findIndex(o => o.id === item.id);
         const char = characterPool.find(c => c.id === item.charId);
         const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
         const hp = Math.floor(char.baseHP * statMult);
@@ -288,11 +324,11 @@
         `;
 
         if (decomposeMode) {
-          html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${index}" onchange="toggleSelect(this)">` + html;
+          html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${originalIndex}" onchange="toggleSelect(this)">` + html;
         }
 
         div.innerHTML = html;
-        if (!decomposeMode) div.onclick = () => showCharacterDetail(index, char, item);
+        if (!decomposeMode) div.onclick = () => showCharacterDetail(originalIndex, char, item);
         container.appendChild(div);
       });
 
@@ -334,18 +370,18 @@
     function selectAll() {
       selected = [];
       const checkboxes = document.querySelectorAll('#inventory input[type="checkbox"]');
-      const maxSelect = Math.min(checkboxes.length, 100);
+      const maxSelect = Math.min(checkboxes.length, 300);
       for (let i = 0; i < maxSelect; i++) {
         checkboxes[i].checked = true;
         selected.push(parseInt(checkboxes[i].dataset.index));
       }
       updateDecomposeBar();
-      if (checkboxes.length > 100) alert(`已自动选中前100个角色（一次最多分解100个）`);
+      if (checkboxes.length > 300) alert(`已自动选中前300个角色（一次最多分解300个）`);
     }
 
     function decomposeSelected() {
       if (selected.length === 0) return;
-      if (selected.length > 100) return alert("一次最多分解100个角色！");
+      if (selected.length > 300) return alert("一次最多分解300个角色！");
       
       let total = 0;
       selected.sort((a, b) => b - a).forEach(i => {
@@ -365,6 +401,7 @@
       renderInventory();
     }
 
+    // ==================== 角色详情 & 养成 ====================
     let currentIndex = null;
     function showCharacterDetail(index, char, item) {
       currentIndex = index;
@@ -458,6 +495,11 @@
         renderInventory();
       }
     }
+
+    // 退出网页时自动清除所有资源
+    window.addEventListener('beforeunload', () => {
+      localStorage.removeItem("gachaGame");
+    });
 
     window.onload = () => {
       loadGame();

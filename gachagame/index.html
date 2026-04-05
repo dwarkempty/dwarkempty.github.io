@@ -22,13 +22,11 @@
     @keyframes drawPop { 0% { transform: scale(0.3) rotate(-12deg); opacity: 0; } 70% { transform: scale(1.15) rotate(8deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
     .draw-shine { animation: shine 1.8s ease infinite; }
     @keyframes shine { 0% { filter: brightness(1); } 50% { filter: brightness(1.6); } 100% { filter: brightness(1); } }
-    .locked { filter: grayscale(1) brightness(0.7); }
     .ms-cell { width: 42px; height: 42px; font-size: 22px; display: flex; align-items: center; justify-content: center; user-select: none; border: 2px solid #374151; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
   <div class="max-w-6xl mx-auto p-3 sm:p-4 lg:p-6">
-    <!-- 头部 -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold flex items-center gap-3">
         <i class="fas fa-dragon text-orange-400"></i> 抽卡养成大冒险
@@ -39,7 +37,6 @@
       </div>
     </div>
 
-    <!-- Tab 导航 -->
     <div class="flex flex-wrap gap-2 bg-gray-900 p-2 rounded-3xl mb-8 w-fit mx-auto">
       <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🃏 抽卡</button>
       <button onclick="switchTab(1)" id="tab1" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🏠 养成</button>
@@ -97,7 +94,7 @@
           <i class="fas fa-gem text-5xl"></i>
           <div>
             <div class="text-2xl font-bold">获取钻石</div>
-            <div class="text-sm text-emerald-200">100~200钻石</div>
+            <div class="text-sm text-emerald-200">300~500钻石</div>
             <div id="diamondCooldown" class="text-xs text-emerald-300 mt-2"></div>
           </div>
         </button>
@@ -150,7 +147,7 @@
     </div>
   </div>
 
-  <!-- 扫雷Modal（已完全修复） -->
+  <!-- 扫雷Modal -->
   <div id="minesweeperModal" onclick="if(event.target.id==='minesweeperModal')hideMinesweeper()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
     <div class="bg-gray-900 rounded-3xl w-full max-w-2xl">
       <div class="p-6">
@@ -246,7 +243,7 @@
       let results = [];
       for (let i = 0; i < times; i++) {
         const char = drawOne();
-        player.owned.push({ id: Date.now() + i, charId: char.id, level: 1, stars: 0, locked: false });
+        player.owned.push({ id: Date.now() + i, charId: char.id, level: 1, stars: 0 });
         results.push(char);
       }
       saveGame();
@@ -314,7 +311,7 @@
         const def = Math.floor(char.baseDEF * statMult);
 
         const div = document.createElement("div");
-        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition ${item.locked ? 'locked' : ''}`;
+        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition`;
 
         let html = `
           <img src="${char.image}" class="character-img w-full rounded-2xl mb-3">
@@ -331,9 +328,7 @@
           </div>
         `;
 
-        html = `<button onclick="event.stopImmediatePropagation();toggleLock(${originalIndex});" class="absolute top-4 left-4 text-xl ${item.locked ? 'text-red-400' : 'text-gray-400'}">🔒</button>` + html;
-
-        if (decomposeMode && !item.locked) {
+        if (decomposeMode) {
           html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${originalIndex}" onchange="toggleSelect(this)">` + html;
         }
 
@@ -345,12 +340,6 @@
       if (player.owned.length === 0) {
         container.innerHTML = `<p class="text-center text-gray-500 py-12 col-span-full">还没有角色，快去抽卡吧！</p>`;
       }
-    }
-
-    function toggleLock(index) {
-      player.owned[index].locked = !player.owned[index].locked;
-      saveGame();
-      renderInventory();
     }
 
     function toggleDecomposeMode() {
@@ -397,7 +386,6 @@
       let total = 0;
       selected.sort((a, b) => b - a).forEach(i => {
         const item = player.owned[i];
-        if (item.locked) return;
         const char = characterPool.find(c => c.id === item.charId);
         total += decomposeValue[char.rarity];
         player.owned.splice(i, 1);
@@ -439,9 +427,9 @@
               <span>升级（+8%属性）</span>
               <span class="text-yellow-300">${costLevel} 钻石</span>
             </button>
-            <button onclick="starUp()" class="w-full ${item.stars >= 5 || item.locked ? 'bg-gray-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} py-4 rounded-2xl text-xl font-bold flex justify-between items-center px-6">
+            <button onclick="starUp()" class="w-full ${item.stars >= 5 ? 'bg-gray-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} py-4 rounded-2xl text-xl font-bold flex justify-between items-center px-6">
               <span>升星（+25%属性）</span>
-              <span class="text-yellow-300">${item.locked ? '已锁定' : '消耗 1 张相同角色'}</span>
+              <span class="text-yellow-300">消耗 1 张相同角色</span>
             </button>
           </div>
           <button onclick="hideModal()" class="mt-6 text-gray-400">关闭</button>
@@ -472,8 +460,13 @@
     function starUp() {
       if (currentIndex === null) return;
       const item = player.owned[currentIndex];
-      if (item.stars >= 5 || item.locked) return alert("无法升星！");
-      const duplicateIndex = player.owned.findIndex(o => o.charId === item.charId && o.id !== item.id && !o.locked);
+      if (item.stars >= 5) return alert("已经满星！");
+      // 只能使用星级 ≤ 当前角色的相同角色作为材料
+      const duplicateIndex = player.owned.findIndex(o => 
+        o.charId === item.charId && 
+        o.id !== item.id && 
+        o.stars <= item.stars
+      );
       if (duplicateIndex === -1) return alert("没有可用的相同角色材料！");
       player.owned.splice(duplicateIndex, 1);
       item.stars++;
@@ -484,7 +477,7 @@
 
     function getDiamonds() {
       if (Date.now() < diamondCooldownEnd) return;
-      const amount = Math.floor(Math.random() * 101) + 100;
+      const amount = Math.floor(Math.random() * 201) + 300;   // 300-500
       player.diamonds += amount;
       document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();

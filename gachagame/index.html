@@ -60,7 +60,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
         <div class="flex items-center gap-4 w-full sm:w-auto">
-          <select id="sortSelect" onchange="renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
+          <select id="sortSelect" onchange="currentSort = this.value; renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
             <option value="rarity">排序：稀有度优先</option>
             <option value="stars">排序：星级优先</option>
             <option value="level">排序：等级优先</option>
@@ -194,7 +194,7 @@
     let player = { diamonds: 1000, owned: [] };
     let decomposeMode = false;
     let selected = [];
-    let currentSort = "rarity";
+    let currentSort = "rarity";   // 默认排序
 
     let diamondCooldownEnd = 0;
     let currentMinesweeperScore = 0;
@@ -461,7 +461,6 @@
       if (currentIndex === null) return;
       const item = player.owned[currentIndex];
       if (item.stars >= 5) return alert("已经满星！");
-      // 只能使用星级 ≤ 当前角色的相同角色作为材料
       const duplicateIndex = player.owned.findIndex(o => 
         o.charId === item.charId && 
         o.id !== item.id && 
@@ -477,7 +476,7 @@
 
     function getDiamonds() {
       if (Date.now() < diamondCooldownEnd) return;
-      const amount = Math.floor(Math.random() * 201) + 300;   // 300-500
+      const amount = Math.floor(Math.random() * 201) + 300;
       player.diamonds += amount;
       document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();

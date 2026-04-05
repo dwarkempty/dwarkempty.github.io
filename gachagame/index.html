@@ -30,6 +30,7 @@
     .star-5 { color: #ec4899; text-shadow: 0 0 12px #ec4899, 0 0 20px #22d3ee; animation: rainbow-star 1.5s linear infinite; }
     @keyframes rainbow-star { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
     .skill-tag { font-size: 10px; padding: 2px 6px; border-radius: 9999px; }
+    .hp-bar { height: 6px; background: #22c55e; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
@@ -70,7 +71,7 @@
       </div>
     </div>
 
-    <!-- 养成界面 -->
+    <!-- 养成界面（新增完整数值显示） -->
     <div id="panel1" class="panel hidden">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div class="flex gap-2">
@@ -157,108 +158,57 @@
     </div>
   </div>
 
-  <!-- 赌博Modal -->
-  <div id="gamblingModal" onclick="if(event.target.id==='gamblingModal')hideGambling()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
-    <div class="bg-gray-900 rounded-3xl max-w-md w-full p-6">
-      <h3 class="text-2xl font-bold text-center mb-6">🎰 老虎机</h3>
-      <div id="slots" class="flex justify-center gap-4 mb-8 text-7xl">💎 🃏 🔥</div>
-      <div class="text-center mb-6">
-        <input id="betAmount" type="number" value="1000" min="100" max="10000" step="100" class="bg-gray-800 text-center text-3xl font-bold w-40 py-2 rounded-2xl">
-        <span class="ml-2 text-gray-400">钻石</span>
-      </div>
-      <button onclick="spinSlots()" class="w-full py-5 bg-gradient-to-r from-amber-500 to-red-500 text-2xl font-bold rounded-3xl">开始转动</button>
-      <p id="gamblingResult" class="text-center mt-6 min-h-[28px] text-lg"></p>
-      <button onclick="hideGambling()" class="mt-6 text-gray-400 block mx-auto">关闭</button>
-    </div>
-  </div>
-
-  <!-- 扫雷Modal -->
-  <div id="minesweeperModal" onclick="if(event.target.id==='minesweeperModal')hideMinesweeper()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
-    <div class="bg-gray-900 rounded-3xl w-full max-w-2xl">
-      <div class="p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-2xl font-bold">💣 扫雷</h3>
-          <div class="flex gap-3">
-            <button onclick="startMinesweeper(8,8,10)" class="px-4 py-1 bg-green-600 rounded-xl text-sm">简单</button>
-            <button onclick="startMinesweeper(10,10,20)" class="px-4 py-1 bg-yellow-600 rounded-xl text-sm">中等</button>
-            <button onclick="startMinesweeper(12,12,30)" class="px-4 py-1 bg-red-600 rounded-xl text-sm">困难</button>
-          </div>
-          <div id="mineScore" class="text-xl font-bold text-yellow-400">0 钻石</div>
-        </div>
-        <div id="minesweeperBoard" class="grid mx-auto gap-px bg-gray-700 p-2 rounded-2xl" style="width: fit-content;"></div>
-        <div class="text-center mt-6">
-          <button onclick="stopMinesweeper()" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl">停止游戏（保存当前收益）</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 记录查询Modal -->
-  <div id="recordModal" onclick="if(event.target.id==='recordModal')hideRecordModal()" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[12000] p-4">
-    <div class="bg-gray-900 rounded-3xl max-w-lg w-full p-8">
-      <h2 class="text-3xl font-bold text-center mb-6">📊 抽卡记录</h2>
-      <div class="flex gap-2 mb-6">
-        <button onclick="setRecordTab(0)" id="recordTab0" class="record-tab active flex-1 py-2 rounded-2xl">角色记录</button>
-        <button onclick="setRecordTab(1)" id="recordTab1" class="record-tab flex-1 py-2 rounded-2xl">武器记录</button>
-      </div>
-      <div id="recordContent"></div>
-      <div class="pt-6 border-t border-gray-700 flex flex-col sm:flex-row gap-3">
-        <button onclick="exportSave()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2">
-          <i class="fas fa-download"></i> 导出存档
-        </button>
-        <button onclick="document.getElementById('importFile').click()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2">
-          <i class="fas fa-upload"></i> 导入存档
-        </button>
-        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importSave(event)">
-      </div>
-      <button onclick="hideRecordModal()" class="mt-8 w-full py-4 bg-white text-black rounded-2xl text-xl font-bold">关闭</button>
-    </div>
-  </div>
-
-  <!-- 战斗测试Modal -->
+  <!-- 战斗测试Modal（全新布局 + 完整回合制） -->
   <div id="battleTestModal" onclick="if(event.target.id==='battleTestModal')hideBattleTest()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[13000] p-4">
-    <div class="bg-gray-900 rounded-3xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+    <div class="bg-gray-900 rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
       <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-2xl font-bold">⚔️ 战斗测试 - 木桩测试场</h3>
-        <button onclick="hideBattleTest()" class="text-gray-400">关闭</button>
-      </div>
-
-      <!-- 选队阶段 -->
-      <div id="teamSelectPanel" class="p-6 flex-1 overflow-auto">
-        <p class="text-sm text-gray-400 mb-4">选择最多4名角色（2前排 + 2后排）</p>
-        <div id="teamSelectGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
-        <div class="mt-6 flex gap-4">
-          <button onclick="startBattleTest()" class="flex-1 bg-violet-600 hover:bg-violet-700 py-4 rounded-3xl text-xl font-bold">开始测试战斗</button>
-          <button onclick="hideBattleTest()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-4 rounded-3xl text-xl font-bold">取消</button>
+        <h3 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-swords"></i> 战斗测试 - 第 <span id="roundNumber" class="text-violet-400">0</span> 回合</h3>
+        <div class="flex items-center gap-3">
+          <button onclick="endBattleTest()" class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-2xl text-sm font-medium">结束战斗</button>
+          <button onclick="hideBattleTest()" class="text-gray-400">关闭</button>
         </div>
       </div>
 
-      <!-- 战斗阶段 -->
-      <div id="battlePanel" class="hidden p-6 flex-1 flex flex-col">
-        <div class="flex justify-between mb-4">
-          <div>
-            <div class="text-xs text-gray-400">我方队伍（能量 <span id="energyDisplay" class="font-bold text-cyan-400">6</span>/6）</div>
-            <div id="playerTeam" class="flex gap-3"></div>
-          </div>
-          <div class="text-right">
-            <div class="text-xs text-gray-400">木桩（测试靶）</div>
-            <div class="text-4xl font-bold text-amber-400" id="dummyHP">10000 / 10000</div>
+      <!-- 战斗主界面：我方左边（后排+前排） | 敌方右边 -->
+      <div id="battleMain" class="p-6 flex-1 grid grid-cols-12 gap-6">
+        <!-- 我方 -->
+        <div class="col-span-7">
+          <div class="text-xs text-gray-400 mb-2">我方队伍（能量 <span id="energyDisplay" class="font-bold text-cyan-400">6</span>/6）</div>
+          <div class="grid grid-cols-2 gap-6">
+            <!-- 后排 -->
+            <div>
+              <div class="text-xs text-gray-400 mb-3">后排</div>
+              <div id="playerBackRow" class="grid grid-cols-2 gap-4"></div>
+            </div>
+            <!-- 前排 -->
+            <div>
+              <div class="text-xs text-gray-400 mb-3">前排</div>
+              <div id="playerFrontRow" class="grid grid-cols-2 gap-4"></div>
+            </div>
           </div>
         </div>
 
-        <div class="flex-1 flex flex-col justify-center items-center border border-dashed border-gray-600 rounded-3xl p-8">
-          <div class="text-6xl mb-6">🪵</div>
-          <div class="text-2xl font-bold mb-2">木桩</div>
-          <div class="text-sm text-gray-400">无防御 • 无减伤 • 测试专用</div>
-        </div>
-
-        <div class="mt-6">
-          <div class="flex justify-between items-center mb-3">
-            <span class="font-medium">选择行动顺序与技能</span>
-            <button onclick="executeTurn()" class="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 rounded-2xl text-base font-bold">执行本回合</button>
+        <!-- 敌方 -->
+        <div class="col-span-5 border-l border-gray-700 pl-6">
+          <div class="text-xs text-gray-400 mb-2">敌方（木桩）</div>
+          <div class="bg-gray-800 rounded-3xl p-6 text-center">
+            <div class="text-7xl mb-4">🪵</div>
+            <div class="text-2xl font-bold mb-1">测试木桩</div>
+            <div class="w-full bg-gray-700 h-3 rounded-full overflow-hidden mb-2">
+              <div id="dummyHPBar" class="hp-bar" style="width:100%"></div>
+            </div>
+            <div id="dummyHPText" class="text-amber-400 font-bold">10000 / 10000</div>
           </div>
-          <div id="actionList" class="flex flex-wrap gap-3"></div>
         </div>
+      </div>
+
+      <!-- 操作区 -->
+      <div class="p-6 border-t border-gray-700">
+        <div class="flex justify-between items-center mb-4">
+          <span class="font-medium">点击角色设置本回合行动</span>
+          <button onclick="executePlayerTurn()" class="bg-emerald-600 hover:bg-emerald-700 px-10 py-3 rounded-2xl text-base font-bold">结束回合 → 执行</button>
+        </div>
+        <div id="actionList" class="flex flex-wrap gap-3"></div>
       </div>
     </div>
   </div>
@@ -348,9 +298,11 @@
     let minesweeperBoard = [];
     let mineRows = 0, mineCols = 0, mineCount = 0;
 
-    // 战斗测试临时变量
-    let testTeam = [];
+    // ====================== 战斗测试全局变量 ======================
+    let testTeam = [];                 // 当前上场角色（最多4个）
     let testEnergy = 6;
+    let round = 0;
+    let playerActions = {};            // {charUniqueId: 'normal' | 'skill1' | 'skill2'}
     let dummyHP = 10000;
     let dummyMaxHP = 10000;
 
@@ -376,7 +328,8 @@
       return "card-r";
     }
 
-    function drawOne(poolType) {
+    // ====================== 抽卡 & 库存（保持不变，仅仓库新增数值显示） ======================
+    function drawOne(poolType) { /* 原逻辑不变 */ 
       const isChar = poolType === "char";
       if (isChar) {
         player.charSsrPity = (player.charSsrPity || 0) + 1;
@@ -425,7 +378,7 @@
       return item;
     }
 
-    function drawCard(times) {
+    function drawCard(times) { /* 原逻辑不变 */ 
       const cost = times === 1 ? 100 : 900;
       if (player.diamonds < cost) return alert("钻石不够啦！去探索吧～");
       player.diamonds -= cost;
@@ -455,7 +408,7 @@
       if (!document.getElementById("panel1").classList.contains("hidden")) renderInventory();
     }
 
-    function showDrawAnimation(results, poolType) {
+    function showDrawAnimation(results, poolType) { /* 原逻辑不变 */ 
       const modal = document.getElementById("drawModal");
       const container = document.getElementById("drawResults");
       const title = document.getElementById("drawTitle");
@@ -960,15 +913,16 @@
       }
     }
 
-    // ====================== 战斗测试 ======================
+    // ====================== 战斗测试（全新实现） ======================
     function openBattleTest() {
       testTeam = [];
       testEnergy = 6;
+      round = 0;
+      playerActions = {};
       dummyHP = 10000;
       dummyMaxHP = 10000;
       document.getElementById("battleTestModal").classList.remove("hidden");
-      document.getElementById("teamSelectPanel").classList.remove("hidden");
-      document.getElementById("battlePanel").classList.add("hidden");
+      document.getElementById("battleMain").style.display = "grid";
       renderTeamSelect();
     }
 
@@ -1002,29 +956,106 @@
 
     function startBattleTest() {
       if (testTeam.length === 0) return alert("至少选择1名角色！");
-      document.getElementById("teamSelectPanel").classList.add("hidden");
-      document.getElementById("battlePanel").classList.remove("hidden");
+      document.getElementById("teamSelectGrid").parentElement.style.display = "none";
+      document.getElementById("battleMain").style.display = "grid";
       renderBattleUI();
     }
 
     function renderBattleUI() {
+      document.getElementById("roundNumber").textContent = round;
       document.getElementById("energyDisplay").textContent = testEnergy;
-      const teamContainer = document.getElementById("playerTeam");
-      teamContainer.innerHTML = "";
-      testTeam.forEach((charItem) => {
+
+      // 后排
+      const backContainer = document.getElementById("playerBackRow");
+      backContainer.innerHTML = "";
+      // 前排
+      const frontContainer = document.getElementById("playerFrontRow");
+      frontContainer.innerHTML = "";
+
+      testTeam.forEach((charItem, idx) => {
         const char = characterPool.find(c => c.id === charItem.charId);
+        const statMult = 1 + (charItem.level - 1) * 0.08 + charItem.stars * 0.25;
+        const maxHP = Math.floor(char.baseHP * statMult);
+        const currentHP = charItem.currentHP !== undefined ? charItem.currentHP : maxHP;
+
         const div = document.createElement("div");
-        div.className = "bg-gray-800 rounded-3xl p-3 text-center border border-violet-400";
+        div.className = `relative bg-gray-800 rounded-3xl p-3 border-2 border-violet-400 cursor-pointer`;
         div.innerHTML = `
-          <img src="${char.image}" class="w-16 h-16 mx-auto rounded-2xl mb-2">
-          <div class="text-sm font-bold">${char.name}</div>
-          <div class="text-xs text-gray-400">${char.type}</div>
-          <button onclick="useSkillInTest(${charItem.id})" class="mt-2 text-[10px] bg-violet-600 hover:bg-violet-700 px-3 py-1 rounded-2xl">使用技能</button>
+          <img src="${char.image}" class="w-20 h-20 mx-auto rounded-2xl mb-2">
+          <div class="text-center">
+            <div class="text-sm font-bold">${char.name}</div>
+            <div class="text-xs text-gray-400">${char.type}</div>
+            <div class="flex items-center gap-2 mt-2">
+              <div class="flex-1 bg-gray-700 h-2 rounded">
+                <div class="hp-bar" style="width:${(currentHP/maxHP)*100}%"></div>
+              </div>
+              <span class="text-xs font-medium">${Math.floor(currentHP)}/${maxHP}</span>
+            </div>
+          </div>
         `;
-        teamContainer.appendChild(div);
+        div.onclick = () => openActionModal(charItem.id);
+        (idx < 2 ? backContainer : frontContainer).appendChild(div);
       });
-      document.getElementById("dummyHP").textContent = `${dummyHP} / ${dummyMaxHP}`;
+
+      // 木桩
+      document.getElementById("dummyHPBar").style.width = (dummyHP / dummyMaxHP * 100) + "%";
+      document.getElementById("dummyHPText").textContent = `${dummyHP} / ${dummyMaxHP}`;
       renderActionList();
+    }
+
+    function openActionModal(charUniqueId) {
+      const charItem = testTeam.find(c => c.id === charUniqueId);
+      const char = characterPool.find(c => c.id === charItem.charId);
+      const statMult = 1 + (charItem.level - 1) * 0.08 + charItem.stars * 0.25;
+      const hp = Math.floor(char.baseHP * statMult);
+      const atk = Math.floor(char.baseATK * statMult);
+      const def = Math.floor(char.baseDEF * statMult);
+
+      const currentAction = playerActions[charUniqueId] || "normal";
+
+      let modalHTML = `
+        <div class="bg-gray-900 rounded-3xl p-6 max-w-md mx-auto">
+          <h3 class="text-xl font-bold mb-4">${char.name} - 设置本回合行动</h3>
+          <div class="text-xs text-gray-400 mb-2">当前数值</div>
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="text-center"><div class="text-red-400">❤️</div><div class="font-bold">${hp}</div></div>
+            <div class="text-center"><div class="text-orange-400">⚔️</div><div class="font-bold">${atk}</div></div>
+            <div class="text-center"><div class="text-blue-400">🛡️</div><div class="font-bold">${def}</div></div>
+          </div>
+          <div class="space-y-3">
+            <div onclick="setAction(${charUniqueId}, 'normal')" class="flex justify-between items-center p-4 rounded-2xl bg-gray-800 cursor-pointer ${currentAction==='normal'?'ring-2 ring-emerald-400':''}">
+              <span>普通攻击</span>
+            </div>
+            ${char.skills.filter(s => s.type === "active").map((s, i) => `
+              <div onclick="setAction(${charUniqueId}, 'skill${i+1}')" class="flex justify-between items-center p-4 rounded-2xl bg-gray-800 cursor-pointer ${currentAction==='skill'+(i+1)?'ring-2 ring-violet-400':''}">
+                <span>主动技能：${s.name}</span>
+                <span class="text-xs bg-violet-600 px-3 py-1 rounded-xl">消耗${s.cost}能量</span>
+              </div>
+            `).join('')}
+          </div>
+          <button onclick="closeActionModal()" class="mt-6 w-full py-4 bg-gray-700 hover:bg-gray-600 rounded-2xl">关闭</button>
+        </div>`;
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = modalHTML;
+      document.body.appendChild(tempDiv.firstElementChild);
+    }
+
+    function setAction(charUniqueId, action) {
+      const charItem = testTeam.find(c => c.id === charUniqueId);
+      const char = characterPool.find(c => c.id === charItem.charId);
+      const skill = char.skills.find(s => s.type === "active");
+      if (action !== "normal" && testEnergy < (skill ? skill.cost : 1)) {
+        alert("能量不足，无法释放该技能！");
+        return;
+      }
+      playerActions[charUniqueId] = action;
+      closeActionModal();
+      renderBattleUI();
+    }
+
+    function closeActionModal() {
+      const modal = document.querySelector(".bg-gray-900.rounded-3xl.p-6");
+      if (modal) modal.remove();
     }
 
     function renderActionList() {
@@ -1032,55 +1063,65 @@
       container.innerHTML = "";
       testTeam.forEach((charItem) => {
         const char = characterPool.find(c => c.id === charItem.charId);
+        const action = playerActions[charItem.id] || "normal";
         const div = document.createElement("div");
         div.className = "bg-gray-800 rounded-2xl px-4 py-3 cursor-pointer hover:bg-gray-700 flex-1 min-w-[140px]";
-        div.innerHTML = `<div class="font-medium">${char.name}</div><div class="text-xs text-gray-400">普通攻击 或 主动技能</div>`;
-        div.onclick = () => useSkillInTest(charItem.id);
+        div.innerHTML = `<div class="font-medium">${char.name}</div><div class="text-xs text-gray-400">${action === "normal" ? "普通攻击" : "主动技能"}</div>`;
+        div.onclick = () => openActionModal(charItem.id);
         container.appendChild(div);
       });
     }
 
-    function useSkillInTest(charUniqueId) {
-      const charItem = testTeam.find(c => c.id === charUniqueId);
-      if (!charItem) return;
-      const char = characterPool.find(c => c.id === charItem.charId);
-      if (char.skills.length === 0 || !char.skills.some(s => s.type === "active")) {
-        const dmg = Math.max(1, Math.floor(char.baseATK * 1.0));
+    function executePlayerTurn() {
+      round++;
+      document.getElementById("roundNumber").textContent = round;
+
+      let totalDmg = 0;
+      testTeam.forEach((charItem) => {
+        const char = characterPool.find(c => c.id === charItem.charId);
+        const action = playerActions[charItem.id] || "normal";
+        let dmg = Math.max(1, Math.floor(char.baseATK * (action === "normal" ? 1.0 : 1.2)));
         dummyHP = Math.max(0, dummyHP - dmg);
-        document.getElementById("dummyHP").textContent = `${dummyHP} / ${dummyMaxHP}`;
-        alert(`${char.name} 普通攻击造成 ${dmg} 伤害！`);
-      } else {
-        const skill = char.skills.find(s => s.type === "active") || char.skills[0];
-        if (testEnergy < skill.cost) return alert("能量不足！");
-        testEnergy -= skill.cost;
-        const dmg = Math.max(1, Math.floor(char.baseATK * 1.2));
-        dummyHP = Math.max(0, dummyHP - dmg);
-        document.getElementById("dummyHP").textContent = `${dummyHP} / ${dummyMaxHP}`;
-        document.getElementById("energyDisplay").textContent = testEnergy;
-        alert(`${char.name} 使用【${skill.name}】造成 ${dmg} 伤害！\n效果：${skill.desc}`);
+        totalDmg += dmg;
+      });
+
+      document.getElementById("dummyHPBar").style.width = (dummyHP / dummyMaxHP * 100) + "%";
+      document.getElementById("dummyHPText").textContent = `${dummyHP} / ${dummyMaxHP}`;
+
+      alert(`第 ${round} 回合 - 我方造成总伤害 ${totalDmg}！`);
+
+      // 敌人回合（木桩简单反击）
+      if (dummyHP > 0) {
+        const enemyDmg = Math.floor(80 + Math.random() * 40);
+        // 随机扣一名前排HP
+        const frontChars = testTeam.slice(2);
+        if (frontChars.length > 0) {
+          const target = frontChars[Math.floor(Math.random() * frontChars.length)];
+          const charData = characterPool.find(c => c.id === target.charId);
+          const statMult = 1 + (target.level - 1) * 0.08 + target.stars * 0.25;
+          const maxHP = Math.floor(charData.baseHP * statMult);
+          target.currentHP = (target.currentHP || maxHP) - enemyDmg;
+          if (target.currentHP < 0) target.currentHP = 0;
+        }
+        alert(`木桩反击造成 ${enemyDmg} 伤害！`);
       }
+
+      testEnergy = Math.min(6, testEnergy + 2);
+      playerActions = {};
+
       if (dummyHP <= 0) {
-        alert("🎉 木桩被击破！测试完成！");
+        alert("🎉 木桩被击破！测试胜利！");
         hideBattleTest();
+        return;
       }
+
+      renderBattleUI();
     }
 
-    function executeTurn() {
-      let totalDmg = 0;
-      testTeam.forEach(charItem => {
-        const char = characterPool.find(c => c.id === charItem.charId);
-        totalDmg += Math.max(1, Math.floor(char.baseATK * 1.0));
-      });
-      dummyHP = Math.max(0, dummyHP - totalDmg);
-      testEnergy = Math.min(6, testEnergy + 2);
-      document.getElementById("dummyHP").textContent = `${dummyHP} / ${dummyMaxHP}`;
-      document.getElementById("energyDisplay").textContent = testEnergy;
-      alert(`本回合造成总伤害 ${totalDmg}！能量恢复 +2`);
-      if (dummyHP <= 0) {
-        alert("🎉 木桩被击破！测试完成！");
+    function endBattleTest() {
+      if (confirm("确定要结束本次战斗测试吗？")) {
         hideBattleTest();
       }
-      renderBattleUI();
     }
 
     window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });

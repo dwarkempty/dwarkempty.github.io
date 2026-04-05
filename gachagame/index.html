@@ -52,6 +52,7 @@
           <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">十连 <span class="text-yellow-300">900钻石</span></button>
         </div>
         <p class="mt-8 text-gray-400 text-sm sm:text-base">概率：R 60% • SR 25% • SSR 12% • UR 3%</p>
+        <p class="mt-2 text-emerald-400 text-xs sm:text-sm">保底机制：10抽必出SSR，120抽必出UR（提前出UR重置大保底）</p>
         
         <!-- 新增记录查询按钮 -->
         <button onclick="showRecordModal()" class="mt-8 inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-2xl text-base font-medium">
@@ -173,7 +174,7 @@
     </div>
   </div>
 
-  <!-- 新增：记录查询Modal -->
+  <!-- 记录查询Modal（新增导出/导入存档按钮） -->
   <div id="recordModal" onclick="if(event.target.id==='recordModal')hideRecordModal()" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[12000] p-4">
     <div class="bg-gray-900 rounded-3xl max-w-lg w-full p-8">
       <h2 class="text-3xl font-bold text-center mb-6">📊 抽卡记录</h2>
@@ -212,10 +213,25 @@
             <span>UR 获得率</span>
             <span id="urRate" class="font-bold">0%</span>
           </div>
+          <div class="flex justify-between mt-3 pt-3 border-t border-gray-700">
+            <span>UR大保底进度</span>
+            <span id="urPityDisplay" class="font-bold text-amber-400">0/120</span>
+          </div>
         </div>
 
         <div id="luckBox" class="mt-6 p-6 rounded-3xl text-center text-2xl font-bold transition-all">
           <!-- 运气评价会动态插入 -->
+        </div>
+
+        <!-- 新增：存档管理 -->
+        <div class="pt-6 border-t border-gray-700 flex flex-col sm:flex-row gap-3">
+          <button onclick="exportSave()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2">
+            <i class="fas fa-download"></i> 导出存档（JSON）
+          </button>
+          <button onclick="document.getElementById('importFile').click()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2">
+            <i class="fas fa-upload"></i> 导入存档
+          </button>
+          <input type="file" id="importFile" accept=".json" class="hidden" onchange="importSave(event)">
         </div>
       </div>
 
@@ -246,7 +262,17 @@
     const decomposeValue = { R: 10, SR: 50, SSR: 200, UR: 1000 };
     const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 
-    let player = { diamonds: 1000, owned: [], totalDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0 };
+    let player = { 
+      diamonds: 1000, 
+      owned: [], 
+      totalDraws: 0, 
+      rCount: 0, 
+      srCount: 0, 
+      ssrCount: 0, 
+      urCount: 0,
+      ssrPity: 0,   // 10抽SSR保底计数
+      urPity: 0     // 120抽UR大保底计数
+    };
     let decomposeMode = false;
     let selected = [];
     let currentSort = "rarity";
@@ -256,7 +282,10 @@
     let minesweeperBoard = [];
     let mineRows = 0, mineCols = 0, mineCount = 0;
 
-    function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
+    function saveGame() { 
+      localStorage.setItem("gachaGame", JSON.stringify(player)); 
+    }
+
     function loadGame() {
       const saved = localStorage.getItem("gachaGame");
       if (saved) {
@@ -264,12 +293,16 @@
         if (data.gold !== undefined) { data.diamonds = data.gold; delete data.gold; }
         player = data;
       }
+      // 默认值处理
       if (!player.diamonds || isNaN(player.diamonds)) player.diamonds = 1000;
       if (!player.totalDraws) player.totalDraws = 0;
       if (!player.rCount) player.rCount = 0;
       if (!player.srCount) player.srCount = 0;
       if (!player.ssrCount) player.ssrCount = 0;
       if (!player.urCount) player.urCount = 0;
+      if (!player.ssrPity) player.ssrPity = 0;
+      if (!player.urPity) player.urPity = 0;
+
       document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();
     }
@@ -281,17 +314,51 @@
       return "card-r";
     }
 
+    // 新增保底抽卡逻辑（核心修改）
     function drawOne() {
-      const total = Object.values(rarityWeights).reduce((a,b)=>a+b, 0);
-      let rand = Math.random() * total;
-      let sum = 0;
-      for (let r in rarityWeights) {
-        sum += rarityWeights[r];
-        if (rand <= sum) {
-          const candidates = characterPool.filter(c => c.rarity === r);
-          return candidates[Math.floor(Math.random() * candidates.length)];
+      // 先增加保底计数
+      player.ssrPity = (player.ssrPity || 0) + 1;
+      player.urPity = (player.urPity || 0) + 1;
+
+      let char;
+
+      // 120抽UR大保底优先
+      if (player.urPity >= 120) {
+        const candidates = characterPool.filter(c => c.rarity === "UR");
+        char = candidates[Math.floor(Math.random() * candidates.length)];
+        player.urPity = 0;
+        player.ssrPity = 0;
+      }
+      // 10抽SSR保底（连续10抽无SSR/UR则强制SSR+）
+      else if (player.ssrPity >= 10) {
+        const candidates = characterPool.filter(c => c.rarity === "SSR" || c.rarity === "UR");
+        char = candidates[Math.floor(Math.random() * candidates.length)];
+        player.ssrPity = 0;
+      }
+      // 普通抽卡
+      else {
+        const total = Object.values(rarityWeights).reduce((a,b)=>a+b, 0);
+        let rand = Math.random() * total;
+        let sum = 0;
+        for (let r in rarityWeights) {
+          sum += rarityWeights[r];
+          if (rand <= sum) {
+            const candidates = characterPool.filter(c => c.rarity === r);
+            char = candidates[Math.floor(Math.random() * candidates.length)];
+            break;
+          }
         }
       }
+
+      // 非强制出货时仍需重置保底
+      if (char.rarity === "SSR" || char.rarity === "UR") {
+        player.ssrPity = 0;
+      }
+      if (char.rarity === "UR") {
+        player.urPity = 0;
+      }
+
+      return char;
     }
 
     function drawCard(times) {
@@ -337,24 +404,19 @@
 
     function hideDrawModal() { document.getElementById("drawModal").classList.add("hidden"); }
 
-    // 新增：排序逻辑（完全按照用户要求）
     function sortOwned(list) {
       const copy = [...list];
       copy.sort((a, b) => {
         const charA = characterPool.find(c => c.id === a.charId);
         const charB = characterPool.find(c => c.id === b.charId);
 
-        // 1. 按稀有度排序（高稀有度在前）
         const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
         if (rDiff !== 0) return rDiff;
 
-        // 2. 同名角色排在一起（名称相同则在一起）
         if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
 
-        // 3. 同名角色组内：星级高的在前
         if (a.stars !== b.stars) return b.stars - a.stars;
 
-        // 4. 星级相同则等级高的在前
         return b.level - a.level;
       });
       return copy;
@@ -723,7 +785,7 @@
       }
     }
 
-    // 新增：记录查询弹窗
+    // 新增：记录查询 + 保底进度显示
     function showRecordModal() {
       const total = player.totalDraws || 0;
       const r = player.rCount || 0;
@@ -741,8 +803,9 @@
       document.getElementById("urCount").textContent = ur;
       document.getElementById("ssrRate").textContent = ssrRate + "%";
       document.getElementById("urRate").textContent = urRate + "%";
+      document.getElementById("urPityDisplay").textContent = `${player.urPity || 0}/120`;
 
-      // 运气分析（以UR概率为准）
+      // 运气分析
       const luckRate = parseFloat(urRate);
       let luckText = "";
       let luckClass = "";
@@ -776,7 +839,48 @@
       document.getElementById("recordModal").classList.add("hidden");
     }
 
-    window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });
+    // 新增：导出存档
+    function exportSave() {
+      const dataStr = JSON.stringify(player, null, 2);
+      const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+      const link = document.createElement("a");
+      link.setAttribute("href", dataUri);
+      link.setAttribute("download", "gacha-save.json");
+      link.click();
+      alert("✅ 存档已导出为 gacha-save.json");
+    }
+
+    // 新增：导入存档
+    function importSave(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          const imported = JSON.parse(ev.target.result);
+          // 兼容旧存档
+          if (imported.gold !== undefined) imported.diamonds = imported.gold;
+          player = imported;
+          if (!player.ssrPity) player.ssrPity = 0;
+          if (!player.urPity) player.urPity = 0;
+          document.getElementById("diamonds").textContent = player.diamonds;
+          saveGame();
+          alert("✅ 存档导入成功！");
+          hideRecordModal();
+          if (!document.getElementById("panel1").classList.contains("hidden")) renderInventory();
+        } catch(err) {
+          alert("❌ 文件格式错误，请导入正确的 JSON 存档");
+        }
+      };
+      reader.readAsText(file);
+      // 清空input防止重复触发
+      e.target.value = "";
+    }
+
+    // 你要求的 beforeunload 删除存档代码（已保留）
+    window.addEventListener('beforeunload', () => { 
+      localStorage.removeItem("gachaGame"); 
+    });
 
     window.onload = () => {
       loadGame();

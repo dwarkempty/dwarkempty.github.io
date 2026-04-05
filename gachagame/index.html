@@ -52,6 +52,11 @@
           <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">十连 <span class="text-yellow-300">900钻石</span></button>
         </div>
         <p class="mt-8 text-gray-400 text-sm sm:text-base">概率：R 60% • SR 25% • SSR 12% • UR 3%</p>
+        
+        <!-- 新增记录查询按钮 -->
+        <button onclick="showRecordModal()" class="mt-8 inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-2xl text-base font-medium">
+          <i class="fas fa-history"></i> 记录查询
+        </button>
       </div>
     </div>
 
@@ -60,7 +65,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
         <div class="flex items-center gap-4 w-full sm:w-auto">
-          <select id="sortSelect" onchange="renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
+          <select id="sortSelect" onchange="currentSort = this.value; renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
             <option value="rarity">排序：稀有度优先</option>
             <option value="stars">排序：星级优先</option>
             <option value="level">排序：等级优先</option>
@@ -168,8 +173,58 @@
     </div>
   </div>
 
+  <!-- 新增：记录查询Modal -->
+  <div id="recordModal" onclick="if(event.target.id==='recordModal')hideRecordModal()" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[12000] p-4">
+    <div class="bg-gray-900 rounded-3xl max-w-lg w-full p-8">
+      <h2 class="text-3xl font-bold text-center mb-6">📊 抽卡记录</h2>
+      
+      <div class="space-y-6">
+        <div class="flex justify-between text-xl">
+          <span>总抽卡次数</span>
+          <span id="totalDraws" class="font-bold">0</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div class="text-center">
+            <div class="text-sm text-gray-400">R</div>
+            <div id="rCount" class="text-4xl font-bold text-blue-400">0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-sm text-gray-400">SR</div>
+            <div id="srCount" class="text-4xl font-bold text-purple-400">0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-sm text-gray-400">SSR</div>
+            <div id="ssrCount" class="text-4xl font-bold text-yellow-400">0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-sm text-gray-400">UR</div>
+            <div id="urCount" class="text-4xl font-bold text-orange-400">0</div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-gray-700">
+          <div class="flex justify-between mb-2">
+            <span>SSR 获得率</span>
+            <span id="ssrRate" class="font-bold">0%</span>
+          </div>
+          <div class="flex justify-between">
+            <span>UR 获得率</span>
+            <span id="urRate" class="font-bold">0%</span>
+          </div>
+        </div>
+
+        <div id="luckBox" class="mt-6 p-6 rounded-3xl text-center text-2xl font-bold transition-all">
+          <!-- 运气评价会动态插入 -->
+        </div>
+      </div>
+
+      <button onclick="hideRecordModal()" class="mt-8 w-full py-4 bg-white text-black rounded-2xl text-xl font-bold">关闭</button>
+    </div>
+  </div>
+
   <script>
-    const characterPool = [ /* 15个角色数据不变 */ 
+    const characterPool = [
       {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
       {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
       {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
@@ -191,9 +246,10 @@
     const decomposeValue = { R: 10, SR: 50, SSR: 200, UR: 1000 };
     const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 
-    let player = { diamonds: 1000, owned: [] };
+    let player = { diamonds: 1000, owned: [], totalDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0 };
     let decomposeMode = false;
     let selected = [];
+    let currentSort = "rarity";
 
     let diamondCooldownEnd = 0;
     let currentMinesweeperScore = 0;
@@ -209,6 +265,11 @@
         player = data;
       }
       if (!player.diamonds || isNaN(player.diamonds)) player.diamonds = 1000;
+      if (!player.totalDraws) player.totalDraws = 0;
+      if (!player.rCount) player.rCount = 0;
+      if (!player.srCount) player.srCount = 0;
+      if (!player.ssrCount) player.ssrCount = 0;
+      if (!player.urCount) player.urCount = 0;
       document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();
     }
@@ -244,6 +305,13 @@
         const char = drawOne();
         player.owned.push({ id: Date.now() + i, charId: char.id, level: 1, stars: 0 });
         results.push(char);
+
+        // 更新抽卡记录
+        player.totalDraws++;
+        if (char.rarity === "R") player.rCount++;
+        else if (char.rarity === "SR") player.srCount++;
+        else if (char.rarity === "SSR") player.ssrCount++;
+        else if (char.rarity === "UR") player.urCount++;
       }
       saveGame();
       showDrawAnimation(results);
@@ -269,29 +337,25 @@
 
     function hideDrawModal() { document.getElementById("drawModal").classList.add("hidden"); }
 
+    // 新增：排序逻辑（完全按照用户要求）
     function sortOwned(list) {
       const copy = [...list];
-      const sortType = document.getElementById("sortSelect").value;   // 实时读取当前选项
       copy.sort((a, b) => {
         const charA = characterPool.find(c => c.id === a.charId);
         const charB = characterPool.find(c => c.id === b.charId);
+
+        // 1. 按稀有度排序（高稀有度在前）
+        const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
+        if (rDiff !== 0) return rDiff;
+
+        // 2. 同名角色排在一起（名称相同则在一起）
         if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
-        if (sortType === "rarity") {
-          const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
-          if (rDiff !== 0) return rDiff;
-          if (a.stars !== b.stars) return b.stars - a.stars;
-          return b.level - a.level;
-        } else if (sortType === "stars") {
-          if (a.stars !== b.stars) return b.stars - a.stars;
-          const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
-          if (rDiff !== 0) return rDiff;
-          return b.level - a.level;
-        } else {
-          if (a.level !== b.level) return b.level - a.level;
-          const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
-          if (rDiff !== 0) return rDiff;
-          return b.stars - a.stars;
-        }
+
+        // 3. 同名角色组内：星级高的在前
+        if (a.stars !== b.stars) return b.stars - a.stars;
+
+        // 4. 星级相同则等级高的在前
+        return b.level - a.level;
       });
       return copy;
     }
@@ -657,6 +721,59 @@
         document.getElementById("decomposeBar").classList.add("hidden");
         renderInventory();
       }
+    }
+
+    // 新增：记录查询弹窗
+    function showRecordModal() {
+      const total = player.totalDraws || 0;
+      const r = player.rCount || 0;
+      const sr = player.srCount || 0;
+      const ssr = player.ssrCount || 0;
+      const ur = player.urCount || 0;
+
+      const ssrRate = total ? (ssr / total * 100).toFixed(2) : 0;
+      const urRate = total ? (ur / total * 100).toFixed(2) : 0;
+
+      document.getElementById("totalDraws").textContent = total;
+      document.getElementById("rCount").textContent = r;
+      document.getElementById("srCount").textContent = sr;
+      document.getElementById("ssrCount").textContent = ssr;
+      document.getElementById("urCount").textContent = ur;
+      document.getElementById("ssrRate").textContent = ssrRate + "%";
+      document.getElementById("urRate").textContent = urRate + "%";
+
+      // 运气分析（以UR概率为准）
+      const luckRate = parseFloat(urRate);
+      let luckText = "";
+      let luckClass = "";
+
+      if (luckRate <= 1) {
+        luckText = "大非酋";
+        luckClass = "bg-gradient-to-r from-red-900 to-red-700 text-white";
+      } else if (luckRate <= 2) {
+        luckText = "非酋";
+        luckClass = "bg-gradient-to-r from-red-700 to-red-500 text-white";
+      } else if (luckRate <= 3) {
+        luckText = "正常玩家";
+        luckClass = "bg-gray-700 text-white";
+      } else if (luckRate <= 4) {
+        luckText = "小欧皇";
+        luckClass = "bg-gradient-to-r from-yellow-300 to-yellow-500 text-black";
+      } else if (luckRate <= 5) {
+        luckText = "欧皇";
+        luckClass = "bg-gradient-to-r from-yellow-400 to-amber-500 text-black";
+      } else {
+        luckText = "欧气满满";
+        luckClass = "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 text-white animate-pulse";
+      }
+
+      const luckBox = document.getElementById("luckBox");
+      luckBox.innerHTML = `<span class="${luckClass} px-8 py-4 rounded-3xl inline-block">${luckText}（UR概率 ${luckRate}%）</span>`;
+      document.getElementById("recordModal").classList.remove("hidden");
+    }
+
+    function hideRecordModal() {
+      document.getElementById("recordModal").classList.add("hidden");
     }
 
     window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });

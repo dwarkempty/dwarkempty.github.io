@@ -92,26 +92,23 @@
       </div>
     </div>
 
-    <!-- 养成界面（新增分解功能） -->
+    <!-- 养成界面 -->
     <div id="panel1" class="panel hidden">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
-        <div>
-          <button onclick="toggleDecomposeMode()" id="decomposeBtn"
-            class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2">
-            <i class="fas fa-recycle"></i> 分解角色
-          </button>
-        </div>
+        <button onclick="toggleDecomposeMode()" id="decomposeBtn"
+          class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2">
+          <i class="fas fa-recycle"></i> 分解角色
+        </button>
       </div>
 
-      <!-- 分解模式提示栏 -->
       <div id="decomposeBar" class="hidden bg-red-900/50 border border-red-500 rounded-3xl p-4 mb-6 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <span id="selectedCount" class="font-bold">已选 0 个</span>
           <span id="decomposeValue" class="text-yellow-300 font-bold">预计获得 0 钻石</span>
         </div>
         <div class="flex gap-3">
-          <button onclick="selectAll()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">全选</button>
+          <button onclick="selectAll()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">全选（最多100个）</button>
           <button onclick="decomposeSelected()" class="px-8 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-bold">确认分解</button>
           <button onclick="toggleDecomposeMode()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">取消</button>
         </div>
@@ -179,10 +176,21 @@
     let selected = [];
 
     function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
+
     function loadGame() {
       const saved = localStorage.getItem("gachaGame");
-      if (saved) player = JSON.parse(saved);
+      if (saved) {
+        let data = JSON.parse(saved);
+        // 修复旧存档：gold → diamonds
+        if (data.gold !== undefined) {
+          data.diamonds = data.gold;
+          delete data.gold;
+        }
+        player = data;
+        if (!player.diamonds || isNaN(player.diamonds)) player.diamonds = 1000;
+      }
       document.getElementById("diamonds").textContent = player.diamonds;
+      saveGame(); // 保存修复后的存档
     }
 
     function getRarityColor(r) {
@@ -249,7 +257,6 @@
       document.getElementById("drawModal").classList.add("hidden");
     }
 
-    // ==================== 仓库渲染（支持分解模式） ====================
     function renderInventory() {
       const container = document.getElementById("inventory");
       container.innerHTML = "";
@@ -264,7 +271,7 @@
 
         const div = document.createElement("div");
         div.className = `relative bg-gray-800 rounded-3xl p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition`;
-        
+
         let html = `
           <img src="${char.image}" class="character-img w-full rounded-2xl mb-3">
           <div class="text-center">
@@ -281,8 +288,9 @@
         `;
 
         if (decomposeMode) {
-          html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500" data-index="${index}" onchange="toggleSelect(this)">` + html;
+          html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${index}" onchange="toggleSelect(this)">` + html;
         }
+
         div.innerHTML = html;
         if (!decomposeMode) div.onclick = () => showCharacterDetail(index, char, item);
         container.appendChild(div);
@@ -296,9 +304,7 @@
     function toggleDecomposeMode() {
       decomposeMode = !decomposeMode;
       const btn = document.getElementById("decomposeBtn");
-      btn.textContent = decomposeMode ? "退出分解模式" : "🗑️ 分解角色";
-      btn.classList.toggle("bg-red-600", !decomposeMode);
-      btn.classList.toggle("bg-gray-600", decomposeMode);
+      btn.innerHTML = decomposeMode ? `<i class="fas fa-times"></i> 退出分解` : `<i class="fas fa-recycle"></i> 分解角色`;
       document.getElementById("decomposeBar").classList.toggle("hidden", !decomposeMode);
       renderInventory();
     }
@@ -327,11 +333,14 @@
 
     function selectAll() {
       selected = [];
-      document.querySelectorAll('#inventory input[type="checkbox"]').forEach(cb => {
-        cb.checked = true;
-        selected.push(parseInt(cb.dataset.index));
-      });
+      const checkboxes = document.querySelectorAll('#inventory input[type="checkbox"]');
+      const maxSelect = Math.min(checkboxes.length, 100);
+      for (let i = 0; i < maxSelect; i++) {
+        checkboxes[i].checked = true;
+        selected.push(parseInt(checkboxes[i].dataset.index));
+      }
       updateDecomposeBar();
+      if (checkboxes.length > 100) alert(`已自动选中前100个角色（一次最多分解100个）`);
     }
 
     function decomposeSelected() {
@@ -339,7 +348,6 @@
       if (selected.length > 100) return alert("一次最多分解100个角色！");
       
       let total = 0;
-      // 按索引从大到小排序，避免删除时索引错位
       selected.sort((a, b) => b - a).forEach(i => {
         const item = player.owned[i];
         const char = characterPool.find(c => c.id === item.charId);
@@ -357,7 +365,6 @@
       renderInventory();
     }
 
-    // ==================== 角色详情 & 养成 ====================
     let currentIndex = null;
     function showCharacterDetail(index, char, item) {
       currentIndex = index;
@@ -430,7 +437,6 @@
       showCharacterDetail(currentIndex, char, item);
     }
 
-    // ==================== 探索 ====================
     function getResource() {
       const amount = Math.floor(Math.random() * 101) + 200;
       player.diamonds += amount;

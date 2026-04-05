@@ -1,1 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>抽卡养成大冒险</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    .card-r { border-color: #3b82f6; box-shadow: 0 0 15px #3b82f6; }
+    .card-sr { border-color: #a855f7; box-shadow: 0 0 15px #a855f7; }
+    .card-ssr { border-color: #eab308; box-shadow: 0 0 15px #eab308; }
+    .card-ur { 
+      border-color: #ec4899; 
+      box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6, 0 0 36px #22d3ee;
+      animation: rainbow-glow 2.5s linear infinite;
+    }
+    @keyframes rainbow-glow {
+      0%   { box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6; }
+      33%  { box-shadow: 0 0 12px #8b5cf6, 0 0 24px #22d3ee; }
+      66%  { box-shadow: 0 0 12px #22d3ee, 0 0 24px #eab308; }
+      100% { box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6; }
+    }
+    .rarity-r { background: #3b82f6; }
+    .rarity-sr { background: #a855f7; }
+    .rarity-ssr { background: #eab308; }
+    .rarity-ur { 
+      background: linear-gradient(90deg, #ec4899, #8b5cf6, #22d3ee, #eab308);
+      background-size: 300% 300%;
+      animation: gradient-shift 3s ease infinite;
+    }
+    @keyframes gradient-shift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+  <div class="max-w-6xl mx-auto p-4">
+    <!-- 头部 -->
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold flex items-center gap-3">
+        <i class="fas fa-dragon text-orange-400"></i> 抽卡养成大冒险
+      </h1>
+      <div class="flex items-center gap-2 bg-gray-900 px-6 py-3 rounded-2xl text-xl">
+        <i class="fas fa-coins text-yellow-400"></i>
+        <span id="gold" class="font-bold">1000</span>
+      </div>
+    </div>
 
+    <!-- Tab 导航 -->
+    <div class="flex gap-2 bg-gray-900 p-2 rounded-3xl mb-8 w-fit mx-auto">
+      <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-8 py-3 rounded-2xl font-medium">🃏 抽卡</button>
+      <button onclick="switchTab(1)" id="tab1" class="tab-btn px-8 py-3 rounded-2xl font-medium">🏠 养成</button>
+      <button onclick="switchTab(2)" id="tab2" class="tab-btn px-8 py-3 rounded-2xl font-medium">💰 获取资源</button>
+    </div>
+
+    <!-- 抽卡界面 -->
+    <div id="panel0" class="panel">
+      <div class="text-center py-12">
+        <h2 class="text-3xl font-bold mb-6">抽取角色！</h2>
+        <div class="flex justify-center gap-6">
+          <button onclick="drawCard(1)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-10 py-6 rounded-3xl text-2xl font-bold shadow-xl transition">
+            单抽 <span class="text-yellow-300">100金币</span>
+          </button>
+          <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-10 py-6 rounded-3xl text-2xl font-bold shadow-xl transition">
+            十连 <span class="text-yellow-300">900金币</span>
+          </button>
+        </div>
+        <p class="mt-8 text-gray-400">概率：R 60% • SR 25% • SSR 12% • UR 3%</p>
+      </div>
+    </div>
+
+    <!-- 养成界面 -->
+    <div id="panel1" class="panel hidden">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
+      <div id="inventory" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </div>
+
+    <!-- 获取资源界面 -->
+    <div id="panel2" class="panel hidden text-center py-12">
+      <h2 class="text-3xl font-bold mb-8">获取金币</h2>
+      <button onclick="getResource()" class="bg-emerald-500 hover:bg-emerald-600 px-16 py-8 rounded-3xl text-3xl font-bold flex items-center gap-4 mx-auto">
+        <i class="fas fa-treasure-chest"></i> 冒险一次
+      </button>
+      <p class="mt-6 text-gray-400">每次可随机获得 50~300 金币</p>
+      <p id="resourceResult" class="mt-8 text-2xl font-bold text-yellow-400 min-h-[40px]"></p>
+    </div>
+  </div>
+
+  <!-- 角色详情弹窗 -->
+  <div id="modal" onclick="if(event.target===this)hideModal()" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-md w-full mx-4 overflow-hidden">
+      <div id="modalContent" class="p-6"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 数据 ====================
+    const characterPool = [
+      {id:1, name:"火焰剑士", rarity:"R", baseHP:120, baseATK:65, baseDEF:40},
+      {id:2, name:"冰霜法师", rarity:"R", baseHP:95, baseATK:75, baseDEF:35},
+      {id:3, name:"雷霆骑士", rarity:"SR", baseHP:160, baseATK:85, baseDEF:55},
+      {id:4, name:"风影刺客", rarity:"SR", baseHP:110, baseATK:100, baseDEF:45},
+      {id:5, name:"圣光牧师", rarity:"SSR", baseHP:180, baseATK:75, baseDEF:80},
+      {id:6, name:"暗影刺客", rarity:"SSR", baseHP:130, baseATK:130, baseDEF:50},
+      {id:7, name:"巨龙骑士", rarity:"UR", baseHP:220, baseATK:140, baseDEF:90},
+      {id:8, name:"星辰法师", rarity:"UR", baseHP:200, baseATK:160, baseDEF:70},
+      {id:9, name:"狂暴战士", rarity:"SR", baseHP:140, baseATK:110, baseDEF:60},
+      {id:10, name:"神圣天使", rarity:"SSR", baseHP:170, baseATK:90, baseDEF:85}
+    ];
+
+    const rarityWeights = { R: 60, SR: 25, SSR: 12, UR: 3 };
+
+    let player = {
+      gold: 1000,
+      owned: [] // {id, charId, level:1, stars:0}
+    };
+
+    // ==================== 工具函数 ====================
+    function saveGame() {
+      localStorage.setItem("gachaGame", JSON.stringify(player));
+    }
+
+    function loadGame() {
+      const saved = localStorage.getItem("gachaGame");
+      if (saved) player = JSON.parse(saved);
+      document.getElementById("gold").textContent = player.gold;
+    }
+
+    function getRarityColor(r) {
+      if (r === "UR") return "card-ur";
+      if (r === "SSR") return "card-ssr";
+      if (r === "SR") return "card-sr";
+      return "card-r";
+    }
+
+    function drawOne() {
+      const total = Object.values(rarityWeights).reduce((a,b)=>a+b, 0);
+      let rand = Math.random() * total;
+      let sum = 0;
+      for (let r in rarityWeights) {
+        sum += rarityWeights[r];
+        if (rand <= sum) {
+          const candidates = characterPool.filter(c => c.rarity === r);
+          return candidates[Math.floor(Math.random() * candidates.length)];
+        }
+      }
+    }
+
+    // ==================== 抽卡 ====================
+    function drawCard(times) {
+      const cost = times === 1 ? 100 : 900;
+      if (player.gold < cost) {
+        alert("金币不够啦！去获取资源吧～");
+        return;
+      }
+      player.gold -= cost;
+      document.getElementById("gold").textContent = player.gold;
+
+      let results = [];
+      for (let i = 0; i < times; i++) {
+        const char = drawOne();
+        player.owned.push({
+          id: Date.now() + i,
+          charId: char.id,
+          level: 1,
+          stars: 0
+        });
+        results.push(char);
+      }
+
+      saveGame();
+      alert(`🎉 恭喜！获得了 ${times} 张卡！\n` + results.map(c => `${c.rarity} ${c.name}`).join("\n"));
+      if (!document.getElementById("panel1").classList.contains("hidden")) renderInventory();
+    }
+
+    // ==================== 渲染仓库 ====================
+    function renderInventory() {
+      const container = document.getElementById("inventory");
+      container.innerHTML = "";
+
+      player.owned.forEach((item, index) => {
+        const char = characterPool.find(c => c.id === item.charId);
+        const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
+        const hp = Math.floor(char.baseHP * statMult);
+        const atk = Math.floor(char.baseATK * statMult);
+        const def = Math.floor(char.baseDEF * statMult);
+
+        const div = document.createElement("div");
+        div.className = `bg-gray-800 rounded-3xl p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition`;
+        div.innerHTML = `
+          <div class="text-center">
+            <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${char.rarity}</div>
+            <div class="text-2xl font-bold mb-1">${char.name}</div>
+            <div class="text-sm text-gray-400">Lv.${item.level} ★${item.stars}</div>
+            <div class="flex justify-between text-sm mt-4">
+              <div>❤️ ${hp}</div>
+              <div>⚔️ ${atk}</div>
+              <div>🛡️ ${def}</div>
+            </div>
+          </div>
+        `;
+        div.onclick = () => showCharacterDetail(index, char, item);
+        container.appendChild(div);
+      });
+
+      if (player.owned.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-12 col-span-full">还没有角色，快去抽卡吧！</p>`;
+      }
+    }
+
+    // ==================== 角色详情 & 养成 ====================
+    let currentIndex = null;
+
+    function showCharacterDetail(index, char, item) {
+      currentIndex = index;
+      const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
+      const hp = Math.floor(char.baseHP * statMult);
+      const atk = Math.floor(char.baseATK * statMult);
+      const def = Math.floor(char.baseDEF * statMult);
+
+      // 计算同角色数量（包括自己）
+      const sameCount = player.owned.filter(o => o.charId === item.charId).length;
+
+      const costLevel = item.level * 30;
+
+      document.getElementById("modalContent").innerHTML = `
+        <div class="text-center">
+          <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-6 py-2 rounded-full text-white font-bold">${char.rarity}</div>
+          <h2 class="text-4xl font-bold my-4">${char.name}</h2>
+          <div class="text-xl text-gray-400">Lv.${item.level}　★${item.stars}/5　<span class="text-emerald-400">拥有 ${sameCount} 张</span></div>
+          
+          <div class="grid grid-cols-3 gap-6 my-8 text-xl">
+            <div class="text-center"><div class="text-red-400">❤️ 血量</div><div class="font-bold">${hp}</div></div>
+            <div class="text-center"><div class="text-orange-400">⚔️ 攻击</div><div class="font-bold">${atk}</div></div>
+            <div class="text-center"><div class="text-blue-400">🛡️ 防御</div><div class="font-bold">${def}</div></div>
+          </div>
+
+          <div class="space-y-4">
+            <button onclick="levelUp()" class="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-2xl text-xl font-bold flex justify-between items-center px-6">
+              <span>升级（+8%属性）</span>
+              <span class="text-yellow-300">${costLevel} 金币</span>
+            </button>
+            <button onclick="starUp()" class="w-full ${item.stars >= 5 ? 'bg-gray-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} py-4 rounded-2xl text-xl font-bold flex justify-between items-center px-6">
+              <span>升星（+25%属性）</span>
+              <span class="text-yellow-300">消耗 1 张相同角色</span>
+            </button>
+          </div>
+
+          <button onclick="hideModal()" class="mt-6 text-gray-400">关闭</button>
+        </div>
+      `;
+      document.getElementById("modal").classList.remove("hidden");
+    }
+
+    function hideModal() {
+      document.getElementById("modal").classList.add("hidden");
+      currentIndex = null;
+      renderInventory();
+    }
+
+    function levelUp() {
+      if (currentIndex === null) return;
+      const item = player.owned[currentIndex];
+      const cost = item.level * 30;
+      if (player.gold < cost) return alert("金币不够！");
+      
+      player.gold -= cost;
+      item.level = Math.min(item.level + 1, 100);
+      document.getElementById("gold").textContent = player.gold;
+      saveGame();
+      const char = characterPool.find(c=>c.id===item.charId);
+      showCharacterDetail(currentIndex, char, item);
+    }
+
+    function starUp() {
+      if (currentIndex === null) return;
+      const item = player.owned[currentIndex];
+      if (item.stars >= 5) return alert("已经满星！");
+      
+      // 寻找可消耗的相同角色（排除自己）
+      const duplicateIndex = player.owned.findIndex(o => 
+        o.charId === item.charId && o.id !== item.id
+      );
+      
+      if (duplicateIndex === -1) return alert("没有多余的相同角色可以消耗！");
+      
+      // 消耗材料
+      player.owned.splice(duplicateIndex, 1);
+      item.stars++;
+      
+      saveGame();
+      const char = characterPool.find(c=>c.id===item.charId);
+      showCharacterDetail(currentIndex, char, item);
+    }
+
+    // ==================== 获取资源 ====================
+    function getResource() {
+      const amount = Math.floor(Math.random() * 251) + 50;
+      player.gold += amount;
+      document.getElementById("gold").textContent = player.gold;
+      saveGame();
+      
+      const result = document.getElementById("resourceResult");
+      result.innerHTML = `🎉 获得 <span class="text-4xl font-bold text-yellow-400">${amount}</span> 金币！`;
+      setTimeout(() => result.innerHTML = "", 3000);
+    }
+
+    // ==================== Tab 切换 ====================
+    function switchTab(n) {
+      document.querySelectorAll(".panel").forEach(p => p.classList.add("hidden"));
+      document.getElementById("panel" + n).classList.remove("hidden");
+      
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active", "bg-white", "text-black"));
+      document.getElementById("tab" + n).classList.add("active", "bg-white", "text-black");
+      
+      if (n === 1) renderInventory();
+    }
+
+    // ==================== 启动 ====================
+    window.onload = () => {
+      loadGame();
+      switchTab(0);
+    };
+  </script>
+</body>
+</html>

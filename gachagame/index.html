@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>抽卡养成大冒险</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -35,9 +35,10 @@
       100% { background-position: 0% 50%; }
     }
     .character-img {
-      height: 220px;
+      height: 160px;
+      @apply sm:h-48 lg:h-52;
       object-fit: contain;
-      filter: drop-shadow(0 15px 20px rgba(0,0,0,0.7));
+      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6));
     }
     .draw-card {
       animation: drawPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -57,107 +58,106 @@
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
-  <div class="max-w-6xl mx-auto p-4">
+  <div class="max-w-6xl mx-auto p-3 sm:p-4 lg:p-6">
     <!-- 头部 -->
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-4xl font-bold flex items-center gap-3">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold flex items-center gap-3">
         <i class="fas fa-dragon text-orange-400"></i> 抽卡养成大冒险
       </h1>
-      <div class="flex items-center gap-2 bg-gray-900 px-6 py-3 rounded-2xl text-xl">
+      <div class="flex items-center gap-2 bg-gray-900 px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-lg sm:text-xl whitespace-nowrap">
         <i class="fas fa-gem text-cyan-400"></i>
         <span id="diamonds" class="font-bold">1000</span>
       </div>
     </div>
 
     <!-- Tab 导航 -->
-    <div class="flex gap-2 bg-gray-900 p-2 rounded-3xl mb-8 w-fit mx-auto">
-      <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-8 py-3 rounded-2xl font-medium">🃏 抽卡</button>
-      <button onclick="switchTab(1)" id="tab1" class="tab-btn px-8 py-3 rounded-2xl font-medium">🏠 养成</button>
-      <button onclick="switchTab(2)" id="tab2" class="tab-btn px-8 py-3 rounded-2xl font-medium">🔍 探索</button>
+    <div class="flex flex-wrap gap-2 bg-gray-900 p-2 rounded-3xl mb-8 w-fit mx-auto">
+      <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🃏 抽卡</button>
+      <button onclick="switchTab(1)" id="tab1" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🏠 养成</button>
+      <button onclick="switchTab(2)" id="tab2" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🔍 探索</button>
     </div>
 
     <!-- 抽卡界面 -->
     <div id="panel0" class="panel">
-      <div class="text-center py-12">
-        <h2 class="text-3xl font-bold mb-6">抽取角色！</h2>
-        <div class="flex justify-center gap-6">
-          <button onclick="drawCard(1)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-10 py-6 rounded-3xl text-2xl font-bold shadow-xl transition">
+      <div class="text-center py-8 sm:py-12">
+        <h2 class="text-2xl sm:text-3xl font-bold mb-6">抽取角色！</h2>
+        <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
+          <button onclick="drawCard(1)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">
             单抽 <span class="text-yellow-300">100钻石</span>
           </button>
-          <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-10 py-6 rounded-3xl text-2xl font-bold shadow-xl transition">
+          <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">
             十连 <span class="text-yellow-300">900钻石</span>
           </button>
         </div>
-        <p class="mt-8 text-gray-400">概率：R 60% • SR 25% • SSR 12% • UR 3%</p>
+        <p class="mt-8 text-gray-400 text-sm sm:text-base">概率：R 60% • SR 25% • SSR 12% • UR 3%</p>
       </div>
     </div>
 
-    <!-- 养成界面（新增排序 + 分解300上限） -->
+    <!-- 养成界面 -->
     <div id="panel1" class="panel hidden">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
-        <div class="flex items-center gap-4">
-          <select id="sortSelect" onchange="renderInventory()" class="bg-gray-800 text-white px-4 py-2 rounded-2xl border border-gray-700 focus:outline-none">
+        <div class="flex items-center gap-4 w-full sm:w-auto">
+          <select id="sortSelect" onchange="renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
             <option value="rarity">排序：稀有度优先</option>
             <option value="stars">排序：星级优先</option>
             <option value="level">排序：等级优先</option>
           </select>
-          <button onclick="toggleDecomposeMode()" id="decomposeBtn"
-            class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2">
+          <button onclick="toggleDecomposeMode()" id="decomposeBtn" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2 whitespace-nowrap">
             <i class="fas fa-recycle"></i> 分解角色
           </button>
         </div>
       </div>
 
-      <div id="decomposeBar" class="hidden bg-red-900/50 border border-red-500 rounded-3xl p-4 mb-6 flex items-center justify-between">
+      <div id="decomposeBar" class="hidden bg-red-900/50 border border-red-500 rounded-3xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <span id="selectedCount" class="font-bold">已选 0 个</span>
           <span id="decomposeValue" class="text-yellow-300 font-bold">预计获得 0 钻石</span>
         </div>
-        <div class="flex gap-3">
-          <button onclick="selectAll()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">全选（最多300个）</button>
-          <button onclick="decomposeSelected()" class="px-8 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-bold">确认分解</button>
-          <button onclick="toggleDecomposeMode()" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">取消</button>
+        <div class="flex gap-3 w-full sm:w-auto">
+          <button onclick="selectAll()" class="flex-1 sm:flex-none px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">全选（最多300个）</button>
+          <button onclick="decomposeSelected()" class="flex-1 sm:flex-none px-8 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-bold">确认分解</button>
+          <button onclick="toggleDecomposeMode()" class="flex-1 sm:flex-none px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">取消</button>
         </div>
       </div>
 
-      <div id="inventory" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+      <div id="inventory" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
     </div>
 
     <!-- 探索界面 -->
-    <div id="panel2" class="panel hidden text-center py-12">
+    <div id="panel2" class="panel hidden text-center py-8 sm:py-12">
       <h2 class="text-3xl font-bold mb-8">🔍 探索</h2>
-      <button onclick="getResource()" class="bg-emerald-500 hover:bg-emerald-600 px-16 py-8 rounded-3xl text-3xl font-bold flex items-center gap-4 mx-auto">
+      <button onclick="getResource()" class="bg-emerald-500 hover:bg-emerald-600 px-12 sm:px-16 py-6 sm:py-8 rounded-3xl text-2xl sm:text-3xl font-bold flex items-center gap-4 mx-auto">
         <i class="fas fa-compass"></i> 探索一次
       </button>
       <p class="mt-6 text-gray-400">每次可随机获得 200~300 钻石</p>
-      <p id="resourceResult" class="mt-8 text-2xl font-bold text-yellow-400 min-h-[40px]"></p>
+      <p id="resourceResult" class="mt-8 text-xl sm:text-2xl font-bold text-yellow-400 min-h-[40px]"></p>
     </div>
   </div>
 
   <!-- 抽卡动画Modal -->
-  <div id="drawModal" onclick="if(event.target.id==='drawModal')hideDrawModal()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[9999]">
-    <div class="max-w-5xl w-full mx-4 bg-gray-900 rounded-3xl p-8 relative">
-      <div class="text-center mb-8">
-        <h2 id="drawTitle" class="text-4xl font-bold text-yellow-300">🎉 抽卡结果</h2>
+  <div id="drawModal" onclick="if(event.target.id==='drawModal')hideDrawModal()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[9999] p-4">
+    <div class="max-w-[95vw] sm:max-w-5xl w-full bg-gray-900 rounded-3xl p-6 sm:p-8 relative">
+      <div class="text-center mb-6 sm:mb-8">
+        <h2 id="drawTitle" class="text-3xl sm:text-4xl font-bold text-yellow-300">🎉 抽卡结果</h2>
       </div>
-      <div id="drawResults" class="flex flex-wrap justify-center gap-6 min-h-[420px]"></div>
-      <div class="text-center mt-8">
-        <button onclick="hideDrawModal()" class="px-12 py-4 bg-white text-black rounded-2xl font-bold text-xl hover:bg-yellow-300 transition">返回游戏</button>
+      <div id="drawResults" class="flex flex-wrap justify-center gap-4 sm:gap-6 min-h-[320px] sm:min-h-[420px]"></div>
+      <div class="text-center mt-6 sm:mt-8">
+        <button onclick="hideDrawModal()" class="w-full sm:w-auto px-12 py-4 bg-white text-black rounded-2xl font-bold text-xl hover:bg-yellow-300 transition">返回游戏</button>
       </div>
     </div>
   </div>
 
   <!-- 角色详情弹窗 -->
-  <div id="modal" onclick="if(event.target===this)hideModal()" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[10000]">
-    <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-md w-full mx-4 overflow-hidden">
+  <div id="modal" onclick="if(event.target===this)hideModal()" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[10000] p-4">
+    <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-full sm:max-w-md w-full mx-auto overflow-hidden">
       <div id="modalContent" class="p-6"></div>
     </div>
   </div>
 
   <script>
-    // ==================== 角色数据 ====================
-    const characterPool = [ /* 15个角色数据保持不变 */ 
+    /* ====================== 角色数据 & 逻辑（保持不变） ====================== */
+    const characterPool = [
       {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
       {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
       {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
@@ -185,7 +185,6 @@
     let currentSort = "rarity";
 
     function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
-
     function loadGame() {
       const saved = localStorage.getItem("gachaGame");
       if (saved) {
@@ -247,11 +246,11 @@
         const delay = results.length === 1 ? 0 : i * 80;
         const div = document.createElement("div");
         div.style.animationDelay = delay + "ms";
-        div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${getRarityColor(char.rarity)} text-center w-52`;
+        div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${getRarityColor(char.rarity)} text-center w-40 sm:w-52`;
         div.innerHTML = `
           <img src="${char.image}" class="character-img w-full rounded-2xl mx-auto draw-shine">
           <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${char.rarity}</div>
-          <div class="text-xl font-bold mt-2">${char.name}</div>
+          <div class="text-lg sm:text-xl font-bold mt-2">${char.name}</div>
           <div class="text-xs text-gray-400">${char.enName}</div>
         `;
         container.appendChild(div);
@@ -262,13 +261,11 @@
       document.getElementById("drawModal").classList.add("hidden");
     }
 
-    // ==================== 排序函数 ====================
     function sortOwned(list) {
       const copy = [...list];
       copy.sort((a, b) => {
         const charA = characterPool.find(c => c.id === a.charId);
         const charB = characterPool.find(c => c.id === b.charId);
-
         if (currentSort === "rarity") {
           const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
           if (rDiff !== 0) return rDiff;
@@ -279,7 +276,7 @@
           const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
           if (rDiff !== 0) return rDiff;
           return b.level - a.level;
-        } else { // level
+        } else {
           if (a.level !== b.level) return b.level - a.level;
           const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
           if (rDiff !== 0) return rDiff;
@@ -289,12 +286,10 @@
       return copy;
     }
 
-    // ==================== 仓库渲染 ====================
     function renderInventory() {
       const container = document.getElementById("inventory");
       container.innerHTML = "";
       selected = [];
-
       const sortedOwned = sortOwned(player.owned);
 
       sortedOwned.forEach((item) => {
@@ -306,13 +301,13 @@
         const def = Math.floor(char.baseDEF * statMult);
 
         const div = document.createElement("div");
-        div.className = `relative bg-gray-800 rounded-3xl p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition`;
+        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition`;
 
         let html = `
           <img src="${char.image}" class="character-img w-full rounded-2xl mb-3">
           <div class="text-center">
             <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${char.rarity}</div>
-            <div class="text-xl font-bold mb-1">${char.name}</div>
+            <div class="text-base sm:text-xl font-bold mb-1">${char.name}</div>
             <div class="text-xs text-gray-400">${char.enName}</div>
             <div class="text-sm text-gray-400 mt-2">Lv.${item.level} ★${item.stars}</div>
             <div class="flex justify-between text-sm mt-4">
@@ -382,7 +377,6 @@
     function decomposeSelected() {
       if (selected.length === 0) return;
       if (selected.length > 300) return alert("一次最多分解300个角色！");
-      
       let total = 0;
       selected.sort((a, b) => b - a).forEach(i => {
         const item = player.owned[i];
@@ -390,7 +384,6 @@
         total += decomposeValue[char.rarity];
         player.owned.splice(i, 1);
       });
-
       player.diamonds += total;
       document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();
@@ -401,7 +394,6 @@
       renderInventory();
     }
 
-    // ==================== 角色详情 & 养成 ====================
     let currentIndex = null;
     function showCharacterDetail(index, char, item) {
       currentIndex = index;
@@ -416,16 +408,14 @@
         <div class="text-center">
           <img src="${char.image}" class="character-img mx-auto rounded-3xl mb-4">
           <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-6 py-2 rounded-full text-white font-bold">${char.rarity}</div>
-          <h2 class="text-4xl font-bold my-3">${char.name}</h2>
+          <h2 class="text-3xl sm:text-4xl font-bold my-3">${char.name}</h2>
           <div class="text-sm text-gray-400 mb-4">${char.enName}</div>
           <div class="text-xl text-gray-400">Lv.${item.level}　★${item.stars}/5　<span class="text-emerald-400">拥有 ${sameCount} 张</span></div>
-          
           <div class="grid grid-cols-3 gap-6 my-8 text-xl">
             <div class="text-center"><div class="text-red-400">❤️ 血量</div><div class="font-bold">${hp}</div></div>
             <div class="text-center"><div class="text-orange-400">⚔️ 攻击</div><div class="font-bold">${atk}</div></div>
             <div class="text-center"><div class="text-blue-400">🛡️ 防御</div><div class="font-bold">${def}</div></div>
           </div>
-
           <div class="space-y-4">
             <button onclick="levelUp()" class="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-2xl text-xl font-bold flex justify-between items-center px-6">
               <span>升级（+8%属性）</span>
@@ -496,7 +486,6 @@
       }
     }
 
-    // 退出网页时自动清除所有资源
     window.addEventListener('beforeunload', () => {
       localStorage.removeItem("gachaGame");
     });

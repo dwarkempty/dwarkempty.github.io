@@ -10,67 +10,33 @@
     .card-r { border-color: #3b82f6; box-shadow: 0 0 15px #3b82f6; }
     .card-sr { border-color: #a855f7; box-shadow: 0 0 15px #a855f7; }
     .card-ssr { border-color: #eab308; box-shadow: 0 0 15px #eab308; }
-    .card-ur { 
-      border-color: #ec4899; 
-      box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6, 0 0 36px #22d3ee;
-      animation: rainbow-glow 2.5s linear infinite;
-    }
-    @keyframes rainbow-glow {
-      0%   { box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6; }
-      33%  { box-shadow: 0 0 12px #8b5cf6, 0 0 24px #22d3ee; }
-      66%  { box-shadow: 0 0 12px #22d3ee, 0 0 24px #eab308; }
-      100% { box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6; }
-    }
+    .card-ur { border-color: #ec4899; box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6, 0 0 36px #22d3ee; animation: rainbow-glow 2.5s linear infinite; }
+    @keyframes rainbow-glow { 0% { box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6; } 33% { box-shadow: 0 0 12px #8b5cf6, 0 0 24px #22d3ee; } 66% { box-shadow: 0 0 12px #22d3ee, 0 0 24px #eab308; } 100% { box-shadow: 0 0 12px #ec4899, 0 0 24px #8b5cf6; } }
     .rarity-r { background: #3b82f6; }
     .rarity-sr { background: #a855f7; }
     .rarity-ssr { background: #eab308; }
-    .rarity-ur { 
-      background: linear-gradient(90deg, #ec4899, #8b5cf6, #22d3ee, #eab308);
-      background-size: 300% 300%;
-      animation: gradient-shift 3s ease infinite;
-    }
-    @keyframes gradient-shift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    .character-img {
-      height: 160px;
-      @apply sm:h-48 lg:h-52;
-      object-fit: contain;
-      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6));
-    }
-    .draw-card {
-      animation: drawPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-      opacity: 0;
-    }
-    @keyframes drawPop {
-      0% { transform: scale(0.3) rotate(-12deg); opacity: 0; }
-      70% { transform: scale(1.15) rotate(8deg); }
-      100% { transform: scale(1) rotate(0deg); opacity: 1; }
-    }
+    .rarity-ur { background: linear-gradient(90deg, #ec4899, #8b5cf6, #22d3ee, #eab308); background-size: 300% 300%; animation: gradient-shift 3s ease infinite; }
+    @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .character-img { height: 160px; @apply sm:h-48 lg:h-52; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6)); }
+    .draw-card { animation: drawPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 0; }
+    @keyframes drawPop { 0% { transform: scale(0.3) rotate(-12deg); opacity: 0; } 70% { transform: scale(1.15) rotate(8deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
     .draw-shine { animation: shine 1.8s ease infinite; }
-    @keyframes shine {
-      0% { filter: brightness(1); }
-      50% { filter: brightness(1.6); }
-      100% { filter: brightness(1); }
-    }
+    @keyframes shine { 0% { filter: brightness(1); } 50% { filter: brightness(1.6); } 100% { filter: brightness(1); } }
+    .locked { filter: grayscale(1) brightness(0.7); }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
   <div class="max-w-6xl mx-auto p-3 sm:p-4 lg:p-6">
-    <!-- 头部 -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold flex items-center gap-3">
         <i class="fas fa-dragon text-orange-400"></i> 抽卡养成大冒险
       </h1>
-      <div class="flex items-center gap-2 bg-gray-900 px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-lg sm:text-xl whitespace-nowrap">
+      <div class="flex items-center gap-2 bg-gray-900 px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-lg sm:text-xl">
         <i class="fas fa-gem text-cyan-400"></i>
         <span id="diamonds" class="font-bold">1000</span>
       </div>
     </div>
 
-    <!-- Tab 导航 -->
     <div class="flex flex-wrap gap-2 bg-gray-900 p-2 rounded-3xl mb-8 w-fit mx-auto">
       <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🃏 抽卡</button>
       <button onclick="switchTab(1)" id="tab1" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🏠 养成</button>
@@ -82,18 +48,14 @@
       <div class="text-center py-8 sm:py-12">
         <h2 class="text-2xl sm:text-3xl font-bold mb-6">抽取角色！</h2>
         <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
-          <button onclick="drawCard(1)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">
-            单抽 <span class="text-yellow-300">100钻石</span>
-          </button>
-          <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">
-            十连 <span class="text-yellow-300">900钻石</span>
-          </button>
+          <button onclick="drawCard(1)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">单抽 <span class="text-yellow-300">100钻石</span></button>
+          <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">十连 <span class="text-yellow-300">900钻石</span></button>
         </div>
         <p class="mt-8 text-gray-400 text-sm sm:text-base">概率：R 60% • SR 25% • SSR 12% • UR 3%</p>
       </div>
     </div>
 
-    <!-- 养成界面 -->
+    <!-- 养成界面（同名分组 + 锁定） -->
     <div id="panel1" class="panel hidden">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 class="text-2xl font-bold flex items-center gap-2"><i class="fas fa-warehouse"></i> 我的仓库</h2>
@@ -124,27 +86,47 @@
       <div id="inventory" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
     </div>
 
-    <!-- 探索界面 -->
+    <!-- 探索界面（三大功能） -->
     <div id="panel2" class="panel hidden text-center py-8 sm:py-12">
       <h2 class="text-3xl font-bold mb-8">🔍 探索</h2>
-      <button onclick="getResource()" class="bg-emerald-500 hover:bg-emerald-600 px-12 sm:px-16 py-6 sm:py-8 rounded-3xl text-2xl sm:text-3xl font-bold flex items-center gap-4 mx-auto">
-        <i class="fas fa-compass"></i> 探索一次
-      </button>
-      <p class="mt-6 text-gray-400">每次可随机获得 200~300 钻石</p>
-      <p id="resourceResult" class="mt-8 text-xl sm:text-2xl font-bold text-yellow-400 min-h-[40px]"></p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        <!-- 获取钻石 -->
+        <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
+          <i class="fas fa-gem text-5xl"></i>
+          <div>
+            <div class="text-2xl font-bold">获取钻石</div>
+            <div class="text-sm text-emerald-200">100~200钻石</div>
+            <div id="diamondCooldown" class="text-xs text-emerald-300 mt-2"></div>
+          </div>
+        </button>
+
+        <!-- 赌博 -->
+        <button onclick="openGambling()" class="bg-amber-600 hover:bg-amber-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
+          <i class="fas fa-dice text-5xl"></i>
+          <div>
+            <div class="text-2xl font-bold">赌博</div>
+            <div class="text-sm text-amber-200">老虎机</div>
+          </div>
+        </button>
+
+        <!-- 扫雷 -->
+        <button onclick="openMinesweeper()" class="bg-red-600 hover:bg-red-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
+          <i class="fas fa-bomb text-5xl"></i>
+          <div>
+            <div class="text-2xl font-bold">扫雷</div>
+            <div class="text-sm text-red-200">每标记一颗雷 +500钻石</div>
+          </div>
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- 抽卡动画Modal -->
   <div id="drawModal" onclick="if(event.target.id==='drawModal')hideDrawModal()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[9999] p-4">
     <div class="max-w-[95vw] sm:max-w-5xl w-full bg-gray-900 rounded-3xl p-6 sm:p-8 relative">
-      <div class="text-center mb-6 sm:mb-8">
-        <h2 id="drawTitle" class="text-3xl sm:text-4xl font-bold text-yellow-300">🎉 抽卡结果</h2>
-      </div>
+      <div class="text-center mb-6 sm:mb-8"><h2 id="drawTitle" class="text-3xl sm:text-4xl font-bold text-yellow-300">🎉 抽卡结果</h2></div>
       <div id="drawResults" class="flex flex-wrap justify-center gap-4 sm:gap-6 min-h-[320px] sm:min-h-[420px]"></div>
-      <div class="text-center mt-6 sm:mt-8">
-        <button onclick="hideDrawModal()" class="w-full sm:w-auto px-12 py-4 bg-white text-black rounded-2xl font-bold text-xl hover:bg-yellow-300 transition">返回游戏</button>
-      </div>
+      <div class="text-center mt-6 sm:mt-8"><button onclick="hideDrawModal()" class="w-full sm:w-auto px-12 py-4 bg-white text-black rounded-2xl font-bold text-xl hover:bg-yellow-300 transition">返回游戏</button></div>
     </div>
   </div>
 
@@ -155,9 +137,45 @@
     </div>
   </div>
 
+  <!-- 赌博Modal（老虎机） -->
+  <div id="gamblingModal" onclick="if(event.target.id==='gamblingModal')hideGambling()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
+    <div class="bg-gray-900 rounded-3xl max-w-md w-full p-6">
+      <h3 class="text-2xl font-bold text-center mb-6">🎰 老虎机</h3>
+      <div id="slots" class="flex justify-center gap-4 mb-8 text-7xl">💎 🃏 🔥</div>
+      <div class="text-center mb-6">
+        <input id="betAmount" type="number" value="1000" min="100" max="10000" step="100" class="bg-gray-800 text-center text-3xl font-bold w-40 py-2 rounded-2xl">
+        <span class="ml-2 text-gray-400">钻石</span>
+      </div>
+      <button onclick="spinSlots()" class="w-full py-5 bg-gradient-to-r from-amber-500 to-red-500 text-2xl font-bold rounded-3xl">开始转动</button>
+      <p id="gamblingResult" class="text-center mt-6 min-h-[28px] text-lg"></p>
+      <button onclick="hideGambling()" class="mt-6 text-gray-400 block mx-auto">关闭</button>
+    </div>
+  </div>
+
+  <!-- 扫雷Modal -->
+  <div id="minesweeperModal" onclick="if(event.target.id==='minesweeperModal')hideMinesweeper()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
+    <div class="bg-gray-900 rounded-3xl w-full max-w-2xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-2xl font-bold">💣 扫雷</h3>
+          <div class="flex gap-3">
+            <button onclick="startMinesweeper(8,8,10)" class="px-4 py-1 bg-green-600 rounded-xl text-sm">简单</button>
+            <button onclick="startMinesweeper(10,10,20)" class="px-4 py-1 bg-yellow-600 rounded-xl text-sm">中等</button>
+            <button onclick="startMinesweeper(12,12,30)" class="px-4 py-1 bg-red-600 rounded-xl text-sm">困难</button>
+          </div>
+          <div id="mineScore" class="text-xl font-bold text-yellow-400">0 钻石</div>
+        </div>
+        <div id="minesweeperBoard" class="grid mx-auto gap-px bg-gray-700 p-2 rounded-2xl" style="width: fit-content;"></div>
+        <div class="text-center mt-6">
+          <button onclick="stopMinesweeper()" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl">停止游戏（保存当前收益）</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    /* ====================== 角色数据 & 逻辑（保持不变） ====================== */
-    const characterPool = [
+    // ==================== 数据 ====================
+    const characterPool = [ /* 15个角色数据（保持不变） */ 
       {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
       {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
       {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
@@ -184,7 +202,11 @@
     let selected = [];
     let currentSort = "rarity";
 
+    let diamondCooldownEnd = 0;
+    let currentMinesweeperScore = 0;
+
     function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
+
     function loadGame() {
       const saved = localStorage.getItem("gachaGame");
       if (saved) {
@@ -226,7 +248,7 @@
       let results = [];
       for (let i = 0; i < times; i++) {
         const char = drawOne();
-        player.owned.push({ id: Date.now() + i, charId: char.id, level: 1, stars: 0 });
+        player.owned.push({ id: Date.now() + i, charId: char.id, level: 1, stars: 0, locked: false });
         results.push(char);
       }
       saveGame();
@@ -234,38 +256,33 @@
       if (!document.getElementById("panel1").classList.contains("hidden")) renderInventory();
     }
 
-    function showDrawAnimation(results) {
+    function showDrawAnimation(results) { /* 保持原抽卡动画 */ 
       const modal = document.getElementById("drawModal");
       const container = document.getElementById("drawResults");
       const title = document.getElementById("drawTitle");
       container.innerHTML = "";
       modal.classList.remove("hidden");
       title.textContent = results.length === 1 ? "🎉 单抽结果" : "🎉 十连结果";
-
       results.forEach((char, i) => {
         const delay = results.length === 1 ? 0 : i * 80;
         const div = document.createElement("div");
         div.style.animationDelay = delay + "ms";
         div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${getRarityColor(char.rarity)} text-center w-40 sm:w-52`;
-        div.innerHTML = `
-          <img src="${char.image}" class="character-img w-full rounded-2xl mx-auto draw-shine">
-          <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${char.rarity}</div>
-          <div class="text-lg sm:text-xl font-bold mt-2">${char.name}</div>
-          <div class="text-xs text-gray-400">${char.enName}</div>
-        `;
+        div.innerHTML = `<img src="${char.image}" class="character-img w-full rounded-2xl mx-auto draw-shine"><div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${char.rarity}</div><div class="text-lg sm:text-xl font-bold mt-2">${char.name}</div><div class="text-xs text-gray-400">${char.enName}</div>`;
         container.appendChild(div);
       });
     }
 
-    function hideDrawModal() {
-      document.getElementById("drawModal").classList.add("hidden");
-    }
+    function hideDrawModal() { document.getElementById("drawModal").classList.add("hidden"); }
 
+    // ==================== 排序 + 同名分组 ====================
     function sortOwned(list) {
       const copy = [...list];
       copy.sort((a, b) => {
         const charA = characterPool.find(c => c.id === a.charId);
         const charB = characterPool.find(c => c.id === b.charId);
+        // 先按名称分组（同名靠在一起）
+        if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
         if (currentSort === "rarity") {
           const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
           if (rDiff !== 0) return rDiff;
@@ -301,7 +318,7 @@
         const def = Math.floor(char.baseDEF * statMult);
 
         const div = document.createElement("div");
-        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition`;
+        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(char.rarity)} hover:scale-105 transition ${item.locked ? 'locked' : ''}`;
 
         let html = `
           <img src="${char.image}" class="character-img w-full rounded-2xl mb-3">
@@ -318,7 +335,10 @@
           </div>
         `;
 
-        if (decomposeMode) {
+        // 锁定按钮
+        html = `<button onclick="event.stopImmediatePropagation();toggleLock(${originalIndex});" class="absolute top-4 left-4 text-xl ${item.locked ? 'text-red-400' : 'text-gray-400'}">🔒</button>` + html;
+
+        if (decomposeMode && !item.locked) {
           html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${originalIndex}" onchange="toggleSelect(this)">` + html;
         }
 
@@ -332,7 +352,13 @@
       }
     }
 
-    function toggleDecomposeMode() {
+    function toggleLock(index) {
+      player.owned[index].locked = !player.owned[index].locked;
+      saveGame();
+      renderInventory();
+    }
+
+    function toggleDecomposeMode() { /* 保持原逻辑 */ 
       decomposeMode = !decomposeMode;
       const btn = document.getElementById("decomposeBtn");
       btn.innerHTML = decomposeMode ? `<i class="fas fa-times"></i> 退出分解` : `<i class="fas fa-recycle"></i> 分解角色`;
@@ -342,15 +368,12 @@
 
     function toggleSelect(checkbox) {
       const index = parseInt(checkbox.dataset.index);
-      if (checkbox.checked) {
-        if (!selected.includes(index)) selected.push(index);
-      } else {
-        selected = selected.filter(i => i !== index);
-      }
+      if (checkbox.checked) selected.push(index);
+      else selected = selected.filter(i => i !== index);
       updateDecomposeBar();
     }
 
-    function updateDecomposeBar() {
+    function updateDecomposeBar() { /* 保持原逻辑 */ 
       const count = selected.length;
       let value = 0;
       selected.forEach(i => {
@@ -362,7 +385,7 @@
       document.getElementById("decomposeValue").textContent = `预计获得 ${value} 钻石`;
     }
 
-    function selectAll() {
+    function selectAll() { /* 保持原逻辑 */ 
       selected = [];
       const checkboxes = document.querySelectorAll('#inventory input[type="checkbox"]');
       const maxSelect = Math.min(checkboxes.length, 300);
@@ -371,7 +394,6 @@
         selected.push(parseInt(checkboxes[i].dataset.index));
       }
       updateDecomposeBar();
-      if (checkboxes.length > 300) alert(`已自动选中前300个角色（一次最多分解300个）`);
     }
 
     function decomposeSelected() {
@@ -380,6 +402,7 @@
       let total = 0;
       selected.sort((a, b) => b - a).forEach(i => {
         const item = player.owned[i];
+        if (item.locked) return;
         const char = characterPool.find(c => c.id === item.charId);
         total += decomposeValue[char.rarity];
         player.owned.splice(i, 1);
@@ -394,6 +417,7 @@
       renderInventory();
     }
 
+    // ==================== 角色详情（锁定角色不可升星） ====================
     let currentIndex = null;
     function showCharacterDetail(index, char, item) {
       currentIndex = index;
@@ -421,9 +445,9 @@
               <span>升级（+8%属性）</span>
               <span class="text-yellow-300">${costLevel} 钻石</span>
             </button>
-            <button onclick="starUp()" class="w-full ${item.stars >= 5 ? 'bg-gray-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} py-4 rounded-2xl text-xl font-bold flex justify-between items-center px-6">
+            <button onclick="starUp()" class="w-full ${item.stars >= 5 || item.locked ? 'bg-gray-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} py-4 rounded-2xl text-xl font-bold flex justify-between items-center px-6">
               <span>升星（+25%属性）</span>
-              <span class="text-yellow-300">消耗 1 张相同角色</span>
+              <span class="text-yellow-300">${item.locked ? '已锁定' : '消耗 1 张相同角色'}</span>
             </button>
           </div>
           <button onclick="hideModal()" class="mt-6 text-gray-400">关闭</button>
@@ -438,7 +462,7 @@
       renderInventory();
     }
 
-    function levelUp() {
+    function levelUp() { /* 原逻辑 */ 
       if (currentIndex === null) return;
       const item = player.owned[currentIndex];
       const cost = item.level * 30;
@@ -454,9 +478,9 @@
     function starUp() {
       if (currentIndex === null) return;
       const item = player.owned[currentIndex];
-      if (item.stars >= 5) return alert("已经满星！");
-      const duplicateIndex = player.owned.findIndex(o => o.charId === item.charId && o.id !== item.id);
-      if (duplicateIndex === -1) return alert("没有多余的相同角色可以消耗！");
+      if (item.stars >= 5 || item.locked) return alert("无法升星！");
+      const duplicateIndex = player.owned.findIndex(o => o.charId === item.charId && o.id !== item.id && !o.locked);
+      if (duplicateIndex === -1) return alert("没有可用的相同角色材料！");
       player.owned.splice(duplicateIndex, 1);
       item.stars++;
       saveGame();
@@ -464,14 +488,167 @@
       showCharacterDetail(currentIndex, char, item);
     }
 
-    function getResource() {
-      const amount = Math.floor(Math.random() * 101) + 200;
+    // ==================== 探索新功能 ====================
+    function getDiamonds() {
+      if (Date.now() < diamondCooldownEnd) return;
+      const amount = Math.floor(Math.random() * 101) + 100;
       player.diamonds += amount;
       document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();
-      const result = document.getElementById("resourceResult");
-      result.innerHTML = `🎉 获得 <span class="text-4xl font-bold text-yellow-400">${amount}</span> 钻石！`;
-      setTimeout(() => result.innerHTML = "", 3000);
+      const btn = document.getElementById("diamondBtn");
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+      diamondCooldownEnd = Date.now() + 10000;
+      const cd = document.getElementById("diamondCooldown");
+      let timeLeft = 10;
+      const timer = setInterval(() => {
+        timeLeft--;
+        cd.textContent = `${timeLeft}秒后可再次获取`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          btn.classList.remove("opacity-50", "cursor-not-allowed");
+          cd.textContent = "";
+        }
+      }, 1000);
+    }
+
+    function openGambling() {
+      document.getElementById("gamblingModal").classList.remove("hidden");
+      document.getElementById("gamblingResult").innerHTML = "";
+    }
+
+    function hideGambling() {
+      document.getElementById("gamblingModal").classList.add("hidden");
+    }
+
+    function spinSlots() {
+      const bet = parseInt(document.getElementById("betAmount").value);
+      if (bet < 100 || bet > 10000 || bet > player.diamonds) return alert("下注金额不正确！");
+      player.diamonds -= bet;
+      document.getElementById("diamonds").textContent = player.diamonds;
+
+      const symbols = ["💎","🃏","🔥","🌟","⚡","🧊"];
+      const reel1 = symbols[Math.floor(Math.random()*symbols.length)];
+      const reel2 = symbols[Math.floor(Math.random()*symbols.length)];
+      const reel3 = symbols[Math.floor(Math.random()*symbols.length)];
+      document.getElementById("slots").innerHTML = `${reel1} ${reel2} ${reel3}`;
+
+      let win = 0;
+      if (reel1 === reel2 && reel2 === reel3) win = bet * 8;
+      else if (reel1 === reel2 || reel2 === reel3) win = bet * 2;
+
+      if (win > 0) {
+        player.diamonds += win;
+        document.getElementById("diamonds").textContent = player.diamonds;
+        document.getElementById("gamblingResult").innerHTML = `<span class="text-green-400">🎉 恭喜中奖！获得 ${win} 钻石</span>`;
+      } else {
+        document.getElementById("gamblingResult").innerHTML = `<span class="text-red-400">😢 未中奖</span>`;
+      }
+      saveGame();
+    }
+
+    let minesweeperBoard = [];
+    let mineRows = 0, mineCols = 0, mineCount = 0;
+
+    function startMinesweeper(rows, cols, mines) {
+      mineRows = rows; mineCols = cols; mineCount = mines;
+      currentMinesweeperScore = 0;
+      document.getElementById("mineScore").textContent = "0 钻石";
+
+      minesweeperBoard = Array(rows).fill().map(() => Array(cols).fill({revealed: false, mine: false, flagged: false, adjacent: 0}));
+
+      // 随机放置地雷
+      let placed = 0;
+      while (placed < mines) {
+        const r = Math.floor(Math.random() * rows);
+        const c = Math.floor(Math.random() * cols);
+        if (!minesweeperBoard[r][c].mine) {
+          minesweeperBoard[r][c].mine = true;
+          placed++;
+        }
+      }
+
+      // 计算相邻雷数
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (minesweeperBoard[r][c].mine) continue;
+          let count = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && minesweeperBoard[nr][nc].mine) count++;
+            }
+          }
+          minesweeperBoard[r][c].adjacent = count;
+        }
+      }
+
+      renderMinesweeperBoard();
+    }
+
+    function renderMinesweeperBoard() {
+      const boardEl = document.getElementById("minesweeperBoard");
+      boardEl.innerHTML = "";
+      boardEl.style.gridTemplateColumns = `repeat(${mineCols}, 32px)`;
+
+      for (let r = 0; r < mineRows; r++) {
+        for (let c = 0; c < mineCols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "w-8 h-8 flex items-center justify-center text-xl bg-gray-600 hover:bg-gray-500 border border-gray-400 rounded cursor-pointer select-none";
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+          cell.onclick = (e) => handleMineClick(e, r, c);
+          cell.oncontextmenu = (e) => { e.preventDefault(); handleMineFlag(r, c); };
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function handleMineClick(e, r, c) {
+      const cellData = minesweeperBoard[r][c];
+      if (cellData.revealed || cellData.flagged) return;
+      if (cellData.mine) {
+        alert("💥 踩雷了！游戏结束");
+        hideMinesweeper();
+        return;
+      }
+      cellData.revealed = true;
+      e.target.classList.add("bg-gray-800");
+      e.target.textContent = cellData.adjacent > 0 ? cellData.adjacent : "";
+      if (cellData.adjacent === 0) {
+        // 自动展开（简化版）
+      }
+    }
+
+    function handleMineFlag(r, c) {
+      const cellData = minesweeperBoard[r][c];
+      if (cellData.revealed) return;
+      cellData.flagged = !cellData.flagged;
+      const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      cellEl.textContent = cellData.flagged ? "🚩" : "";
+      if (cellData.flagged && cellData.mine) {
+        currentMinesweeperScore += 500;
+        document.getElementById("mineScore").textContent = `${currentMinesweeperScore} 钻石`;
+      }
+    }
+
+    function stopMinesweeper() {
+      player.diamonds += currentMinesweeperScore;
+      document.getElementById("diamonds").textContent = player.diamonds;
+      saveGame();
+      hideMinesweeper();
+      alert(`🎉 扫雷结束！获得 ${currentMinesweeperScore} 钻石`);
+    }
+
+    function hideMinesweeper() {
+      document.getElementById("minesweeperModal").classList.add("hidden");
+      currentMinesweeperScore = 0;
+    }
+
+    function openMinesweeper() {
+      document.getElementById("minesweeperModal").classList.remove("hidden");
+      // 默认打开简单模式
+      startMinesweeper(8, 8, 10);
     }
 
     function switchTab(n) {

@@ -117,13 +117,9 @@
 
   <!-- Panel 2: 探索 -->
   <div id="panel2" class="panel hidden max-w-7xl mx-auto px-4">
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-8" id="explorationGrid">
-      <!-- 探索按钮将由 JS 动态生成 -->
-    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-8" id="explorationGrid"></div>
   </div>
 
-  <!-- 所有 Modal（仅保留非战斗部分） -->
-  
   <!-- 抽卡结果 Modal -->
   <div id="drawModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
     <div class="bg-zinc-900 rounded-3xl max-w-5xl w-full mx-4 p-8">
@@ -146,7 +142,6 @@
         <button onclick="switchGamblingTab(0)" class="gambling-tab active flex-1 py-4 text-xl font-bold">老虎机</button>
         <button onclick="switchGamblingTab(1)" class="gambling-tab flex-1 py-4 text-xl font-bold">21点</button>
       </div>
-      <!-- 老虎机面板 -->
       <div id="slotPanel">
         <div class="flex justify-center gap-8 mb-8">
           <div onclick="selectCurrency(0)" class="currency-btn active flex-1 max-w-40 bg-zinc-800 hover:bg-zinc-700 rounded-3xl p-4 text-center cursor-pointer">💎 钻石<br>100-5000</div>
@@ -161,9 +156,7 @@
         <button onclick="spinSlots()" class="w-full py-6 bg-amber-500 hover:bg-amber-400 text-3xl font-bold rounded-3xl">开始转动</button>
         <div id="gamblingResult" class="mt-6 text-center text-xl min-h-[2.5rem]"></div>
       </div>
-      <!-- 21点面板 -->
       <div id="blackjackPanel" class="hidden">
-        <!-- 21点完整代码保持原样（省略部分与原文件一致） -->
         <div class="flex justify-between mb-4">
           <div class="text-center">
             <div class="text-xl">庄家 (AI)</div>
@@ -240,6 +233,11 @@
         <button onclick="executeConsoleCommand()" class="px-10 bg-emerald-600 rounded-3xl font-bold">执行</button>
       </div>
     </div>
+  </div>
+
+  <!-- 【关键修复】角色/武器详情 Modal（之前缺失） -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+    <div id="modalInner" class="modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4"></div>
   </div>
 
   <script src="js/constants.js"></script>

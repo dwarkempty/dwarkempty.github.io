@@ -7,9 +7,11 @@ const ENERGY_PER_TURN = 2;
 let hasActed = [false, false, false, false]; // 本回合是否已行动
 
 let currentEnemyTargets = [
-  { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65 },
-  { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90 }
+  { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65, defense: 40 },
+  { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90, defense: 25 }
 ];
+
+let playerStatuses = [{}, {}, {}, {}]; // 每个位置的状态（后续扩展）
 
 // ====================== R级角色技能数据 ======================
 const characterSkillMap = {
@@ -43,6 +45,17 @@ const characterSkillMap = {
   }
 };
 
+// ====================== 伤害计算公式 ======================
+function calculateDamage(attackerStats, defender, isCritPossible = true) {
+  let damage = attackerStats.atk;
+  const critChance = attackerStats.critRate || 0.05;
+  const isCrit = isCritPossible && Math.random() < critChance;
+  if (isCrit) damage = Math.floor(damage * (1 + (attackerStats.critDamage || 0.5)));
+  const defenseReduce = defender.defense || 30;
+  damage = Math.floor(damage * (1 - defenseReduce / (defenseReduce + 100)));
+  return Math.max(1, damage);
+}
+
 // ====================== 执行技能 ======================
 function executeSkill(position, isNormalAttack) {
   const char = currentBattleTeam[position];
@@ -56,11 +69,11 @@ function executeSkill(position, isNormalAttack) {
   let logText = "";
 
   if (isNormalAttack) {
-    damage = Math.floor(stats.atk * 0.8);
+    damage = calculateDamage(stats, currentEnemyTargets[0]);
     logText = `${charData.name} 发动【普攻】！造成 ${damage} 伤害`;
   } else {
     if (!skillInfo || battleEnergy < skillInfo.skill1Cost) {
-      return alert("能量不足或暂无主动技能！");
+      return alert("能量不足！");
     }
     battleEnergy -= skillInfo.skill1Cost;
     damage = Math.floor(stats.atk * 1.2);
@@ -77,11 +90,38 @@ function executeSkill(position, isNormalAttack) {
   renderBattleUI();
 
   if (hasActed.every(v => v)) {
-    setTimeout(() => {
-      alert("✅ 本回合玩家行动结束！\n（敌方行动暂为占位，下一阶段实现）");
-      endBattleTurn();
-    }, 800);
+    setTimeout(enemyTurn, 800);
   }
+}
+
+// ====================== 敌方回合 ======================
+function enemyTurn() {
+  document.getElementById("battleLog").innerHTML += `<div class="text-red-400 font-bold">【敌方回合开始】</div>`;
+
+  for (let enemy of currentEnemyTargets) {
+    if (enemy.hp <= 0) continue;
+    const targetIndex = Math.floor(Math.random() * 4);
+    const targetChar = currentBattleTeam[targetIndex];
+    if (!targetChar) continue;
+
+    const damage = Math.floor(enemy.atk * 0.9);
+    // 简单扣血（后续可加护盾）
+    // 这里暂时不做玩家血量扣减（留给下一阶段完整生命值系统）
+    document.getElementById("battleLog").innerHTML += `<div class="text-red-400">${enemy.name} 攻击 ${targetChar.name}，造成 ${damage} 伤害</div>`;
+  }
+
+  // 检查胜负
+  const allEnemiesDead = currentEnemyTargets.every(e => e.hp <= 0);
+  if (allEnemiesDead) {
+    setTimeout(() => alert("🎉 战斗胜利！"), 300);
+    return;
+  }
+
+  // 重置玩家行动
+  hasActed = [false, false, false, false];
+  battleEnergy = Math.min(battleEnergy + ENERGY_PER_TURN, MAX_ENERGY);
+  document.getElementById("battleLog").innerHTML += `<div class="text-cyan-400">⚡ 玩家回合开始！能量恢复至 ${battleEnergy}/${MAX_ENERGY}</div>`;
+  renderBattleUI();
 }
 
 // ====================== 渲染主战斗界面 ======================
@@ -248,11 +288,11 @@ function hideBattleModal() {
   currentBattleTeam = [null, null, null, null];
 }
 
-// ====================== 暴露所有函数 ======================
+// ====================== 暴露 ======================
 window.executeSkill = executeSkill;
 window.showBattleCharDetail = showBattleCharDetail;
 window.hideBattleCharDetailModal = hideBattleCharDetailModal;
-window.endBattleTurn = endBattleTurn;
+window.endBattleTurn = enemyTurn;
 window.openBattleTest = openBattleTest;
 window.showBattleSelectModal = showBattleSelectModal;
 window.hideBattleSelectModal = hideBattleSelectModal;

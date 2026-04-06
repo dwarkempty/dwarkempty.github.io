@@ -57,6 +57,8 @@
     .modal-content { animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
     .ms-cell { width: 42px; height: 42px; font-size: 22px; display: flex; align-items: center; justify-content: center; user-select: none; border: 2px solid #374151; }
+    .ms-revealed-safe { background-color: #10b981 !important; color: white; }
+    .ms-unrevealed { background-color: #4b5563 !important; }
     .star-1 { color: #22c55e; text-shadow: 0 0 8px #22c55e; }
     .star-2 { color: #3b82f6; text-shadow: 0 0 8px #3b82f6; }
     .star-3 { color: #a855f7; text-shadow: 0 0 8px #a855f7; }
@@ -182,14 +184,14 @@
           <i class="fas fa-dice text-5xl"></i>
           <div>
             <div class="text-2xl font-bold">赌博</div>
-            <div class="text-sm text-amber-200">老虎机</div>
+            <div class="text-sm text-amber-200">老虎机 / 21点</div>
           </div>
         </button>
         <button onclick="openMinesweeper()" class="bg-red-600 hover:bg-red-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
           <i class="fas fa-bomb text-5xl"></i>
           <div>
             <div class="text-2xl font-bold">扫雷</div>
-            <div class="text-sm text-red-200">每标记一颗雷 +500钻石</div>
+            <div class="text-sm text-red-200">标记雷获胜后统一结算</div>
           </div>
         </button>
       </div>
@@ -212,18 +214,70 @@
     </div>
   </div>
 
-  <!-- 赌博Modal -->
+  <!-- 赌博Modal（大更新版） -->
   <div id="gamblingModal" onclick="if(event.target.id==='gamblingModal')hideGambling()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
-    <div class="bg-gray-900 rounded-3xl max-w-md w-full p-6">
-      <h3 class="text-2xl font-bold text-center mb-6">🎰 老虎机</h3>
-      <div id="slots" class="flex justify-center gap-4 mb-8 text-7xl">💎 🃏 🔥</div>
-      <div class="text-center mb-6">
-        <input id="betAmount" type="number" value="1000" min="100" max="10000" step="100" class="bg-gray-800 text-center text-3xl font-bold w-40 py-2 rounded-2xl">
-        <span class="ml-2 text-gray-400">钻石</span>
+    <div class="bg-gray-900 rounded-3xl max-w-4xl w-full p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-3xl font-bold">🎰 赌博</h3>
+        <button onclick="hideGambling()" class="text-gray-400 text-xl">✕</button>
       </div>
-      <button onclick="spinSlots()" class="w-full py-5 bg-gradient-to-r from-amber-500 to-red-500 text-2xl font-bold rounded-3xl btn-hover">开始转动</button>
-      <p id="gamblingResult" class="text-center mt-6 min-h-[28px] text-lg"></p>
-      <button onclick="hideGambling()" class="mt-6 text-gray-400 block mx-auto">关闭</button>
+
+      <!-- 赌博Tab -->
+      <div class="flex border-b border-gray-700 mb-6">
+        <button onclick="switchGamblingTab(0)" id="gTab0" class="gambling-tab flex-1 py-3 text-center font-bold active border-b-4 border-amber-400">老虎机</button>
+        <button onclick="switchGamblingTab(1)" id="gTab1" class="gambling-tab flex-1 py-3 text-center font-bold">21点</button>
+      </div>
+
+      <!-- 老虎机面板 -->
+      <div id="slotPanel">
+        <div class="flex justify-center gap-8 mb-8 text-8xl" id="slots">💎 🃏 🔥</div>
+        
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div onclick="selectCurrency(0)" id="currency0" class="currency-btn cursor-pointer bg-gray-800 hover:bg-gray-700 rounded-2xl p-4 text-center active">💎 钻石<br><span class="text-xs">100-5000</span></div>
+          <div onclick="selectCurrency(1)" id="currency1" class="currency-btn cursor-pointer bg-gray-800 hover:bg-gray-700 rounded-2xl p-4 text-center">🪙 金币<br><span class="text-xs">1000-50000</span></div>
+          <div onclick="selectCurrency(2)" id="currency2" class="currency-btn cursor-pointer bg-gray-800 hover:bg-gray-700 rounded-2xl p-4 text-center">🧪 魔药<br><span class="text-xs">5-100</span></div>
+        </div>
+
+        <div class="text-center mb-6">
+          <input id="betAmount" type="number" value="1000" min="100" class="bg-gray-800 text-center text-3xl font-bold w-48 py-3 rounded-2xl">
+          <span id="betUnit" class="ml-3 text-gray-400 text-xl">钻石</span>
+        </div>
+
+        <button onclick="spinSlots()" class="w-full py-6 bg-gradient-to-r from-amber-500 to-red-500 text-3xl font-bold rounded-3xl btn-hover">开始转动</button>
+        <p id="gamblingResult" class="text-center mt-8 min-h-[32px] text-2xl font-bold"></p>
+      </div>
+
+      <!-- 21点面板 -->
+      <div id="blackjackPanel" class="hidden">
+        <div class="grid grid-cols-2 gap-8">
+          <!-- 庄家 -->
+          <div>
+            <div class="text-sm text-gray-400 mb-2">庄家 (AI)</div>
+            <div id="dealerCards" class="flex gap-3 justify-center min-h-[120px]"></div>
+            <div id="dealerScore" class="text-center text-2xl font-bold mt-2">得分：0</div>
+          </div>
+          <!-- 玩家 -->
+          <div>
+            <div class="text-sm text-gray-400 mb-2">玩家</div>
+            <div id="playerCards" class="flex gap-3 justify-center min-h-[120px]"></div>
+            <div id="playerScore" class="text-center text-2xl font-bold mt-2">得分：0</div>
+          </div>
+        </div>
+
+        <div class="flex justify-center gap-6 mt-8">
+          <button onclick="hitBlackjack()" id="hitBtn" class="px-10 py-4 bg-blue-600 hover:bg-blue-700 rounded-3xl text-2xl font-bold btn-hover">摸牌</button>
+          <button onclick="standBlackjack()" id="standBtn" class="px-10 py-4 bg-red-600 hover:bg-red-700 rounded-3xl text-2xl font-bold btn-hover">停牌</button>
+        </div>
+
+        <div class="text-center mt-6">
+          <div id="blackjackBetInfo" class="text-xl"></div>
+          <div id="blackjackResult" class="text-3xl font-bold mt-4 min-h-[48px]"></div>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+          <button onclick="startBlackjack()" class="px-12 py-4 bg-gradient-to-r from-amber-500 to-red-500 text-2xl font-bold rounded-3xl btn-hover">开始新局</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -242,7 +296,7 @@
         </div>
         <div id="minesweeperBoard" class="grid mx-auto gap-px bg-gray-700 p-2 rounded-2xl" style="width: fit-content;"></div>
         <div class="text-center mt-6">
-          <button onclick="stopMinesweeper()" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl btn-hover">停止游戏（保存当前收益）</button>
+          <button onclick="stopMinesweeper()" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl">停止游戏（保存当前收益）</button>
         </div>
       </div>
     </div>
@@ -276,7 +330,7 @@
       <h2 class="text-3xl font-bold text-center mb-6 flex items-center justify-center gap-3">
         <i class="fas fa-terminal text-green-400"></i> 开发者控制台
       </h2>
-      <input id="consoleInput" type="text" placeholder="输入命令，例如：give 999 50" class="w-full bg-gray-800 text-white px-5 py-4 rounded-2xl text-lg mb-6 font-mono">
+      <input id="consoleInput" type="text" placeholder="输入命令，例如：give 998 500" class="w-full bg-gray-800 text-white px-5 py-4 rounded-2xl text-lg mb-6 font-mono">
       <button onclick="executeConsoleCommand()" class="w-full py-4 bg-green-600 hover:bg-green-700 rounded-2xl text-xl font-bold">执行命令</button>
       <div id="consoleLog" class="mt-6 text-sm font-mono text-green-300 h-48 overflow-y-auto bg-black/30 rounded-2xl p-4"></div>
       <button onclick="hideConsole()" class="mt-8 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl">关闭控制台</button>
@@ -354,6 +408,19 @@
     let minesweeperBoard = [];
     let mineRows = 0, mineCols = 0, mineCount = 0;
     let minesweeperGameOver = false;
+    let minesweeperReward = 0;   // 新增：扫雷累计奖励，仅胜利时结算
+
+    // ====================== 赌博全局变量 ======================
+    let currentGamblingTab = 0;
+    let currentBetCurrency = 0; // 0=钻石 1=金币 2=魔药
+    let currentBetAmount = 1000;
+
+    // 21点全局
+    let blackjackDeck = [];
+    let playerHand = [];
+    let dealerHand = [];
+    let blackjackBet = 0;
+    let blackjackBetCurrency = 0;
 
     function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
 
@@ -361,7 +428,6 @@
       const saved = localStorage.getItem("gachaGame");
       if (saved) {
         let data = JSON.parse(saved);
-        if (data.gold !== undefined) data.diamonds = data.gold;
         player = data;
       }
       if (!player.diamonds) player.diamonds = 1000;
@@ -751,7 +817,6 @@
       document.getElementById("modal").classList.remove("hidden");
     }
 
-    // ====================== 武器详情 ======================
     function showWeaponDetail(index) {
       currentModalIndex = index;
       currentModalType = "weapon";
@@ -1113,40 +1178,216 @@
       }, 1000);
     }
 
-    function openGambling() { document.getElementById("gamblingModal").classList.remove("hidden"); document.getElementById("gamblingResult").innerHTML = ""; }
-    function hideGambling() { document.getElementById("gamblingModal").classList.add("hidden"); }
-    function spinSlots() { 
+    // ====================== 赌博大更新 ======================
+    function openGambling() {
+      document.getElementById("gamblingModal").classList.remove("hidden");
+      switchGamblingTab(0);
+    }
+
+    function hideGambling() {
+      document.getElementById("gamblingModal").classList.add("hidden");
+    }
+
+    function switchGamblingTab(n) {
+      currentGamblingTab = n;
+      document.querySelectorAll('.gambling-tab').forEach((b, i) => b.classList.toggle('active', i === n));
+      document.getElementById("slotPanel").classList.toggle("hidden", n !== 0);
+      document.getElementById("blackjackPanel").classList.toggle("hidden", n !== 1);
+    }
+
+    function selectCurrency(n) {
+      currentBetCurrency = n;
+      document.querySelectorAll('.currency-btn').forEach((el, i) => el.classList.toggle('active', i === n));
+      const unit = n === 0 ? "钻石" : n === 1 ? "金币" : "魔药";
+      document.getElementById("betUnit").textContent = unit;
+    }
+
+    // ====================== 老虎机 ======================
+    function spinSlots() {
       const bet = parseInt(document.getElementById("betAmount").value);
-      if (bet < 100 || bet > 10000 || bet > player.diamonds) return alert("下注金额不正确！");
-      player.diamonds -= bet;
-      document.getElementById("diamonds").textContent = player.diamonds;
-      const symbols = ["💎","🃏","🔥","🌟","⚡","🧊"];
-      const reel1 = symbols[Math.floor(Math.random()*symbols.length)];
-      const reel2 = symbols[Math.floor(Math.random()*symbols.length)];
-      const reel3 = symbols[Math.floor(Math.random()*symbols.length)];
+      let maxBet = currentBetCurrency === 0 ? 5000 : currentBetCurrency === 1 ? 50000 : 100;
+      let minBet = currentBetCurrency === 0 ? 100 : currentBetCurrency === 1 ? 1000 : 5;
+
+      if (bet < minBet || bet > maxBet) return alert(`下注金额必须在 ${minBet}~${maxBet} 之间！`);
+
+      let costField = currentBetCurrency === 0 ? "diamonds" : currentBetCurrency === 1 ? "gold" : "magicPotion";
+      if (player[costField] < bet) return alert("余额不足！");
+
+      player[costField] -= bet;
+      if (currentBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+      else if (currentBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
+      else document.getElementById("magicPotion").textContent = player.magicPotion;
+
+      const symbols = ["💎", "🃏", "🔥", "🌟", "⚡", "🧊", "7️⃣", "☠️"];
+      const reel1 = symbols[Math.floor(Math.random() * symbols.length)];
+      const reel2 = symbols[Math.floor(Math.random() * symbols.length)];
+      const reel3 = symbols[Math.floor(Math.random() * symbols.length)];
+
       document.getElementById("slots").innerHTML = `${reel1} ${reel2} ${reel3}`;
+
+      let multiplier = 0;
+      if (reel1 === reel2 && reel2 === reel3) {
+        if (reel1 === "7️⃣") multiplier = 5;
+        else if (reel1 === "☠️") multiplier = 0;
+        else multiplier = 3;
+      } else if (reel1 === reel2 || reel2 === reel3 || reel1 === reel3) {
+        multiplier = 2;
+      }
+
       let win = 0;
-      if (reel1 === reel2 && reel2 === reel3) win = bet * 8;
-      else if (reel1 === reel2 || reel2 === reel3) win = bet * 2;
-      if (win > 0) {
-        player.diamonds += win;
-        document.getElementById("diamonds").textContent = player.diamonds;
-        document.getElementById("gamblingResult").innerHTML = `<span class="text-green-400">🎉 恭喜中奖！获得 ${win} 钻石</span>`;
+      if (multiplier > 0) {
+        win = bet * multiplier;
+        let winField = currentBetCurrency === 0 ? "diamonds" : currentBetCurrency === 1 ? "gold" : "magicPotion";
+        player[winField] += win;
+        if (currentBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+        else if (currentBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
+        else document.getElementById("magicPotion").textContent = player.magicPotion;
+        document.getElementById("gamblingResult").innerHTML = `<span class="text-green-400">🎉 中奖 ×${multiplier}！获得 ${win} ${currentBetCurrency === 0 ? "钻石" : currentBetCurrency === 1 ? "金币" : "魔药"}</span>`;
+      } else if (multiplier === 0) {
+        document.getElementById("gamblingResult").innerHTML = `<span class="text-red-400">💀 全清！损失全部下注</span>`;
       } else {
         document.getElementById("gamblingResult").innerHTML = `<span class="text-red-400">😢 未中奖</span>`;
       }
       saveGame();
     }
 
-    function openMinesweeper() { document.getElementById("minesweeperModal").classList.remove("hidden"); startMinesweeper(8,8,10); }
-    function hideMinesweeper() { 
-      document.getElementById("minesweeperModal").classList.add("hidden"); 
+    // ====================== 21点 ======================
+    function createDeck() {
+      const suits = ['♠', '♥', '♦', '♣'];
+      const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+      let deck = [];
+      for (let s of suits) {
+        for (let v of values) {
+          deck.push({suit: s, value: v});
+        }
+      }
+      return deck.sort(() => Math.random() - 0.5);
+    }
+
+    function cardValue(card) {
+      if (['J','Q','K'].includes(card.value)) return 10;
+      if (card.value === 'A') return 11;
+      return parseInt(card.value);
+    }
+
+    function handScore(hand) {
+      let score = 0;
+      let aces = 0;
+      for (let card of hand) {
+        let val = cardValue(card);
+        if (val === 11) aces++;
+        score += val;
+      }
+      while (score > 21 && aces > 0) {
+        score -= 10;
+        aces--;
+      }
+      return score;
+    }
+
+    function renderCard(card) {
+      return `<div class="w-16 h-24 bg-white text-black rounded-xl flex flex-col items-center justify-center shadow-lg text-3xl border border-gray-300">${card.value}<span class="text-4xl">${card.suit}</span></div>`;
+    }
+
+    function startBlackjack() {
+      blackjackBet = parseInt(document.getElementById("betAmount").value) || 1000;
+      blackjackBetCurrency = currentBetCurrency;
+      let maxBet = blackjackBetCurrency === 0 ? 5000 : blackjackBetCurrency === 1 ? 50000 : 100;
+      let minBet = blackjackBetCurrency === 0 ? 100 : blackjackBetCurrency === 1 ? 1000 : 5;
+      if (blackjackBet < minBet || blackjackBet > maxBet) return alert(`下注金额必须在 ${minBet}~${maxBet} 之间！`);
+
+      let costField = blackjackBetCurrency === 0 ? "diamonds" : blackjackBetCurrency === 1 ? "gold" : "magicPotion";
+      if (player[costField] < blackjackBet) return alert("余额不足！");
+
+      player[costField] -= blackjackBet;
+      if (blackjackBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+      else if (blackjackBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
+      else document.getElementById("magicPotion").textContent = player.magicPotion;
+
+      blackjackDeck = createDeck();
+      playerHand = [blackjackDeck.pop(), blackjackDeck.pop()];
+      dealerHand = [blackjackDeck.pop(), blackjackDeck.pop()];
+
+      document.getElementById("playerCards").innerHTML = playerHand.map(renderCard).join('');
+      document.getElementById("dealerCards").innerHTML = dealerHand.map(renderCard).join('');
+      document.getElementById("playerScore").textContent = `得分：${handScore(playerHand)}`;
+      document.getElementById("dealerScore").textContent = `得分：${handScore([dealerHand[0]])} (隐藏一张)`;
+      document.getElementById("blackjackBetInfo").innerHTML = `下注：${blackjackBet} ${blackjackBetCurrency === 0 ? "钻石" : blackjackBetCurrency === 1 ? "金币" : "魔药"}`;
+      document.getElementById("blackjackResult").innerHTML = "";
+
+      document.getElementById("hitBtn").disabled = false;
+      document.getElementById("standBtn").disabled = false;
+    }
+
+    function hitBlackjack() {
+      playerHand.push(blackjackDeck.pop());
+      document.getElementById("playerCards").innerHTML = playerHand.map(renderCard).join('');
+      const score = handScore(playerHand);
+      document.getElementById("playerScore").textContent = `得分：${score}`;
+      if (score > 21) {
+        endBlackjack(false);
+      }
+    }
+
+    function standBlackjack() {
+      document.getElementById("hitBtn").disabled = true;
+      document.getElementById("standBtn").disabled = true;
+
+      // 庄家回合
+      while (handScore(dealerHand) < 17) {
+        dealerHand.push(blackjackDeck.pop());
+      }
+      document.getElementById("dealerCards").innerHTML = dealerHand.map(renderCard).join('');
+      document.getElementById("dealerScore").textContent = `得分：${handScore(dealerHand)}`;
+
+      const playerScoreVal = handScore(playerHand);
+      const dealerScoreVal = handScore(dealerHand);
+
+      let win = false;
+      if (playerScoreVal > 21) win = false;
+      else if (dealerScoreVal > 21) win = true;
+      else if (playerScoreVal > dealerScoreVal) win = true;
+      else if (playerScoreVal === dealerScoreVal) win = false; // 平局不赢
+      else win = false;
+
+      endBlackjack(win);
+    }
+
+    function endBlackjack(win) {
+      let multiplier = 1;
+      if (win) {
+        if (handScore(playerHand) === 21 && playerHand.length === 2) multiplier = 1.5;
+        let winAmount = Math.floor(blackjackBet * multiplier);
+        let winField = blackjackBetCurrency === 0 ? "diamonds" : blackjackBetCurrency === 1 ? "gold" : "magicPotion";
+        player[winField] += winAmount;
+        if (blackjackBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+        else if (blackjackBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
+        else document.getElementById("magicPotion").textContent = player.magicPotion;
+
+        document.getElementById("blackjackResult").innerHTML = `<span class="text-green-400">🎉 你赢了！获得 ${winAmount} ${blackjackBetCurrency === 0 ? "钻石" : blackjackBetCurrency === 1 ? "金币" : "魔药"}</span>`;
+      } else {
+        document.getElementById("blackjackResult").innerHTML = `<span class="text-red-400">😢 你输了</span>`;
+      }
+      saveGame();
+    }
+
+    // ====================== 扫雷优化 ======================
+    function openMinesweeper() {
+      document.getElementById("minesweeperModal").classList.remove("hidden");
+      startMinesweeper(8,8,10);
+    }
+
+    function hideMinesweeper() {
+      document.getElementById("minesweeperModal").classList.add("hidden");
       currentMinesweeperScore = 0;
+      minesweeperReward = 0;
       minesweeperGameOver = false;
     }
-    function startMinesweeper(rows, cols, mines) { 
+
+    function startMinesweeper(rows, cols, mines) {
       mineRows = rows; mineCols = cols; mineCount = mines;
       currentMinesweeperScore = 0;
+      minesweeperReward = 0;
       minesweeperGameOver = false;
       document.getElementById("mineScore").textContent = "0 钻石";
       minesweeperBoard = Array(rows).fill().map(() => Array(cols).fill().map(() => ({revealed: false, mine: false, flagged: false, adjacent: 0})));
@@ -1170,14 +1411,15 @@
       }
       renderMinesweeperBoard();
     }
-    function renderMinesweeperBoard() { 
+
+    function renderMinesweeperBoard() {
       const boardEl = document.getElementById("minesweeperBoard");
       boardEl.innerHTML = "";
       boardEl.style.gridTemplateColumns = `repeat(${mineCols}, 42px)`;
       for (let r = 0; r < mineRows; r++) {
         for (let c = 0; c < mineCols; c++) {
           const cell = document.createElement("div");
-          cell.className = "ms-cell bg-gray-600 border border-gray-400 hover:bg-gray-500 rounded cursor-pointer flex items-center justify-center text-xl font-bold";
+          cell.className = `ms-cell ms-unrevealed border border-gray-400 hover:bg-gray-500 rounded cursor-pointer flex items-center justify-center text-xl font-bold`;
           cell.dataset.r = r; cell.dataset.c = c;
           cell.addEventListener("click", handleMineClick);
           cell.addEventListener("contextmenu", (e) => { e.preventDefault(); handleMineFlag(r, c); });
@@ -1185,28 +1427,32 @@
         }
       }
     }
-    function handleMineClick(e) { 
+
+    function handleMineClick(e) {
       if (minesweeperGameOver) return;
-      const r = parseInt(e.target.dataset.r); 
+      const r = parseInt(e.target.dataset.r);
       const c = parseInt(e.target.dataset.c);
       const cellData = minesweeperBoard[r][c];
       if (cellData.revealed || cellData.flagged) return;
-      if (cellData.mine) { 
+      if (cellData.mine) {
         minesweeperGameOver = true;
-        alert("💥 踩雷了！游戏结束"); 
-        hideMinesweeper(); 
-        return; 
+        alert("💥 踩雷了！游戏结束，奖励清零");
+        hideMinesweeper();
+        return;
       }
       floodFill(r, c);
+      checkWin();
     }
-    function floodFill(r, c) { 
+
+    function floodFill(r, c) {
       if (r < 0 || r >= mineRows || c < 0 || c >= mineCols) return;
       const cellData = minesweeperBoard[r][c];
       if (cellData.revealed || cellData.flagged || cellData.mine) return;
       cellData.revealed = true;
       const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
       if (cellEl) {
-        cellEl.classList.add("bg-gray-800");
+        cellEl.classList.remove("ms-unrevealed");
+        cellEl.classList.add("ms-revealed-safe");
         if (cellData.adjacent > 0) {
           cellEl.textContent = cellData.adjacent;
           cellEl.style.color = ["#1e90ff","#00b700","#ff0000","#800080","#ffa500","#00ffff","#000000","#808080"][cellData.adjacent-1];
@@ -1219,7 +1465,8 @@
         }
       }
     }
-    function handleMineFlag(r, c) { 
+
+    function handleMineFlag(r, c) {
       if (minesweeperGameOver) return;
       const cellData = minesweeperBoard[r][c];
       if (cellData.revealed) return;
@@ -1227,17 +1474,46 @@
       const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
       if (cellEl) cellEl.textContent = cellData.flagged ? "🚩" : "";
       if (cellData.flagged && cellData.mine) {
-        currentMinesweeperScore += 500;
-        document.getElementById("mineScore").textContent = `${currentMinesweeperScore} 钻石`;
+        minesweeperReward += 500;
+        document.getElementById("mineScore").textContent = `${minesweeperReward} 钻石`;
       }
     }
+
+    function checkWin() {
+      let safeCellsLeft = 0;
+      for (let r = 0; r < mineRows; r++) {
+        for (let c = 0; c < mineCols; c++) {
+          if (!minesweeperBoard[r][c].mine && !minesweeperBoard[r][c].revealed) safeCellsLeft++;
+        }
+      }
+      if (safeCellsLeft === 0) {
+        minesweeperGameOver = true;
+        player.diamonds += minesweeperReward;
+        document.getElementById("diamonds").textContent = player.diamonds;
+        saveGame();
+        alert(`🎉 扫雷胜利！获得 ${minesweeperReward} 钻石`);
+        hideMinesweeper();
+      }
+    }
+
     function stopMinesweeper() {
       if (minesweeperGameOver) return;
-      player.diamonds += currentMinesweeperScore;
-      document.getElementById("diamonds").textContent = player.diamonds;
-      saveGame();
+      // 检查是否胜利
+      let safeCellsLeft = 0;
+      for (let r = 0; r < mineRows; r++) {
+        for (let c = 0; c < mineCols; c++) {
+          if (!minesweeperBoard[r][c].mine && !minesweeperBoard[r][c].revealed) safeCellsLeft++;
+        }
+      }
+      if (safeCellsLeft === 0) {
+        player.diamonds += minesweeperReward;
+        document.getElementById("diamonds").textContent = player.diamonds;
+        saveGame();
+        alert(`🎉 扫雷胜利！获得 ${minesweeperReward} 钻石`);
+      } else {
+        alert("中途退出，奖励清零");
+      }
       hideMinesweeper();
-      alert(`🎉 扫雷结束！获得 ${currentMinesweeperScore} 钻石`);
     }
 
     function switchTab(n) {
@@ -1252,7 +1528,7 @@
       }
     }
 
-    // ====================== 开发者控制台 ======================
+    // ====================== 控制台 ======================
     function openConsolePrompt() {
       const code = prompt("请输入作者命令开启控制台：");
       if (code === "114514") {
@@ -1278,28 +1554,23 @@
         let amount = parseInt(parts[2]) || 1;
 
         if (id === 998) {
-          // 钻石
           player.diamonds += amount;
           document.getElementById("diamonds").textContent = player.diamonds;
           log.innerHTML += `已获得 ${amount} 钻石<br>`;
         } else if (id === 997) {
-          // 金币
           player.gold += amount;
           document.getElementById("gold").textContent = player.gold;
           log.innerHTML += `已获得 ${amount} 金币<br>`;
         } else if (id === 999) {
-          // 魔药
           player.magicPotion += amount;
           document.getElementById("magicPotion").textContent = player.magicPotion;
           log.innerHTML += `已获得 ${amount} 个魔药<br>`;
         } else if (id >= 1 && id <= 15) {
-          // 角色
           const level = parseInt(parts[2]) || 1;
           const stars = parseInt(parts[3]) || 0;
           player.owned.push({ id: Date.now(), charId: id, level: Math.min(level, 100), stars: Math.min(stars, 5), equippedWeapon: null });
           log.innerHTML += `已获得角色 ${characterPool.find(c => c.id === id).name} Lv.${level} ★${stars}<br>`;
         } else if (id >= 100 && id <= 115) {
-          // 武器 (武器id = 角色id + 99)
           const weaponRealId = id - 99;
           const level = parseInt(parts[2]) || 1;
           const stars = parseInt(parts[3]) || 0;

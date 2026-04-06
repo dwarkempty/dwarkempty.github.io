@@ -91,19 +91,23 @@ function executeSkill(position, isNormalAttack) {
   if (!char || hasActed[position]) return alert("该角色本回合已行动！");
 
   const skillInfo = characterSkillMap[char.charId];
+  const charData = window.getCharacterData(char.charId);   // ← 必须获取
+  const stats = window.calculateStats(char, charData, null);
+
+  let damage = 0;
   let logText = "";
 
   if (isNormalAttack) {
-    const stats = window.calculateStats(char, window.getCharacterData(char.charId), null);
-    const damage = Math.floor(stats.atk * 0.8);
-    const targetIndex = Math.floor(Math.random() * currentEnemyTargets.length);
-    currentEnemyTargets[targetIndex].hp = Math.max(0, currentEnemyTargets[targetIndex].hp - damage);
-    logText = `⚔️ ${char.name} 发动【普攻】！造成 ${damage} 伤害`;
+    damage = Math.floor(stats.atk * 0.8);
+    logText = `⚔️ ${charData.name} 发动【普攻】！造成 ${damage} 伤害`;
   } else {
     if (!skillInfo || battleEnergy < skillInfo.skill1Cost) return alert("能量不足！");
     battleEnergy -= skillInfo.skill1Cost;
     logText = skillInfo.execute(position);
   }
+
+  const targetIndex = Math.floor(Math.random() * currentEnemyTargets.length);
+  currentEnemyTargets[targetIndex].hp = Math.max(0, currentEnemyTargets[targetIndex].hp - damage);
 
   document.getElementById("battleLog").innerHTML += `<div class="text-emerald-400">${logText}</div>`;
   document.getElementById("battleLog").scrollTop = 999999;
@@ -129,19 +133,23 @@ function enemyTurn() {
   }
 
   for (let i = 0; i < currentEnemyTargets.length; i++) {
-    const enemy = currentEnemyTargets[i];
-    if (enemy.hp <= 0) continue;
-    const targetIndex = Math.floor(Math.random() * 4);
-    const targetChar = currentBattleTeam[targetIndex];
-    if (!targetChar) continue;
-    const damage = Math.floor(enemy.atk * 0.9);
-    playerHP[targetIndex] = Math.max(0, playerHP[targetIndex] - damage);
-    document.getElementById("battleLog").innerHTML += `<div class="text-red-400">${enemy.name} 攻击 ${targetChar.name}，造成 ${damage} 伤害</div>`;
-  }
+      const enemy = currentEnemyTargets[i];
+      if (enemy.hp <= 0) continue;
 
-  checkBattleEnd();
-  renderBattleUI();
-}
+      const targetIndex = Math.floor(Math.random() * 4);
+      const targetChar = currentBattleTeam[targetIndex];
+      if (!targetChar) continue;
+
+      const targetData = window.getCharacterData(targetChar.charId);   // ← 关键修复
+      const damage = Math.floor(enemy.atk * 0.9);
+      playerHP[targetIndex] = Math.max(0, playerHP[targetIndex] - damage);
+
+      document.getElementById("battleLog").innerHTML += `<div class="text-red-400">${enemy.name} 攻击 ${targetData.name}，造成 ${damage} 伤害</div>`;
+    }
+
+    checkBattleEnd();
+    renderBattleUI();
+  }
 
 // ====================== 胜负判断 ======================
 function checkBattleEnd() {

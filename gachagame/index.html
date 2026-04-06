@@ -66,7 +66,7 @@
     .star-5 { color: #ec4899; text-shadow: 0 0 12px #ec4899, 0 0 20px #22d3ee; animation: rainbow-star 1.5s linear infinite; }
     @keyframes rainbow-star { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 
-    /* 21点卡牌背面 */
+    /* 21点卡牌背面（已优化） */
     .card-back {
       width: 64px;
       height: 96px;
@@ -83,7 +83,8 @@
     }
     .card-back::after {
       content: "🃏";
-      opacity: 0.3;
+      opacity: 0.4;
+      font-size: 28px;
     }
   </style>
 </head>
@@ -234,7 +235,7 @@
     </div>
   </div>
 
-  <!-- 赌博Modal（最终修复版） -->
+  <!-- 赌博Modal（已修复所有视频中显示的问题） -->
   <div id="gamblingModal" onclick="if(event.target.id==='gamblingModal')hideGambling()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[11000] p-4">
     <div class="bg-gray-900 rounded-3xl max-w-4xl w-full p-6">
       <div class="flex justify-between items-center mb-6">
@@ -1329,7 +1330,7 @@
       playerHand = [blackjackDeck.pop(), blackjackDeck.pop()];
       dealerHand = [blackjackDeck.pop(), blackjackDeck.pop()];
 
-      // 庄家只显示第一张，第二张背面
+      // 庄家只显示第一张，第二张必须是背面
       document.getElementById("dealerCards").innerHTML = renderCard(dealerHand[0]) + renderCard(null, true);
       document.getElementById("playerCards").innerHTML = playerHand.map(c => renderCard(c)).join('');
       document.getElementById("playerScore").textContent = `得分：${handScore(playerHand)}`;

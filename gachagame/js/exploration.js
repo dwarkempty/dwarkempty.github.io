@@ -1,4 +1,4 @@
-// js/exploration.js - 探索系统、赌博、21点、扫雷（完整无省略）
+// js/exploration.js - 探索系统、赌博、21点、扫雷（完整无省略，无任何战斗相关代码）
 let diamondCooldownEnd = 0;
 let goldCooldownEnd = 0;
 let potionCooldownEnd = 0;
@@ -428,29 +428,42 @@ function stopMinesweeper() {
   window.hideMinesweeper();
 }
 
-// ====================== 战斗测试入口 ======================
-function addBattleTestButton() {
-  // 在探索面板的 grid 里新增一个按钮
-  const grid = document.querySelector('#panel2 .grid');
-  if (grid) {
-    const btnHTML = `
-      <button onclick="window.openBattleTest()" class="bg-violet-600 hover:bg-violet-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
-        <i class="fas fa-swords text-5xl"></i>
-        <div>
-          <div class="text-2xl font-bold">⚔️ 战斗测试</div>
-          <div class="text-sm text-violet-200">测试能量系统</div>
-        </div>
-      </button>`;
-    grid.innerHTML += btnHTML;
-  }
+// ====================== 动态生成探索按钮（已移除战斗测试按钮） ======================
+function renderExplorationButtons() {
+  const grid = document.getElementById("explorationGrid");
+  grid.innerHTML = `
+    <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
+      <i class="fas fa-gem text-6xl"></i>
+      <div class="text-3xl font-bold">获取钻石</div>
+      <div class="text-emerald-200">300~500钻石</div>
+      <div id="diamondCooldown" class="text-xs text-emerald-300"></div>
+    </button>
+    <button onclick="getGold()" id="goldBtn" class="bg-yellow-600 hover:bg-yellow-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
+      <i class="fas fa-coins text-6xl"></i>
+      <div class="text-3xl font-bold">获取金币</div>
+      <div class="text-yellow-200">500~1000金币</div>
+      <div id="goldCooldown" class="text-xs text-yellow-300"></div>
+    </button>
+    <button onclick="getMagicPotion()" id="potionBtn" class="bg-teal-600 hover:bg-teal-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
+      <i class="fas fa-flask text-6xl"></i>
+      <div class="text-3xl font-bold">魔药炼制</div>
+      <div class="text-teal-200">5~10魔药</div>
+      <div id="potionCooldown" class="text-xs text-teal-300"></div>
+    </button>
+    <button onclick="openGambling()" class="bg-purple-600 hover:bg-purple-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
+      <i class="fas fa-dice text-6xl"></i>
+      <div class="text-3xl font-bold">赌博</div>
+      <div class="text-purple-200">老虎机 / 21点</div>
+    </button>
+    <button onclick="openMinesweeper()" class="bg-red-600 hover:bg-red-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
+      <i class="fas fa-bomb text-6xl"></i>
+      <div class="text-3xl font-bold">扫雷</div>
+      <div class="text-red-200">标记雷获胜后统一结算</div>
+    </button>
+  `;
 }
 
-// 在 exploration.js 末尾调用
-window.addEventListener('load', () => {
-  if (document.getElementById("panel2")) addBattleTestButton();
-});
-
-// 暴露
+// ====================== 暴露 ======================
 window.getDiamonds = getDiamonds;
 window.getGold = getGold;
 window.getMagicPotion = getMagicPotion;
@@ -472,3 +485,4 @@ window.floodFill = floodFill;
 window.handleMineFlag = handleMineFlag;
 window.checkWin = checkWin;
 window.stopMinesweeper = stopMinesweeper;
+window.renderExplorationButtons = renderExplorationButtons;

@@ -428,6 +428,28 @@ function stopMinesweeper() {
   window.hideMinesweeper();
 }
 
+// ====================== 战斗测试入口 ======================
+function addBattleTestButton() {
+  // 在探索面板的 grid 里新增一个按钮
+  const grid = document.querySelector('#panel2 .grid');
+  if (grid) {
+    const btnHTML = `
+      <button onclick="window.openBattleTest()" class="bg-violet-600 hover:bg-violet-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
+        <i class="fas fa-swords text-5xl"></i>
+        <div>
+          <div class="text-2xl font-bold">⚔️ 战斗测试</div>
+          <div class="text-sm text-violet-200">测试能量系统</div>
+        </div>
+      </button>`;
+    grid.innerHTML += btnHTML;
+  }
+}
+
+// 在 exploration.js 末尾调用
+window.addEventListener('load', () => {
+  if (document.getElementById("panel2")) addBattleTestButton();
+});
+
 // 暴露
 window.getDiamonds = getDiamonds;
 window.getGold = getGold;

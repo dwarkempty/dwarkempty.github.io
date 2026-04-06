@@ -249,3 +249,4 @@ window.hideBattleModal = hideBattleModal;
 window.endBattleTurn = endBattleTurn;
 window.showBattleCharDetail = showBattleCharDetail;
 window.hideBattleCharDetailModal = hideBattleCharDetailModal;
+window.characterSkillMap = characterSkillMap;

@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台（完整无省略）
+// js/ui.js - UI 动画、Modal、记录查询、控制台（完整无省略，无战斗相关代码）
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -171,98 +171,7 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// ====================== 新增：统一角色详情界面（仓库 + 战斗共用） ======================
-function showFullCharacterDetail(item, isBattle = false) {
-  const charData = window.getCharacterData(item.charId);
-  const stats = window.calculateStats(item, charData, null); // 暂无装备，可后续扩展
-
-  const skill = window.characterSkillMap[item.charId] || {
-    description: "暂无详细描述",
-    normalAttack: "普通攻击：对敌方单体造成70%总攻击的物理伤害",
-    skill1Name: "暂无技能",
-    skill1Desc: "暂无技能描述",
-    skill1Cost: 0
-  };
-
-  const html = `
-    <div class="flex gap-8">
-      <div class="flex-1 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex items-center justify-center">
-        <img src="${charData.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
-      </div>
-      
-      <div class="flex-1">
-        <div class="text-4xl font-bold mb-6">${charData.name}</div>
-        
-        <div class="grid grid-cols-2 gap-3">
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">等级</div>
-            <div class="text-3xl font-bold">${item.level}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">星级</div>
-            <div class="text-3xl font-bold">${"★".repeat(item.stars)}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时攻击</div>
-            <div class="text-3xl font-bold">${stats.atk}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时暴击率</div>
-            <div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时血量</div>
-            <div class="text-3xl font-bold">${stats.hp}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时暴击伤害</div>
-            <div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时防御</div>
-            <div class="text-3xl font-bold">${stats.def}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时减伤</div>
-            <div class="text-3xl font-bold">0%</div>
-          </div>
-        </div>
-
-        <!-- 人物描述 -->
-        <div class="mt-6 bg-gray-800 rounded-3xl p-5 text-sm leading-relaxed">
-          ${skill.description}
-        </div>
-
-        <!-- 技能栏 -->
-        <div class="grid grid-cols-3 gap-3 mt-6">
-          <div class="border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="font-bold text-sm">普攻</div>
-            <div class="text-xs text-gray-400 mt-2">${skill.normalAttack}</div>
-          </div>
-          <div class="border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="font-bold text-sm">${skill.skill1Name}</div>
-            <div class="text-xs text-gray-400 mt-2">${skill.skill1Desc}</div>
-            <div class="text-amber-400 text-xs mt-3">消耗 ${skill.skill1Cost} 能量</div>
-          </div>
-          <div class="border-4 border-orange-500 rounded-3xl p-4 text-center opacity-50">
-            <div class="font-bold text-sm">主动技2</div>
-            <div class="text-xs text-gray-400 mt-2">R级角色暂无第二主动技能</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="text-center mt-8">
-      <button onclick="window.hideModal()" class="px-12 py-4 bg-gray-700 hover:bg-gray-600 rounded-3xl text-xl">关闭</button>
-    </div>
-  `;
-
-  document.getElementById("modalContent").innerHTML = html;
-  document.getElementById("modal").classList.remove("hidden");
-}
-
 // 暴露
-window.showFullCharacterDetail = showFullCharacterDetail;
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;

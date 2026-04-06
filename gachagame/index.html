@@ -1377,17 +1377,24 @@
     }
 
     function endBlackjack(win) {
-      let multiplier = 1;
+      let payoutMultiplier = 2;   // 普通胜利返回 2 倍下注（本金 + 盈利）
       if (win) {
-        if (handScore(playerHand) === 21 && playerHand.length === 2) multiplier = 1.5;
-        let winAmount = Math.floor(blackjackBet * multiplier);
-        let winField = blackjackBetCurrency === 0 ? "diamonds" : blackjackBetCurrency === 1 ? "gold" : "magicPotion";
+        if (handScore(playerHand) === 21 && playerHand.length === 2) {
+          payoutMultiplier = 2.5;   // 天然21点（Blackjack）返回 2.5 倍
+        }
+        let winAmount = Math.floor(blackjackBet * payoutMultiplier);
+    
+        let winField = blackjackBetCurrency === 0 ? "diamonds" : 
+                       blackjackBetCurrency === 1 ? "gold" : "magicPotion";
+    
         player[winField] += winAmount;
+    
         if (blackjackBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
         else if (blackjackBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
         else document.getElementById("magicPotion").textContent = player.magicPotion;
 
-        document.getElementById("blackjackResult").innerHTML = `<span class="text-green-400">🎉 你赢了！获得 ${winAmount} ${blackjackBetCurrency === 0 ? "钻石" : blackjackBetCurrency === 1 ? "金币" : "魔药"}</span>`;
+        document.getElementById("blackjackResult").innerHTML = 
+          `<span class="text-green-400">🎉 你赢了！获得 ${winAmount} ${blackjackBetCurrency === 0 ? "钻石" : blackjackBetCurrency === 1 ? "金币" : "魔药"}（2倍/2.5倍）</span>`;
       } else {
         document.getElementById("blackjackResult").innerHTML = `<span class="text-red-400">😢 你输了</span>`;
       }

@@ -1,5 +1,5 @@
-// js/battle.js - 下一阶段完整最终版（生命值 + 状态 + 敌人AI + 胜负判断）
-let currentBattleTeam = [null, null, null, null]; // 0=后排a, 1=前排a, 2=后排b, 3=前排b
+// js/battle.js - 最终完整版
+let currentBattleTeam = [null, null, null, null];
 let battleEnergy = 4;
 const MAX_ENERGY = 6;
 const ENERGY_PER_TURN = 2;
@@ -15,7 +15,7 @@ let currentEnemyTargets = [
 
 let playerStatuses = [{}, {}, {}, {}];
 
-// ====================== R级角色完整技能数据 ======================
+// ====================== R级角色完整技能数据（含特殊效果） ======================
 const characterSkillMap = {
   1: { // 艾伦
     description: "出身幽暗森林的年轻游侠，精通弓箭与自然追踪。性格坚韧乐观，热爱冒险与保护生态。虽经验尚浅，但精准的箭术能为团队提供可靠的远程支援，是新手冒险者最常见的伙伴。",
@@ -29,11 +29,10 @@ const characterSkillMap = {
       let damage = Math.floor(stats.atk * 1.2);
       const targetIndex = Math.floor(Math.random() * currentEnemyTargets.length);
       const target = currentEnemyTargets[targetIndex];
-      // 后排额外无视防御
-      if (targetIndex >= 1) damage = Math.floor(damage * 1.05);
+      if (targetIndex >= 1) damage = Math.floor(damage * 1.05); // 后排无视防御
       target.hp = Math.max(0, target.hp - damage);
       target.status.defDown = 2; // 防御降低2回合
-      return `🏹 ${char.name} 发动【穿林箭】！造成 ${damage} 伤害 ${targetIndex >= 1 ? '(后排无视防御)' : ''} 🛡️ 防御降低 -10%`;
+      return `🏹 ${char.name} 发动【穿林箭】！造成 ${damage} 伤害 ${targetIndex >= 1 ? '(后排无视)' : ''} 🛡️ 目标防御降低10% (2回合)`;
     }
   },
   2: { // 莎莉
@@ -51,7 +50,7 @@ const characterSkillMap = {
       target.hp = Math.max(0, target.hp - damage);
       if (Math.random() < 0.3) {
         target.status.burn = 2;
-        return `🔥 ${char.name} 释放【火球冲击】！造成 ${damage} 伤害 🔥 点燃！`;
+        return `🔥 ${char.name} 释放【火球冲击】！造成 ${damage} 伤害 🔥 点燃目标！`;
       }
       return `🔥 ${char.name} 释放【火球冲击】！造成 ${damage} 伤害`;
     }
@@ -86,16 +85,6 @@ const characterSkillMap = {
   }
 };
 
-// ====================== 伤害计算 ======================
-function calculateDamage(attackerStats, defender) {
-  let damage = attackerStats.atk;
-  const isCrit = Math.random() < (attackerStats.critRate || 0.05);
-  if (isCrit) damage = Math.floor(damage * (1 + (attackerStats.critDamage || 0.5)));
-  const def = defender.defense || 30;
-  damage = Math.floor(damage * (1 - def / (def + 100)));
-  return Math.max(1, damage);
-}
-
 // ====================== 执行技能 ======================
 function executeSkill(position, isNormalAttack) {
   const char = currentBattleTeam[position];
@@ -125,21 +114,28 @@ function executeSkill(position, isNormalAttack) {
   if (hasActed.every(v => v)) setTimeout(enemyTurn, 800);
 }
 
-// ====================== 敌方回合 ======================
+// ====================== 敌方回合 + 状态结算 ======================
 function enemyTurn() {
   document.getElementById("battleLog").innerHTML += `<div class="text-red-400 font-bold">【敌方回合开始】</div>`;
+
+  // 结算玩家点燃状态
+  for (let i = 0; i < 4; i++) {
+    if (playerStatuses[i].burn > 0) {
+      const burnDamage = Math.floor(playerMaxHP[i] * 0.05);
+      playerHP[i] = Math.max(0, playerHP[i] - burnDamage);
+      document.getElementById("battleLog").innerHTML += `<div class="text-orange-400">🔥 ${currentBattleTeam[i].name} 受到点燃伤害 ${burnDamage}</div>`;
+      playerStatuses[i].burn--;
+    }
+  }
 
   for (let i = 0; i < currentEnemyTargets.length; i++) {
     const enemy = currentEnemyTargets[i];
     if (enemy.hp <= 0) continue;
-
     const targetIndex = Math.floor(Math.random() * 4);
     const targetChar = currentBattleTeam[targetIndex];
     if (!targetChar) continue;
-
     const damage = Math.floor(enemy.atk * 0.9);
     playerHP[targetIndex] = Math.max(0, playerHP[targetIndex] - damage);
-
     document.getElementById("battleLog").innerHTML += `<div class="text-red-400">${enemy.name} 攻击 ${targetChar.name}，造成 ${damage} 伤害</div>`;
   }
 
@@ -158,7 +154,6 @@ function checkBattleEnd() {
     hideBattleModal();
     return;
   }
-
   const allPlayersDead = playerHP.every(hp => hp <= 0);
   if (allPlayersDead) {
     alert("💀 战斗失败...");
@@ -196,7 +191,7 @@ function renderBattleUI() {
   }
 }
 
-// ====================== 战斗中点击角色详情（新增buff/debuff栏） ======================
+// ====================== 战斗中点击角色详情 ======================
 function showBattleCharDetail(index) {
   const char = currentBattleTeam[index];
   if (!char) return;
@@ -222,7 +217,6 @@ function showBattleCharDetail(index) {
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">减伤</div><div class="text-3xl">0%</div></div>
         </div>
 
-        <!-- 新增：当前所受buff/debuff栏 -->
         <div class="mt-6 bg-gray-800 rounded-3xl p-4 text-center border border-orange-400">
           <div class="text-orange-400 font-bold mb-2">当前所受状态</div>
           <div class="text-sm text-gray-300">暂无状态（后续扩展）</div>
@@ -253,7 +247,6 @@ function hideBattleCharDetailModal() {
 // ====================== 退出战斗重置 ======================
 function hideBattleModal() {
   document.getElementById("battleModal").classList.add("hidden");
-  // 完整重置所有战斗数据
   currentBattleTeam = [null, null, null, null];
   battleEnergy = 4;
   hasActed = [false, false, false, false];
@@ -264,11 +257,10 @@ function hideBattleModal() {
     { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65, defense: 40, status: {} },
     { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90, defense: 25, status: {} }
   ];
-  // 清空日志
   document.getElementById("battleLog").innerHTML = "";
 }
 
-// ====================== 选人界面 ======================
+// ====================== 选人 + 开始战斗 ======================
 function openBattleTest() {
   currentBattleTeam = [null, null, null, null];
   battleEnergy = 4;
@@ -314,7 +306,6 @@ function addToBattleTeam(item) {
   const emptyIndex = currentBattleTeam.findIndex(slot => slot === null);
   if (emptyIndex === -1) return alert("阵型已满！");
   currentBattleTeam[emptyIndex] = { ...item };
-  // 初始化该角色的生命值
   const stats = window.calculateStats(item, window.getCharacterData(item.charId), null);
   playerHP[emptyIndex] = stats.hp;
   playerMaxHP[emptyIndex] = stats.hp;
@@ -355,20 +346,15 @@ function startBattle() {
   renderBattleUI();
 }
 
-function hideBattleModal() {
-  document.getElementById("battleModal").classList.add("hidden");
-  currentBattleTeam = [null, null, null, null];
-}
-
 function endBattleTurn() {
-  enemyTurn(); // 结束玩家回合 → 直接进入敌方回合
+  enemyTurn();
 }
 
 // ====================== 暴露 ======================
 window.executeSkill = executeSkill;
 window.showBattleCharDetail = showBattleCharDetail;
 window.hideBattleCharDetailModal = hideBattleCharDetailModal;
-window.endBattleTurn = enemyTurn;
+window.endBattleTurn = endBattleTurn;
 window.openBattleTest = openBattleTest;
 window.showBattleSelectModal = showBattleSelectModal;
 window.hideBattleSelectModal = hideBattleSelectModal;

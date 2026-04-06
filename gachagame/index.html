@@ -1277,7 +1277,17 @@
         const id = parseInt(parts[1]);
         let amount = parseInt(parts[2]) || 1;
 
-        if (id === 999) {
+        if (id === 998) {
+          // 钻石
+          player.diamonds += amount;
+          document.getElementById("diamonds").textContent = player.diamonds;
+          log.innerHTML += `已获得 ${amount} 钻石<br>`;
+        } else if (id === 997) {
+          // 金币
+          player.gold += amount;
+          document.getElementById("gold").textContent = player.gold;
+          log.innerHTML += `已获得 ${amount} 金币<br>`;
+        } else if (id === 999) {
           // 魔药
           player.magicPotion += amount;
           document.getElementById("magicPotion").textContent = player.magicPotion;

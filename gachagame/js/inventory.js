@@ -1,76 +1,34 @@
-// <!-- js/inventory.js - 性能优化
-let inventoryContainer = null;
-let currentModalIndex = null;
-let currentModalType = "char";
-let decomposeMode = false;
-let selected = [];
-let currentInventoryTab = 0;
-let lastRenderTime = 0;
-const RENDER_THROTTLE = 16; // 约60fps
-
-// ====================== 初始化 + 事件委托（性能核心） ======================
-function initInventory() {
-  if (inventoryContainer) return;
-  inventoryContainer = document.getElementById("inventory");
-  // 事件委托：只绑定一次，彻底解决大量onclick性能问题
-  inventoryContainer.addEventListener('click', handleInventoryClick, false);
+// js/inventory.js - 仓库渲染 + 养成系统（完整无省略，性能优化）
+function sortOwned(list, isChar) {
+  const copy = [...list];
+  copy.sort((a, b) => {
+    const dataA = isChar ? window.getCharacterData(a.charId) : window.getWeaponData(a.weaponId);
+    const dataB = isChar ? window.getCharacterData(b.charId) : window.getWeaponData(b.weaponId);
+    const rDiff = window.rarityOrder[dataB.rarity] - window.rarityOrder[dataA.rarity];
+    if (rDiff !== 0) return rDiff;
+    if (dataA.name !== dataB.name) return dataA.name.localeCompare(dataB.name);
+    if (a.stars !== b.stars) return b.stars - a.stars;
+    return b.level - a.level;
+  });
+  return copy;
 }
 
-function handleInventoryClick(e) {
-  const itemEl = e.target.closest('.inventory-item');
-  if (!itemEl) return;
-
-  const index = parseInt(itemEl.dataset.index);
-  if (isNaN(index)) return;
-
-  if (decomposeMode) {
-    const checkbox = itemEl.querySelector('input[type="checkbox"]');
-    if (checkbox) {
-      checkbox.checked = !checkbox.checked;
-      toggleSelect(checkbox);
-    }
-  } else {
-    if (currentInventoryTab === 0) {
-      window.showCharacterDetail(index);
-    } else {
-      window.showWeaponDetail(index);
-    }
-  }
-}
-
-// ====================== 性能优化后的核心渲染函数 ======================
 function renderInventory() {
-  initInventory();
-
-  const now = Date.now();
-  if (now - lastRenderTime < RENDER_THROTTLE) return;
-  lastRenderTime = now;
-
+  const container = document.getElementById("inventory");
+  container.innerHTML = "";
+  selected = [];
   const isChar = currentInventoryTab === 0;
   const list = isChar ? player.owned : player.weapons;
   const sorted = sortOwned(list, isChar);
-
-  const fragment = document.createDocumentFragment();
-  inventoryContainer.innerHTML = "";
-
-  if (list.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = "text-center text-gray-500 py-12 col-span-full";
-    empty.textContent = isChar ? '还没有角色，快去抽卡吧！' : '还没有武器，快去抽卡吧！';
-    inventoryContainer.appendChild(empty);
-    return;
-  }
 
   sorted.forEach((item) => {
     const originalIndex = list.findIndex(o => o.id === item.id);
     const data = isChar ? window.getCharacterData(item.charId) : window.getWeaponData(item.weaponId);
 
     const div = document.createElement("div");
-    div.className = `inventory-item relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${window.getRarityColor(data.rarity)} hover:scale-105 transition btn-hover`;
-    div.dataset.index = originalIndex;
+    div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${window.getRarityColor(data.rarity)} hover:scale-105 transition btn-hover`;
 
     let html = '';
-
     if (isChar) {
       let equippedName = "无";
       let equippedItem = null;
@@ -132,31 +90,18 @@ function renderInventory() {
       `;
     }
 
-    if (decomposeMode) {
-      html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${originalIndex}" onchange="window.toggleSelect(this)">` + html;
-    }
-
+    if (decomposeMode) html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${originalIndex}" onchange="window.toggleSelect(this)">` + html;
     div.innerHTML = html;
-    fragment.appendChild(div);
+    if (!decomposeMode) {
+      if (isChar) div.onclick = () => window.showCharacterDetail(originalIndex);
+      else div.onclick = () => window.showWeaponDetail(originalIndex);
+    }
+    container.appendChild(div);
   });
 
-  inventoryContainer.appendChild(fragment);
-  window.updateDecomposeBar(); // 保持分解栏联动
-}
-
-// ====================== 其余函数保持不变======================
-function sortOwned(list, isChar) {
-  const copy = [...list];
-  copy.sort((a, b) => {
-    const dataA = isChar ? window.getCharacterData(a.charId) : window.getWeaponData(a.weaponId);
-    const dataB = isChar ? window.getCharacterData(b.charId) : window.getWeaponData(b.weaponId);
-    const rDiff = window.rarityOrder[dataB.rarity] - window.rarityOrder[dataA.rarity];
-    if (rDiff !== 0) return rDiff;
-    if (dataA.name !== dataB.name) return dataA.name.localeCompare(dataB.name);
-    if (a.stars !== b.stars) return b.stars - a.stars;
-    return b.level - a.level;
-  });
-  return copy;
+  if (list.length === 0) {
+    container.innerHTML = `<p class="text-center text-gray-500 py-12 col-span-full">${isChar ? '还没有角色，快去抽卡吧！' : '还没有武器，快去抽卡吧！'}</p>`;
+  }
 }
 
 function showCharacterDetail(index) {
@@ -168,6 +113,7 @@ function showCharacterDetail(index) {
   if (item.equippedWeapon) equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
   const stats = window.calculateStats(item, char, equippedItem);
 
+  // 获取技能描述
   const skillInfo = window.characterSkillMap[item.charId] || {
     description: "暂无详细描述",
     normalAttack: "普通攻击：对敌方单体造成70%总攻击的物理伤害",
@@ -177,16 +123,21 @@ function showCharacterDetail(index) {
   };
 
   const equippedName = equippedItem ? window.getWeaponData(equippedItem.weaponId).name : "无武器";
+
   const borderClass = window.getRarityBorderClass(char.rarity);
 
   document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-auto overflow-hidden border-4 ${borderClass}`;
 
   document.getElementById("modalContent").innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
+      <!-- 左侧：立绘 + 装备 + 描述 -->
       <div class="flex-1 flex flex-col">
+        <!-- 立绘 -->
         <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">
           <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
         </div>
+
+        <!-- 装备武器 -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950">
           <div class="text-center text-lg font-bold mb-3">装备武器</div>
           <div class="bg-gray-800 rounded-2xl p-3 text-center text-base mb-3">${equippedName}</div>
@@ -201,6 +152,8 @@ function showCharacterDetail(index) {
           </select>
           <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
         </div>
+
+        <!-- 角色描述 + 技能描述 -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950 text-sm leading-relaxed">
           <div class="font-bold text-orange-400 mb-3">角色描述</div>
           <p>${skillInfo.description}</p>
@@ -216,17 +169,45 @@ function showCharacterDetail(index) {
           </div>
         </div>
       </div>
+
+      <!-- 右侧：属性 + 按钮 -->
       <div class="flex-1">
         <div class="grid grid-cols-2 gap-3">
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">等级</div><div class="text-4xl font-bold">${item.level}</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">星级</div><div class="text-4xl font-bold">${"★".repeat(item.stars)}</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">攻击</div><div class="text-3xl font-bold">${stats.atk}</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击率</div><div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">血量</div><div class="text-3xl font-bold">${stats.hp}</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击伤害</div><div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">防御</div><div class="text-3xl font-bold">${stats.def}</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">减伤</div><div class="text-3xl font-bold">0%</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">等级</div>
+            <div class="text-4xl font-bold">${item.level}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">星级</div>
+            <div class="text-4xl font-bold">${"★".repeat(item.stars)}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">攻击</div>
+            <div class="text-3xl font-bold">${stats.atk}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击率</div>
+            <div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">血量</div>
+            <div class="text-3xl font-bold">${stats.hp}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击伤害</div>
+            <div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">防御</div>
+            <div class="text-3xl font-bold">${stats.def}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">减伤</div>
+            <div class="text-3xl font-bold">0%</div>
+          </div>
         </div>
+
+        <!-- 升级 & 升星按钮 -->
         <div class="grid grid-cols-2 gap-3 mt-8">
           <button onclick="window.levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
             <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
@@ -237,10 +218,12 @@ function showCharacterDetail(index) {
         </div>
       </div>
     </div>
+
     <div class="text-center mt-8">
       <button onclick="window.hideModal()" class="text-gray-400 text-lg btn-hover">关闭</button>
     </div>
   `;
+
   document.getElementById("modal").classList.remove("hidden");
 }
 
@@ -250,6 +233,7 @@ function showWeaponDetail(index) {
   const item = player.weapons[index];
   const weapon = window.getWeaponData(item.weaponId);
   const wStats = window.calculateWeaponStats(item, weapon);
+
   const borderClass = window.getRarityBorderClass(weapon.rarity);
 
   document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-auto overflow-hidden border-4 ${borderClass}`;
@@ -261,6 +245,7 @@ function showWeaponDetail(index) {
           <img src="${weapon.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
         </div>
       </div>
+
       <div class="flex-1">
         <div class="flex justify-between gap-3 mb-6">
           <div class="flex-1 border-4 border-orange-500 rounded-3xl p-4 text-center">
@@ -272,13 +257,30 @@ function showWeaponDetail(index) {
             <div class="text-4xl font-bold flex items-center justify-center gap-1">${Array(5).fill(0).map((_,i)=>`<span class="${i < item.stars ? 'star-5' : 'text-gray-500'}">★</span>`).join('')}</div>
           </div>
         </div>
+
         <div class="grid grid-cols-2 gap-3">
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">攻击</div><div class="text-3xl font-bold">+${wStats.atk}</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击率</div><div class="text-3xl font-bold">+${(wStats.critRate*100).toFixed(0)}%</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">血量</div><div class="text-3xl font-bold">+${wStats.hp}</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击伤害</div><div class="text-3xl font-bold">+${(wStats.critDamage*100).toFixed(0)}%</div></div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">防御</div><div class="text-3xl font-bold">+${wStats.def}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">攻击</div>
+            <div class="text-3xl font-bold">+${wStats.atk}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击率</div>
+            <div class="text-3xl font-bold">+${(wStats.critRate*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">血量</div>
+            <div class="text-3xl font-bold">+${wStats.hp}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击伤害</div>
+            <div class="text-3xl font-bold">+${(wStats.critDamage*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">防御</div>
+            <div class="text-3xl font-bold">+${wStats.def}</div>
+          </div>
         </div>
+
         <div class="grid grid-cols-2 gap-3 mt-8">
           <button onclick="window.levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
             <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
@@ -289,6 +291,7 @@ function showWeaponDetail(index) {
         </div>
       </div>
     </div>
+
     <div class="text-center mt-8">
       <button onclick="window.hideModal()" class="text-gray-400 text-lg btn-hover">关闭</button>
     </div>
@@ -312,7 +315,9 @@ function equipWeapon() {
 
 function levelUp() {
   if (currentModalIndex === null) return;
-  let item = currentModalType === "char" ? player.owned[currentModalIndex] : player.weapons[currentModalIndex];
+  let item;
+  if (currentModalType === "char") item = player.owned[currentModalIndex];
+  else item = player.weapons[currentModalIndex];
   const cost = item.level * 30;
   if (player.gold < cost) return alert("金币不够！");
   player.gold -= cost;
@@ -336,18 +341,24 @@ function starUp() {
   if (item.stars >= 5) return alert("已经满星！");
   const duplicateIndex = list.findIndex(o => (currentModalType === "char" ? o.charId : o.weaponId) === (currentModalType === "char" ? item.charId : item.weaponId) && o.id !== item.id && o.stars <= item.stars);
   if (duplicateIndex === -1) return alert("没有可用的相同材料！");
+
   const potionCost = 10 + item.stars * 10;
   if (player.magicPotion < potionCost) return alert(`魔药不足！需要 ${potionCost} 个魔药`);
+
   if (!confirm(`确定消耗 ${potionCost} 个魔药 + 1个相同材料升星吗？`)) return;
+
   player.magicPotion -= potionCost;
   list.splice(duplicateIndex, 1);
   item.stars++;
+
   document.getElementById("magicPotion").textContent = player.magicPotion;
   window.saveGame();
+
   const burst = document.createElement("div");
   burst.className = "fixed inset-0 flex items-center justify-center pointer-events-none z-[99999]";
   burst.innerHTML = `<div class="text-8xl flex gap-4 star-burst">★★★</div>`;
   document.body.appendChild(burst);
+
   setTimeout(() => {
     burst.remove();
     if (currentModalType === "char") window.showCharacterDetail(currentModalIndex);
@@ -430,7 +441,7 @@ function setInventoryTab(n) {
   window.renderInventory();
 }
 
-// ====================== 暴露 ======================
+// 暴露所有函数
 window.renderInventory = renderInventory;
 window.sortOwned = sortOwned;
 window.showCharacterDetail = showCharacterDetail;

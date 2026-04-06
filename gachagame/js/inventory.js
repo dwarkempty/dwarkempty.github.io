@@ -108,7 +108,123 @@ function showCharacterDetail(index) {
   currentModalIndex = index;
   currentModalType = "char";
   const item = player.owned[index];
-  window.showFullCharacterDetail(item);   // ← 调用统一新函数
+  const char = window.getCharacterData(item.charId);
+  let equippedItem = null;
+  if (item.equippedWeapon) equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
+  const stats = window.calculateStats(item, char, equippedItem);
+
+  // 获取技能描述
+  const skillInfo = window.characterSkillMap[item.charId] || {
+    description: "暂无详细描述",
+    normalAttack: "普通攻击：对敌方单体造成70%总攻击的物理伤害",
+    skill1Name: "暂无技能",
+    skill1Desc: "暂无技能描述",
+    skill1Cost: 0
+  };
+
+  const equippedName = equippedItem ? window.getWeaponData(equippedItem.weaponId).name : "无武器";
+
+  const borderClass = window.getRarityBorderClass(char.rarity);
+
+  document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-auto overflow-hidden border-4 ${borderClass}`;
+
+  document.getElementById("modalContent").innerHTML = `
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- 左侧：立绘 + 装备 + 描述 -->
+      <div class="flex-1 flex flex-col">
+        <!-- 立绘 -->
+        <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">
+          <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
+        </div>
+
+        <!-- 装备武器 -->
+        <div class="mt-4 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950">
+          <div class="text-center text-lg font-bold mb-3">装备武器</div>
+          <div class="bg-gray-800 rounded-2xl p-3 text-center text-base mb-3">${equippedName}</div>
+          <select id="equipSelect" class="w-full bg-gray-800 text-white py-3 px-4 rounded-2xl mb-3">
+            <option value="">无武器</option>
+            ${player.weapons.map(w => {
+              const wp = window.getWeaponData(w.weaponId);
+              const canEquip = (wp.rarity === "R" || wp.rarity === "SR") || (wp.owner === item.charId);
+              const isEquipped = player.owned.some(c => c.equippedWeapon === w.id);
+              return canEquip && !isEquipped ? `<option value="${w.id}">${wp.name} (${wp.rarity})</option>` : '';
+            }).join('')}
+          </select>
+          <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
+        </div>
+
+        <!-- 角色描述 + 技能描述 -->
+        <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950 text-sm leading-relaxed">
+          <div class="font-bold text-orange-400 mb-3">角色描述</div>
+          <p>${skillInfo.description}</p>
+          <div class="mt-6 pt-4 border-t border-gray-700">
+            <div class="font-bold text-orange-400 mb-2">技能描述</div>
+            <div class="text-xs bg-gray-800 rounded-2xl p-3 mb-2">
+              <span class="text-emerald-400">普攻：</span>${skillInfo.normalAttack}
+            </div>
+            <div class="text-xs bg-gray-800 rounded-2xl p-3">
+              <span class="text-amber-400">${skillInfo.skill1Name}</span><br>
+              ${skillInfo.skill1Desc}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：属性 + 按钮 -->
+      <div class="flex-1">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">等级</div>
+            <div class="text-4xl font-bold">${item.level}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">星级</div>
+            <div class="text-4xl font-bold">${"★".repeat(item.stars)}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">攻击</div>
+            <div class="text-3xl font-bold">${stats.atk}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击率</div>
+            <div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">血量</div>
+            <div class="text-3xl font-bold">${stats.hp}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击伤害</div>
+            <div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">防御</div>
+            <div class="text-3xl font-bold">${stats.def}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">减伤</div>
+            <div class="text-3xl font-bold">0%</div>
+          </div>
+        </div>
+
+        <!-- 升级 & 升星按钮 -->
+        <div class="grid grid-cols-2 gap-3 mt-8">
+          <button onclick="window.levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
+            <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
+          </button>
+          <button onclick="window.starUp()" class="btn-hover bg-purple-600 hover:bg-purple-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2 ${item.stars >= 5 ? 'opacity-50 cursor-not-allowed' : ''}">
+            <i class="fas fa-star"></i> 升星 ★${item.stars} → ★${item.stars+1}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-8">
+      <button onclick="window.hideModal()" class="text-gray-400 text-lg btn-hover">关闭</button>
+    </div>
+  `;
+
+  document.getElementById("modal").classList.remove("hidden");
 }
 
 function showWeaponDetail(index) {

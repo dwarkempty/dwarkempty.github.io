@@ -342,8 +342,16 @@
         
         <!-- 敌人 -->
         <div class="w-80 flex flex-col gap-4 justify-center">
-          <div class="battle-enemy bg-red-900/30 border border-red-500 rounded-3xl p-6 text-center text-2xl font-bold">敌人 1</div>
-          <div class="battle-enemy bg-red-900/30 border border-red-500 rounded-3xl p-6 text-center text-2xl font-bold">敌人 2</div>
+          <div id="enemy-0" class="battle-enemy bg-red-900/30 border border-red-500 rounded-3xl p-6 text-center text-2xl font-bold relative">
+            <div class="text-xs text-red-300 mb-1">森林魔狼</div>
+            <div id="enemy-hp-0" class="text-sm">1200 / 1200</div>
+            <div class="h-2 bg-gray-700 rounded mt-2 overflow-hidden"><div id="enemy-hp-bar-0" class="h-full bg-red-500 w-full"></div></div>
+          </div>
+          <div id="enemy-1" class="battle-enemy bg-red-900/30 border border-red-500 rounded-3xl p-6 text-center text-2xl font-bold relative">
+            <div class="text-xs text-red-300 mb-1">影林刺客</div>
+            <div id="enemy-hp-1" class="text-sm">850 / 850</div>
+            <div class="h-2 bg-gray-700 rounded mt-2 overflow-hidden"><div id="enemy-hp-bar-1" class="h-full bg-red-500 w-full"></div></div>
+          </div>
         </div>
       </div>
     

@@ -90,24 +90,22 @@ function executeSkill(position, isNormalAttack) {
   const char = currentBattleTeam[position];
   if (!char || hasActed[position]) return alert("该角色本回合已行动！");
 
-  const skillInfo = characterSkillMap[char.charId];
-  const charData = window.getCharacterData(char.charId);   // ← 必须获取
+  const charData = window.getCharacterData(char.charId);   // 关键修复
   const stats = window.calculateStats(char, charData, null);
+  const skillInfo = characterSkillMap[char.charId];
 
-  let damage = 0;
   let logText = "";
 
   if (isNormalAttack) {
-    damage = Math.floor(stats.atk * 0.8);
+    const damage = Math.floor(stats.atk * 0.8);
+    const targetIndex = Math.floor(Math.random() * currentEnemyTargets.length);
+    currentEnemyTargets[targetIndex].hp = Math.max(0, currentEnemyTargets[targetIndex].hp - damage);
     logText = `⚔️ ${charData.name} 发动【普攻】！造成 ${damage} 伤害`;
   } else {
     if (!skillInfo || battleEnergy < skillInfo.skill1Cost) return alert("能量不足！");
     battleEnergy -= skillInfo.skill1Cost;
-    logText = skillInfo.execute(position);
+    logText = skillInfo.execute(position);   // 执行特殊效果
   }
-
-  const targetIndex = Math.floor(Math.random() * currentEnemyTargets.length);
-  currentEnemyTargets[targetIndex].hp = Math.max(0, currentEnemyTargets[targetIndex].hp - damage);
 
   document.getElementById("battleLog").innerHTML += `<div class="text-emerald-400">${logText}</div>`;
   document.getElementById("battleLog").scrollTop = 999999;
@@ -140,7 +138,7 @@ function enemyTurn() {
       const targetChar = currentBattleTeam[targetIndex];
       if (!targetChar) continue;
 
-      const targetData = window.getCharacterData(targetChar.charId);   // ← 关键修复
+      const targetData = window.getCharacterData(targetChar.charId);
       const damage = Math.floor(enemy.atk * 0.9);
       playerHP[targetIndex] = Math.max(0, playerHP[targetIndex] - damage);
 
@@ -148,6 +146,12 @@ function enemyTurn() {
     }
 
     checkBattleEnd();
+  
+    // 关键修复：重置玩家行动标记，进入我方新回合
+    hasActed = [false, false, false, false];
+    battleEnergy = Math.min(battleEnergy + ENERGY_PER_TURN, MAX_ENERGY);
+
+    document.getElementById("battleLog").innerHTML += `<div class="text-cyan-400">⚡ 我方回合开始！能量恢复至 ${battleEnergy}/${MAX_ENERGY}</div>`;
     renderBattleUI();
   }
 

@@ -31,6 +31,8 @@
     @keyframes rainbow-star { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
     .battle-unit { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .battle-log { max-height: 220px; overflow-y: auto; scrollbar-width: thin; }
+    .dead { filter: grayscale(100%) brightness(0.6); position: relative; }
+    .dead::after { content: "死亡"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; color: #ef4444; font-weight: bold; text-shadow: 0 0 8px #ef4444; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
@@ -1046,7 +1048,8 @@
         maxHP: Math.floor(char.baseHP * statMult),
         atk: Math.floor(char.baseATK * statMult),
         def: Math.floor(char.baseDEF * statMult),
-        hasActed: false
+        hasActed: false,
+        dead: false
       };
       renderTeamSlots();
     }
@@ -1092,17 +1095,24 @@
     }
 
     function renderBattleUI() {
+      // 后排
       document.getElementById("playerBack0").innerHTML = battlePlayerUnits[2] ? createUnitHTML(battlePlayerUnits[2], 2) : "<div class='text-gray-500'>空</div>";
       document.getElementById("playerBack1").innerHTML = battlePlayerUnits[3] ? createUnitHTML(battlePlayerUnits[3], 3) : "<div class='text-gray-500'>空</div>";
+      // 前排
       document.getElementById("playerFront0").innerHTML = battlePlayerUnits[0] ? createUnitHTML(battlePlayerUnits[0], 0) : "<div class='text-gray-500'>空</div>";
       document.getElementById("playerFront1").innerHTML = battlePlayerUnits[1] ? createUnitHTML(battlePlayerUnits[1], 1) : "<div class='text-gray-500'>空</div>";
+      // 敌人
       document.getElementById("enemy0").innerHTML = createEnemyHTML(battleEnemyUnits[0], 0);
       document.getElementById("enemy1").innerHTML = createEnemyHTML(battleEnemyUnits[1], 1);
       document.getElementById("energyDisplay").textContent = `${currentEnergy} / ${maxEnergy}`;
     }
 
     function createUnitHTML(unit, index) {
-      return `<div class="text-center"><div class="text-sm font-bold">${unit.name}</div><div class="text-emerald-400 text-xs">${unit.currentHP}/${unit.maxHP}</div></div>`;
+      const isDead = unit.dead || unit.currentHP <= 0;
+      if (isDead) {
+        return `<div class="text-center dead"><div class="text-sm font-bold">${unit.name}</div><div class="text-red-400 text-xs">0/${unit.maxHP}</div></div>`;
+      }
+      return `<div class="text-center"><div class="text-sm font-bold">${unit.name}</div><div class="text-emerald-400 text-xs">${Math.max(0, unit.currentHP)}/${unit.maxHP}</div></div>`;
     }
 
     function createEnemyHTML(enemy, index) {
@@ -1111,8 +1121,8 @@
 
     function selectUnit(index) {
       const unit = battlePlayerUnits[index];
-      if (!unit || unit.hasActed) {
-        if (unit && unit.hasActed) alert("该角色本回合已行动！");
+      if (!unit || unit.hasActed || unit.dead || unit.currentHP <= 0) {
+        if (unit && (unit.hasActed || unit.dead || unit.currentHP <= 0)) alert("该角色无法行动！");
         return;
       }
       selectedUnitIndex = index;
@@ -1125,24 +1135,71 @@
     function chooseAction(type) {
       if (selectedUnitIndex < 0) return;
       const unit = battlePlayerUnits[selectedUnitIndex];
+      const char = characterPool.find(c => c.id === unit.charId);
+
       if (type === "skill") {
         if (currentEnergy < 1) return alert("能量不足！");
         currentEnergy--;
-        const target = battleEnemyUnits[Math.floor(Math.random() * battleEnemyUnits.length)];
-        const damage = Math.floor(unit.atk * 1.5);
-        target.currentHP -= damage;
-        addBattleLog(`${unit.name} 释放技能，对 ${target.name} 造成 ${damage} 伤害！`);
+        useSkill(unit, char);
       } else {
         const target = battleEnemyUnits[Math.floor(Math.random() * battleEnemyUnits.length)];
         const damage = Math.floor(unit.atk * 1.0);
         target.currentHP -= damage;
         addBattleLog(`${unit.name} 普通攻击，对 ${target.name} 造成 ${damage} 伤害！`);
       }
+
       unit.hasActed = true;
       renderBattleUI();
       document.getElementById("actionPanel").classList.add("hidden");
       selectedUnitIndex = -1;
       checkBattleEnd();
+    }
+
+    function useSkill(unit, char) {
+      const skill = char.skills[0]; // 目前只实现第一个主动技能
+      if (!skill) {
+        addBattleLog(`${unit.name} 没有可释放的技能！`);
+        return;
+      }
+
+      const target = battleEnemyUnits[Math.floor(Math.random() * battleEnemyUnits.length)];
+
+      if (char.id === 1) { // 艾伦 穿林箭
+        const damage = Math.floor(unit.atk * 1.2);
+        target.currentHP -= damage;
+        addBattleLog(`${unit.name} 使用穿林箭，对 ${target.name} 造成 ${damage} 伤害！`);
+      } else if (char.id === 2) { // 莎莉 火球冲击
+        const damage = Math.floor(unit.atk * 1.1);
+        target.currentHP -= damage;
+        addBattleLog(`${unit.name} 使用火球冲击，对 ${target.name} 造成 ${damage} 伤害！`);
+      } else if (char.id === 3) { // 巴克 铁壁守护
+        unit.currentHP = Math.min(unit.maxHP, unit.currentHP + Math.floor(unit.def * 1.5)); // 简化护盾为回血
+        addBattleLog(`${unit.name} 使用铁壁守护，获得护盾！`);
+      } else if (char.id === 4) { // 莉莉 月光祈福
+        unit.currentHP = Math.min(unit.maxHP, unit.currentHP + Math.floor(unit.atk * 0.8));
+        addBattleLog(`${unit.name} 使用月光祈福，回复自身生命！`);
+      } else if (char.id === 5) { // 凯尔 疾风连斩
+        const damage = Math.floor(unit.atk * 2.55);
+        target.currentHP -= damage;
+        addBattleLog(`${unit.name} 使用疾风连斩，对 ${target.name} 造成 ${damage} 伤害！`);
+      } else if (char.id === 6) { // 米娅 荆棘缠绕
+        const damage = Math.floor(unit.atk * 1.05);
+        target.currentHP -= damage;
+        unit.currentHP = Math.min(unit.maxHP, unit.currentHP + Math.floor(unit.atk * 0.85));
+        addBattleLog(`${unit.name} 使用荆棘缠绕，对 ${target.name} 造成 ${damage} 伤害并回复自身！`);
+      } else if (char.id === 7) { // 索雷 雷鸣冲击
+        const damage = Math.floor(unit.atk * 1.45);
+        target.currentHP -= damage;
+        addBattleLog(`${unit.name} 使用雷鸣冲击，对 ${target.name} 造成 ${damage} 伤害！`);
+      } else if (char.id === 8) { // 影刃 暗影绝杀
+        const damage = Math.floor(unit.atk * 1.7);
+        target.currentHP -= damage;
+        addBattleLog(`${unit.name} 使用暗影绝杀，对 ${target.name} 造成 ${damage} 伤害！`);
+      } else {
+        const damage = Math.floor(unit.atk * 1.5);
+        target.currentHP -= damage;
+        addBattleLog(`${unit.name} 释放技能，对 ${target.name} 造成 ${damage} 伤害！`);
+      }
     }
 
     function selectTarget(enemyIndex) {
@@ -1159,7 +1216,7 @@
     function enemyTurn() {
       battleEnemyUnits.forEach(enemy => {
         if (enemy.currentHP <= 0) return;
-        const target = battlePlayerUnits[0] || battlePlayerUnits[1] || battlePlayerUnits[2] || battlePlayerUnits[3];
+        const target = battlePlayerUnits.find(u => !u.dead && u.currentHP > 0) || battlePlayerUnits[0];
         if (target) {
           const damage = Math.floor(enemy.atk * 0.9);
           target.currentHP -= damage;
@@ -1167,7 +1224,6 @@
         }
       });
       currentEnergy = Math.min(currentEnergy + 2, maxEnergy);
-      // 重置行动状态
       battlePlayerUnits.forEach(unit => { unit.hasActed = false; });
       renderBattleUI();
       checkBattleEnd();
@@ -1183,10 +1239,12 @@
     }
 
     function checkBattleEnd() {
-      if (battleEnemyUnits.every(e => e.currentHP <= 0)) {
+      battlePlayerUnits = battlePlayerUnits.filter(u => u.currentHP > 0);
+      battleEnemyUnits = battleEnemyUnits.filter(e => e.currentHP > 0);
+      if (battleEnemyUnits.length === 0) {
         alert("🎉 战斗胜利！");
         hideBattleModal();
-      } else if (battlePlayerUnits.every(p => p.currentHP <= 0)) {
+      } else if (battlePlayerUnits.length === 0) {
         alert("😢 战斗失败...");
         hideBattleModal();
       }

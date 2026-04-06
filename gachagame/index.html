@@ -284,6 +284,83 @@
       <button onclick="hideConsole()" class="mt-8 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl">关闭控制台</button>
     </div>
   </div>
+  
+  <!-- ==================== 新增：战斗系统 Modal ==================== -->
+
+  <!-- 1. 战斗前选人 Modal -->
+  <div id="battleSelectModal" onclick="if(event.target.id==='battleSelectModal')hideBattleSelectModal()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[14000] p-4">
+    <div class="bg-gray-900 rounded-3xl max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+      <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+        <h2 class="text-3xl font-bold">⚔️ 战斗前选人</h2>
+        <button onclick="hideBattleSelectModal()" class="text-3xl text-gray-400 hover:text-white">✕</button>
+      </div>
+      
+      <div class="flex flex-1 overflow-hidden">
+        <!-- 左侧：角色仓库 -->
+        <div class="flex-1 border-r border-gray-700 p-6 overflow-auto" id="battleSelectInventory"></div>
+        
+        <!-- 右侧：阵型 -->
+        <div class="w-96 bg-gray-950 p-6 flex flex-col">
+          <div class="text-center text-xl font-bold mb-6 text-amber-400">选择上阵阵型（同名角色只能一位）</div>
+          
+          <div class="grid grid-cols-2 gap-4 mb-8">
+            <!-- 后排 a -->
+            <div onclick="selectBattlePosition(0)" id="position-0" class="battle-slot border-4 border-dashed border-gray-600 hover:border-amber-400 rounded-3xl h-28 flex items-center justify-center text-2xl font-bold cursor-pointer transition">后排 a</div>
+            <!-- 前排 a -->
+            <div onclick="selectBattlePosition(1)" id="position-1" class="battle-slot border-4 border-dashed border-gray-600 hover:border-amber-400 rounded-3xl h-28 flex items-center justify-center text-2xl font-bold cursor-pointer transition">前排 a</div>
+            <!-- 后排 b -->
+            <div onclick="selectBattlePosition(2)" id="position-2" class="battle-slot border-4 border-dashed border-gray-600 hover:border-amber-400 rounded-3xl h-28 flex items-center justify-center text-2xl font-bold cursor-pointer transition">后排 b</div>
+            <!-- 前排 b -->
+            <div onclick="selectBattlePosition(3)" id="position-3" class="battle-slot border-4 border-dashed border-gray-600 hover:border-amber-400 rounded-3xl h-28 flex items-center justify-center text-2xl font-bold cursor-pointer transition">前排 b</div>
+          </div>
+        
+          <button onclick="startBattle()" class="mt-auto py-5 bg-gradient-to-r from-red-600 to-orange-600 text-2xl font-bold rounded-3xl btn-hover">🚀 开始战斗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 战斗主界面 Modal -->
+  <div id="battleModal" onclick="if(event.target.id==='battleModal')hideBattleModal()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[15000] p-4">
+    <div class="bg-gray-900 rounded-3xl w-full max-w-7xl max-h-[95vh] flex flex-col">
+      <div class="p-4 border-b flex items-center justify-between bg-gray-950">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">⚡</span>
+          <span id="battleEnergy" class="text-3xl font-bold text-yellow-400">4 / 6</span>
+        </div>
+        <button onclick="hideBattleModal()" class="px-6 py-2 bg-gray-800 hover:bg-red-600 rounded-2xl text-lg font-medium">退出战斗</button>
+      </div>
+    
+      <div class="flex-1 flex p-6 gap-6">
+        <!-- 我方阵型 -->
+        <div class="flex-1 grid grid-cols-2 gap-4">
+          <div onclick="showBattleCharDetail(0)" id="my-0" class="battle-unit bg-gray-800 rounded-3xl p-4 text-center cursor-pointer"></div>
+          <div onclick="showBattleCharDetail(1)" id="my-1" class="battle-unit bg-gray-800 rounded-3xl p-4 text-center cursor-pointer"></div>
+          <div onclick="showBattleCharDetail(2)" id="my-2" class="battle-unit bg-gray-800 rounded-3xl p-4 text-center cursor-pointer"></div>
+          <div onclick="showBattleCharDetail(3)" id="my-3" class="battle-unit bg-gray-800 rounded-3xl p-4 text-center cursor-pointer"></div>
+        </div>
+        
+        <!-- 敌人 -->
+        <div class="w-80 flex flex-col gap-4 justify-center">
+          <div class="battle-enemy bg-red-900/30 border border-red-500 rounded-3xl p-6 text-center text-2xl font-bold">敌人 1</div>
+          <div class="battle-enemy bg-red-900/30 border border-red-500 rounded-3xl p-6 text-center text-2xl font-bold">敌人 2</div>
+        </div>
+      </div>
+    
+      <div class="p-6 border-t bg-gray-950 flex justify-between items-center">
+        <div id="battleLog" class="flex-1 text-sm text-gray-400 h-20 overflow-y-auto"></div>
+        <button onclick="endBattleTurn()" class="px-10 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-xl font-bold rounded-3xl btn-hover">结束本回合</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 3. 战斗中角色详情 Modal -->
+  <div id="battleCharDetailModal" onclick="if(event.target.id==='battleCharDetailModal')hideBattleCharDetailModal()" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[16000] p-4">
+    <div class="modal-content bg-gray-900 rounded-3xl max-w-4xl w-full p-6">
+      <!-- 动态填充，由 battle.js 控制 -->
+      <div id="battleDetailContent"></div>
+    </div>
+  </div>
 </div>
 
   <script src="js/constants.js"></script>

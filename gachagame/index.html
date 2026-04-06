@@ -412,7 +412,7 @@
       return Math.floor(base * levelMult * starMult);
     }
 
-    // ====================== 抽卡逻辑 ======================
+// ====================== 抽卡核心（已修复） ======================
     function drawOne(poolType) {
       const isChar = poolType === "char";
       if (isChar) {
@@ -474,8 +474,16 @@
       let results = [];
       for (let i = 0; i < times; i++) {
         const item = drawOne(currentDrawPool);
+        
         if (currentDrawPool === "char") {
-          player.owned.push({ id: Date.now() + i, charId: item.id, level: 1, stars: 0, equippedWeapon: null });
+          // 关键修复：确保角色真实加入仓库
+          player.owned.push({ 
+            id: Date.now() + i, 
+            charId: item.id, 
+            level: 1, 
+            stars: 0, 
+            equippedWeapon: null 
+          });
           player.totalCharDraws++;
           if (item.rarity === "R") player.rCount++;
           else if (item.rarity === "SR") player.srCount++;
@@ -492,7 +500,9 @@
         results.push(item);
       }
       saveGame();
+      // 强制显示动画
       showDrawAnimation(results, currentDrawPool);
+      // 如果当前在养成页，立即刷新仓库
       if (!document.getElementById("panel1").classList.contains("hidden")) renderInventory();
     }
 
@@ -500,22 +510,35 @@
       const modal = document.getElementById("drawModal");
       const container = document.getElementById("drawResults");
       const title = document.getElementById("drawTitle");
+      
       container.innerHTML = "";
-      modal.classList.remove("hidden");
+      modal.classList.remove("hidden");   // 强制显示
       title.textContent = poolType === "char" ? (results.length === 1 ? "🎉 单抽角色" : "🎉 十连角色") : (results.length === 1 ? "🎉 单抽武器" : "🎉 十连武器");
+
       results.forEach((item, i) => {
         const delay = results.length === 1 ? 0 : i * 80;
         const div = document.createElement("div");
         div.style.animationDelay = delay + "ms";
+        
         const pool = poolType === "char" ? characterPool : weaponPool;
         const data = pool.find(x => x.id === item.id);
+        
+        if (!data) return; // 防止异常
+
         div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
-        div.innerHTML = `<img src="${data.image}" class="character-img w-full rounded-2xl mx-auto draw-shine"><div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div><div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div><div class="text-xs text-gray-400">${data.enName || data.type}</div>`;
+        div.innerHTML = `
+          <img src="${data.image}" class="character-img w-full rounded-2xl mx-auto draw-shine">
+          <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div>
+          <div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div>
+          <div class="text-xs text-gray-400">${data.enName || data.type}</div>
+        `;
         container.appendChild(div);
       });
     }
 
-    function hideDrawModal() { document.getElementById("drawModal").classList.add("hidden"); }
+    function hideDrawModal() { 
+      document.getElementById("drawModal").classList.add("hidden"); 
+    }
 
     // ====================== 库存渲染 ======================
     function sortOwned(list, isChar) {

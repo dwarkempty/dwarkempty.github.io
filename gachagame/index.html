@@ -17,7 +17,7 @@
     .rarity-ssr { background: #eab308; }
     .rarity-ur { background: linear-gradient(90deg, #ec4899, #8b5cf6, #22d3ee, #eab308); background-size: 300% 300%; animation: gradient-shift 3s ease infinite; }
     @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    .character-img { height: 160px; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6)); }
+    .character-img { height: 160px; @apply sm:h-48 lg:h-52; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6)); }
     .draw-card { animation: drawPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 0; }
     @keyframes drawPop { 0% { transform: scale(0.3) rotate(-12deg); opacity: 0; } 70% { transform: scale(1.15) rotate(8deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
     .draw-shine { animation: shine 1.8s ease infinite; }
@@ -29,10 +29,6 @@
     .star-4 { color: #eab308; text-shadow: 0 0 8px #eab308; }
     .star-5 { color: #ec4899; text-shadow: 0 0 12px #ec4899, 0 0 20px #22d3ee; animation: rainbow-star 1.5s linear infinite; }
     @keyframes rainbow-star { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
-    .battle-slot { transition: all 0.3s; }
-    .battle-slot.dead { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
-    .enemy-slot { transition: all 0.3s; }
-    .battle-log { max-height: 180px; overflow-y: auto; scrollbar-width: thin; background: #111827; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
@@ -112,7 +108,7 @@
     <!-- 探索界面 -->
     <div id="panel2" class="panel hidden text-center py-8 sm:py-12">
       <h2 class="text-3xl font-bold mb-8">🔍 探索</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
         <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
           <i class="fas fa-gem text-5xl"></i>
           <div>
@@ -134,9 +130,6 @@
             <div class="text-2xl font-bold">扫雷</div>
             <div class="text-sm text-red-200">每标记一颗雷 +500钻石</div>
           </div>
-        </button>
-        <button onclick="showTeamSelection()" class="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition text-xl font-bold">
-          ⚔️ 战斗测试
         </button>
       </div>
     </div>
@@ -202,7 +195,11 @@
         <button onclick="setRecordTab(0)" id="recordTab0" class="record-tab active flex-1 py-2 rounded-2xl">角色记录</button>
         <button onclick="setRecordTab(1)" id="recordTab1" class="record-tab flex-1 py-2 rounded-2xl">武器记录</button>
       </div>
-      <div id="recordContent"></div>
+      
+      <div id="recordContent">
+        <!-- 动态填充 -->
+      </div>
+
       <div class="pt-6 border-t border-gray-700 flex flex-col sm:flex-row gap-3">
         <button onclick="exportSave()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2">
           <i class="fas fa-download"></i> 导出存档
@@ -212,522 +209,402 @@
         </button>
         <input type="file" id="importFile" accept=".json" class="hidden" onchange="importSave(event)">
       </div>
+
       <button onclick="hideRecordModal()" class="mt-8 w-full py-4 bg-white text-black rounded-2xl text-xl font-bold">关闭</button>
     </div>
   </div>
 
-  <!-- 战斗前选人界面 -->
-  <div id="teamSelectModal" onclick="if(event.target.id==='teamSelectModal')hideTeamSelection()" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[13000] p-4">
-    <div class="bg-gray-900 rounded-3xl w-full max-w-7xl max-h-[92vh] overflow-hidden flex flex-col">
-      <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-        <h2 class="text-3xl font-bold">⚔️ 战斗前选人界面</h2>
-        <button onclick="hideTeamSelection()" class="text-red-400 text-2xl">✕</button>
-      </div>
-      <div class="flex-1 flex overflow-hidden">
-        <!-- 左：角色仓库 -->
-        <div class="w-2/3 p-6 overflow-y-auto border-r border-gray-700">
-          <h3 class="text-xl mb-4 flex items-center gap-2"><span class="text-2xl">🧙</span> 角色仓库 (排序逻辑不变)</h3>
-          <div id="teamSelectInventory" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4"></div>
-        </div>
-        <!-- 右：阵型 -->
-        <div class="w-1/3 p-6 bg-gray-950 flex flex-col">
-          <h3 class="text-xl mb-6 flex items-center gap-2"><span class="text-2xl">⚔️</span> 我的阵型</h3>
-          <div class="flex-1 grid grid-cols-2 gap-6">
-            <div onclick="selectPosition(2)" id="pos-back-a" class="border-2 border-dashed border-blue-400 hover:border-blue-500 rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all">
-              <div class="text-4xl mb-3">🏹</div>
-              <div class="font-bold text-lg">后排 a</div>
-            </div>
-            <div onclick="selectPosition(1)" id="pos-front-a" class="border-2 border-dashed border-red-400 hover:border-red-500 rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all">
-              <div class="text-4xl mb-3">🛡️</div>
-              <div class="font-bold text-lg">前排 a</div>
-            </div>
-            <div onclick="selectPosition(3)" id="pos-back-b" class="border-2 border-dashed border-blue-400 hover:border-blue-500 rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all">
-              <div class="text-4xl mb-3">🏹</div>
-              <div class="font-bold text-lg">后排 b</div>
-            </div>
-            <div onclick="selectPosition(0)" id="pos-front-b" class="border-2 border-dashed border-red-400 hover:border-red-500 rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all">
-              <div class="text-4xl mb-3">🛡️</div>
-              <div class="font-bold text-lg">前排 b</div>
-            </div>
-          </div>
-          <button onclick="startBattle()" class="mt-auto py-6 bg-red-600 hover:bg-red-700 text-2xl font-bold rounded-3xl flex items-center justify-center gap-3">
-            <i class="fas fa-swords"></i> 开始战斗
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 战斗主界面 -->
-  <div id="battleModal" class="hidden fixed inset-0 bg-black/95 flex flex-col z-[14000]">
-    <div class="flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col">
-      <!-- 顶部 -->
-      <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center gap-3 bg-gray-900 px-8 py-4 rounded-3xl text-xl">
-          <span>当前能量点</span>
-          <span id="battleEnergy" class="text-5xl font-bold text-yellow-300">4</span>
-          <span class="text-gray-400">/6</span>
-        </div>
-        <button onclick="endBattle()" class="px-8 py-4 bg-gray-800 hover:bg-red-600 rounded-3xl text-lg font-medium flex items-center gap-2">
-          <i class="fas fa-sign-out-alt"></i> 退出战斗
-        </button>
-      </div>
-
-      <div class="flex flex-1 gap-8">
-        <!-- 我方 -->
-        <div class="flex-1 flex flex-col justify-center gap-8">
-          <div class="grid grid-cols-2 gap-6">
-            <div onclick="openBattleCharacterPanel(2)" id="player-back-a" class="battle-slot border-4 border-blue-500 rounded-3xl p-6 cursor-pointer"></div>
-            <div onclick="openBattleCharacterPanel(1)" id="player-front-a" class="battle-slot border-4 border-red-500 rounded-3xl p-6 cursor-pointer"></div>
-            <div onclick="openBattleCharacterPanel(3)" id="player-back-b" class="battle-slot border-4 border-blue-500 rounded-3xl p-6 cursor-pointer"></div>
-            <div onclick="openBattleCharacterPanel(0)" id="player-front-b" class="battle-slot border-4 border-red-500 rounded-3xl p-6 cursor-pointer"></div>
-          </div>
-        </div>
-
-        <!-- 敌人 -->
-        <div class="flex flex-col justify-center gap-8 w-80">
-          <div onclick="selectTarget(0)" id="enemy-0" class="enemy-slot border-4 border-orange-500 rounded-3xl p-8 cursor-pointer"></div>
-          <div onclick="selectTarget(1)" id="enemy-1" class="enemy-slot border-4 border-orange-500 rounded-3xl p-8 cursor-pointer"></div>
-        </div>
-      </div>
-
-      <!-- 实时信息 -->
-      <div class="mt-6 bg-gray-900 rounded-3xl p-6">
-        <div class="flex justify-between items-center mb-3">
-          <div class="text-2xl font-bold">战斗实时信息</div>
-          <button onclick="endPlayerTurn()" class="px-10 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-3xl text-xl font-bold flex items-center gap-2">
-            结束本回合 <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
-        <div id="battleLog" class="battle-log text-sm p-4 rounded-2xl h-48 overflow-auto"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 战斗中点击角色界面 -->
-  <div id="battleCharModal" onclick="if(event.target.id==='battleCharModal')hideBattleCharModal()" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[15000] p-4">
-    <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-4xl w-full p-8">
-      <div class="flex gap-8">
-        <!-- 立绘 -->
-        <div class="flex-1">
-          <div class="text-3xl font-bold mb-4 text-center" id="battleCharName"></div>
-          <img id="battleCharIllust" src="" class="w-full rounded-3xl shadow-2xl" style="height:420px;object-fit:contain">
-        </div>
-        <!-- 属性 -->
-        <div class="flex-1 space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gray-800 rounded-2xl p-4"><div class="text-xs text-gray-400">等级</div><div id="battleCharLevel" class="text-3xl font-bold"></div></div>
-            <div class="bg-gray-800 rounded-2xl p-4"><div class="text-xs text-gray-400">星级</div><div id="battleCharStars" class="text-3xl font-bold"></div></div>
-            <div class="bg-gray-800 rounded-2xl p-4"><div class="text-xs text-gray-400">实时攻击</div><div id="battleCharATK" class="text-3xl font-bold text-red-400"></div></div>
-            <div class="bg-gray-800 rounded-2xl p-4"><div class="text-xs text-gray-400">实时血量</div><div id="battleCharHP" class="text-3xl font-bold text-emerald-400"></div></div>
-            <div class="bg-gray-800 rounded-2xl p-4"><div class="text-xs text-gray-400">实时防御</div><div id="battleCharDEF" class="text-3xl font-bold"></div></div>
-            <div class="bg-gray-800 rounded-2xl p-4"><div class="text-xs text-gray-400">实时暴击率</div><div id="battleCharCrit" class="text-3xl font-bold"></div></div>
-          </div>
-          <div class="bg-gray-800 rounded-2xl p-4">
-            <div class="text-xs text-gray-400 mb-1">所受状态： buff/debuff</div>
-            <div id="battleBuffs" class="min-h-[52px] text-sm"></div>
-          </div>
-          <!-- 技能 -->
-          <div class="space-y-3">
-            <button onclick="performAction('normal')" id="normalBtn" class="w-full text-left bg-gray-800 hover:bg-gray-700 rounded-2xl p-5 flex justify-between items-center"></button>
-            <button onclick="performAction('skill1')" id="skill1Btn" class="w-full text-left bg-gray-800 hover:bg-gray-700 rounded-2xl p-5 flex justify-between items-center"></button>
-            <button onclick="performAction('skill2')" id="skill2Btn" class="w-full text-left bg-gray-800 hover:bg-gray-700 rounded-2xl p-5 flex justify-between items-center hidden"></button>
-          </div>
-        </div>
-      </div>
-      <div class="mt-8 text-center">
-        <button onclick="hideBattleCharModal()" class="px-12 py-4 text-gray-400 text-xl">关闭面板</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // ====================== 全局数据 ======================
-    let player = {
-      diamonds: 1000,
-      owned: [],
-      weapons: [],
-      totalCharDraws: 0,
-      totalWeaponDraws: 0,
-      rCount: 0, srCount: 0, ssrCount: 0, urCount: 0,
-      wR: 0, wSR: 0, wSSR: 0, wUR: 0,
-      charUrPity: 0,
-      weaponUrPity: 0,
-      lastDiamondTime: 0
-    };
-
-    let currentDrawPool = 'char';
-    let currentInventoryTab = 0;
-    let currentSort = 'rarity';
-    let decomposeMode = false;
-    let selected = [];
-    let currentModalIndex = null;
-    let currentRecordTab = 0;
-
-    // ====================== 角色池（已完整加入技能） ======================
+    // ====================== 数据池 ======================
     const characterPool = [
-      {id:1, name:"森林游侠·艾伦", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg",
-       type:"强袭", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"穿林箭", desc:"消耗1能量，对敌方单体造成120%总攻击的物理伤害，并降低目标10%防御，持续2回合。若目标处于后排，该技能额外无视5%的防御", cost:1}]},
-      {id:2, name:"火焰学徒·莎莉", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg",
-       type:"强袭", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"火球冲击", desc:"消耗1能量，对敌方单体造成110%总攻击的火焰魔法伤害，有30%概率点燃目标（每回合造成相当于自身5%总攻击的额外持续伤害，持续2回合）", cost:1}]},
-      {id:3, name:"铁壁卫士·巴克", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg",
-       type:"卫士", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"铁壁守护", desc:"消耗1能量，为自身或一名前排队友生成护盾（吸收相当于自身1.5倍总防御的伤害），持续2回合，并提升自身20%减伤1回合", cost:1}]},
-      {id:4, name:"月影精灵·莉莉", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, image:"images/Lily_Illustration.jpg",
-       type:"辅助", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"月光祈福", desc:"消耗1能量，为己方单体回复相当于自身80%总攻击的生命值，并提升目标10%攻击力，持续2回合。若目标为前排角色，额外为其附加5%暴击率加成", cost:1}]},
-      {id:5, name:"疾风剑豪·凯尔", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, image:"images/Kael_Illustration.jpg",
-       type:"强袭", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"疾风连斩", desc:"消耗1能量，对敌方单体进行3段攻击，每段造成85%总攻击的物理伤害（总计约255%）。最后一段若目标在前排，则额外无视30%防御", cost:1}]},
-      {id:6, name:"自然召唤师·米娅", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, image:"images/Mia_Illustration.jpg",
-       type:"辅助", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"荆棘缠绕", desc:"消耗1能量，对敌方单体造成105%总攻击的自然伤害并降低25%防御，持续2回合；同时为己方一名角色回复相当于自身85%总攻击的生命值", cost:1}]},
-      {id:7, name:"雷鸣骑士·索雷", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, image:"images/Sorey_Illustration.jpg",
-       type:"卫士", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"雷鸣冲击", desc:"消耗1能量，对敌方前排单体造成145%总攻击的雷电伤害，并有40%概率眩晕目标1回合，同时自身获得18%减伤，持续1回合", cost:1}]},
-      {id:8, name:"暗夜刺客·影刃", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, image:"images/Shadowblade_Illustration.jpg",
-       type:"强袭", skills:[{name:"普攻", desc:"普通攻击", dmg:100}, {name:"暗影绝杀", desc:"消耗1能量，对敌方单体造成170%总攻击的物理伤害。若目标在后排，则额外+40%伤害并降低其20%攻击力，持续2回合", cost:1}]},
-      // SSR / UR 仅占位，方便后续扩展
-      {id:9, name:"星辰魔导师·塞尔维亚", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, image:"images/Sylvia_Illustration.jpg", type:"辅助", skills:[]},
-      {id:10, name:"幻月弓神·阿蕾莎", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, image:"images/Alesha_Illustration.jpg", type:"强袭", skills:[]},
-      {id:11, name:"圣辉骑士王·加兰", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, image:"images/Galan_Illustration.jpg", type:"卫士", skills:[]},
-      {id:12, name:"凤凰圣女·菲妮克斯", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, image:"images/Phoenix_Illustration.jpg", type:"辅助", skills:[]},
-      {id:13, name:"创世光辉·露娜薇尔", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, image:"images/Lunaviel_Illustration.jpg", type:"强袭", skills:[]},
-      {id:14, name:"永恒时女·克罗诺", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, image:"images/Chrono_Illustration.jpg", type:"辅助", skills:[]},
-      {id:15, name:"元素起源·埃尔温", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, image:"images/Elwin_Illustration.jpg", type:"强袭", skills:[]}
+      {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
+      {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
+      {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
+      {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, image:"images/Lily_Illustration.jpg"},
+      {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, image:"images/Kael_Illustration.jpg"},
+      {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, image:"images/Mia_Illustration.jpg"},
+      {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, image:"images/Sorey_Illustration.jpg"},
+      {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, image:"images/Shadowblade_Illustration.jpg"},
+      {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, image:"images/Sylvia_Illustration.jpg"},
+      {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, image:"images/Alesha_Illustration.jpg"},
+      {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, image:"images/Galan_Illustration.jpg"},
+      {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Fenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, image:"images/Phoenix_Illustration.jpg"},
+      {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, image:"images/Lunaviel_Illustration.jpg"},
+      {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, image:"images/Chrono_Illustration.jpg"},
+      {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, image:"images/Elwin_Illustration.jpg"}
     ];
 
     const weaponPool = [
-      {id:1, name:"森林魔杖", rarity:"R", image:"images/ForestWand.jpg"},
-      {id:2, name:"铁锋冒险剑", rarity:"R", image:"images/IronEdge.jpg"},
-      {id:3, name:"影林双刃", rarity:"R", image:"images/ShadowwoodTwinBlades.jpg"},
-      {id:4, name:"猎手短弓", rarity:"R", image:"images/Hunter'sShortbow.jpg"},
-      {id:5, name:"雷霆圣剑", rarity:"SR", image:"images/ThunderclapHolySword.jpg"},
-      {id:6, name:"暗影夜刃", rarity:"SR", image:"images/NightbladeTwinDaggers.jpg"},
-      {id:7, name:"月影弦弓", rarity:"SR", image:"images/LunarShadowString.jpg"},
-      {id:8, name:"自然召唤杖", rarity:"SR", image:"images/ElementOriginStaff.jpg"},
-      {id:9, name:"圣辉王剑", rarity:"SSR", image:"images/HolyRadianceKingSword.jpg"},
-      {id:10, name:"星辰法典", rarity:"SSR", image:"images/StarriverCodex.jpg"},
-      {id:11, name:"凤凰圣杖", rarity:"SSR", image:"images/NirvanaHolyStaff.jpg"},
-      {id:12, name:"幻月弓", rarity:"SSR", image:"images/PhantomLongbow.jpg"},
-      {id:13, name:"创世轮", rarity:"UR", image:"images/ChronoWheel.jpg"},
-      {id:14, name:"起源法杖", rarity:"UR", image:"images/GenesisOriginStaff.jpg"},
-      {id:15, name:"永恒时轮", rarity:"UR", image:"images/AmethystSummoningStaff.jpg"}
+      {id:1, name:"森林魔杖", enName:"Forest Wand", rarity:"R", type:"权杖", image:"images/ForestWand.jpg"},
+      {id:2, name:"铁锋冒险剑", enName:"Iron Edge", rarity:"R", type:"单手剑", image:"images/IronEdge.jpg"},
+      {id:3, name:"影林双刃", enName:"Shadowwood Twin Blades", rarity:"R", type:"双刀", image:"images/ShadowwoodTwinBlades.jpg"},
+      {id:4, name:"猎手短弓", enName:"Hunter’s Shortbow", rarity:"R", type:"弓箭", image:"images/Hunter'sShortbow.jpg"},
+      {id:5, name:"紫晶唤魔杖", enName:"Amethyst Summoning Staff", rarity:"SR", type:"权杖", image:"images/AmethystSummoningStaff.jpg"},
+      {id:6, name:"雷鸣圣剑", enName:"Thunderclap Holy Sword", rarity:"SR", type:"单手剑", image:"images/ThunderclapHolySword.jpg"},
+      {id:7, name:"夜刃双刺", enName:"Nightblade Twin Daggers", rarity:"SR", type:"双刀", image:"images/NightbladeTwinDaggers.jpg"},
+      {id:8, name:"幻影长弓", enName:"Phantom Longbow", rarity:"SR", type:"弓箭", image:"images/PhantomLongbow.jpg"},
+      {id:9, name:"星河魔典", enName:"Starriver Codex", rarity:"SSR", type:"权杖", owner:9, image:"images/StarriverCodex.jpg"},
+      {id:10, name:"幻月神弓·月影弦", enName:"Lunar Shadow String", rarity:"SSR", type:"弓箭", owner:10, image:"images/LunarShadowString.jpg"},
+      {id:11, name:"圣辉王剑·光誓", enName:"Holy Radiance King Sword", rarity:"SSR", type:"单手剑", owner:11, image:"images/HolyRadianceKingSword.jpg"},
+      {id:12, name:"涅槃圣杖·凤翼", enName:"Nirvana Holy Staff", rarity:"SSR", type:"权杖", owner:12, image:"images/NirvanaHolyStaff.jpg"},
+      {id:13, name:"创世起源杖·光始", enName:"Genesis Origin Staff", rarity:"UR", type:"权杖", owner:13, image:"images/GenesisOriginStaff.jpg"},
+      {id:14, name:"永恒逆转杖·时轮", enName:"Chrono Wheel", rarity:"UR", type:"权杖", owner:14, image:"images/ChronoWheel.jpg"},
+      {id:15, name:"元素起源杖·万象", enName:"Element Origin Staff", rarity:"UR", type:"权杖", owner:15, image:"images/ElementOriginStaff.jpg"}
     ];
 
+    const rarityWeights = { R: 60, SR: 25, SSR: 12, UR: 3 };
     const decomposeValue = { R: 10, SR: 50, SSR: 200, UR: 1000 };
+    const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 
-    // ====================== 战斗系统核心类 ======================
-    class BattleCharacter {
-      constructor(poolData, ownedData, position) {
-        this.charId = ownedData.charId;
-        this.name = poolData.name;
-        this.rarity = poolData.rarity;
-        this.level = ownedData.level || 1;
-        this.stars = ownedData.stars || 0;
-        this.equippedWeapon = ownedData.equippedWeapon;
-        this.baseHP = poolData.baseHP;
-        this.baseATK = poolData.baseATK;
-        this.baseDEF = poolData.baseDEF;
-        this.type = poolData.type;
-        this.skills = poolData.skills || [];
-        this.currentHP = this.getMaxHP();
-        this.position = position;
-        this.buffs = [];
-        this.isDead = false;
-        this.hasActed = false;
-      }
-      getMaxHP() {
-        return Math.floor(this.baseHP * Math.pow(1.06, this.level - 1) * (1 + this.stars * 0.25));
-      }
-      getCombatStats() {
-        let atk = Math.floor(this.baseATK * Math.pow(1.06, this.level - 1) * (1 + this.stars * 0.25));
-        let def = Math.floor(this.baseDEF * Math.pow(1.06, this.level - 1) * (1 + this.stars * 0.25));
-        return { atk, def, hp: this.currentHP };
-      }
-    }
-
-    const BattleSystem = {
-      playerTeam: new Array(4).fill(null),
-      enemyTeam: [
-        { name: "哥布林战士", hp: 800, maxHP: 800, atk: 65, def: 40, isDead: false },
-        { name: "森林魔狼", hp: 650, maxHP: 650, atk: 85, def: 25, isDead: false }
-      ],
-      energy: 4,
-      maxEnergy: 6,
-      turn: 1,
-      log: [],
-      actingChar: null,
-
-      addLog(msg) {
-        this.log.unshift(`[回合 ${this.turn}] ${msg}`);
-        if (this.log.length > 20) this.log.pop();
-        const el = document.getElementById('battleLog');
-        if (el) el.innerHTML = this.log.map(l => `<div class="py-0.5">${l}</div>`).join('');
-      },
-
-      renderBattleUI() {
-        // 我方4位置
-        const posIds = ['player-front-b', 'player-front-a', 'player-back-a', 'player-back-b'];
-        for (let i = 0; i < 4; i++) {
-          const slot = document.getElementById(posIds[i]);
-          const char = this.playerTeam[i];
-          if (char && !char.isDead) {
-            slot.innerHTML = `
-              <div class="text-center">
-                <img src="${characterPool.find(c => c.id === char.charId).image}" class="w-24 h-24 mx-auto rounded-2xl object-contain">
-                <div class="font-bold text-sm mt-2">${char.name}</div>
-                <div class="text-emerald-400 text-xs">${char.currentHP}/${char.getMaxHP()}</div>
-              </div>`;
-            slot.classList.remove('dead');
-          } else if (char && char.isDead) {
-            slot.classList.add('dead');
-            slot.innerHTML = `<div class="text-red-400 text-center">💀 已阵亡</div>`;
-          } else {
-            slot.innerHTML = `<div class="text-gray-400 text-xs text-center">空位</div>`;
-          }
-        }
-        // 敌人
-        for (let i = 0; i < 2; i++) {
-          const slot = document.getElementById(`enemy-${i}`);
-          const e = this.enemyTeam[i];
-          if (!e.isDead) {
-            slot.innerHTML = `
-              <div class="text-center">
-                <div class="text-6xl mb-2">👹</div>
-                <div class="font-bold">${e.name}</div>
-                <div class="text-red-400 text-sm">${e.hp}/${e.maxHP}</div>
-              </div>`;
-          } else {
-            slot.innerHTML = `<div class="text-gray-500 text-center text-sm">已阵亡</div>`;
-          }
-        }
-        document.getElementById('battleEnergy').textContent = this.energy;
-      },
-
-      checkDeath() {
-        this.playerTeam.forEach(c => { if (c && c.currentHP <= 0) c.isDead = true; });
-        this.enemyTeam.forEach(e => { if (e.hp <= 0) e.isDead = true; });
-        if (this.enemyTeam.every(e => e.isDead)) {
-          this.addLog('🎉 全敌阵亡！战斗胜利！获得 300 钻石');
-          player.diamonds += 300;
-          document.getElementById('diamonds').textContent = player.diamonds;
-          setTimeout(() => endBattle(true), 1200);
-        }
-        if (this.playerTeam.every(c => !c || c.isDead)) {
-          this.addLog('💀 我方全灭……战斗失败');
-          setTimeout(() => endBattle(false), 1200);
-        }
-      },
-
-      executeSkill(attacker, skillIndex, targetIndex) {
-        const skill = attacker.skills[skillIndex];
-        if (!skill) return;
-        const cost = skill.cost || 1;
-        if (this.energy < cost) return this.addLog('能量不足！');
-        this.energy -= cost;
-        this.addLog(`${attacker.name} 释放 ${skill.name}`);
-        // 简化伤害计算（实际可按描述.txt 精确实现每个技能）
-        if (targetIndex >= 0) {
-          const target = this.enemyTeam[targetIndex];
-          if (target && !target.isDead) {
-            const dmg = Math.floor(attacker.getCombatStats().atk * 1.2);
-            target.hp = Math.max(0, target.hp - dmg);
-            this.addLog(`对 ${target.name} 造成 ${dmg} 伤害`);
-          }
-        }
-        attacker.hasActed = true;
-        this.checkDeath();
-        this.renderBattleUI();
-      },
-
-      enemyTurn() {
-        this.addLog('=== 敌人回合 ===');
-        this.enemyTeam.forEach((enemy, i) => {
-          if (enemy.isDead) return;
-          const target = this.playerTeam[Math.floor(Math.random() * 4)];
-          if (target && !target.isDead) {
-            const dmg = Math.floor(enemy.atk * 0.9);
-            target.currentHP = Math.max(0, target.currentHP - dmg);
-            this.addLog(`${enemy.name} 攻击 ${target.name}，造成 ${dmg} 伤害`);
-          }
-        });
-        this.checkDeath();
-        this.renderBattleUI();
-      }
+    // ====================== 玩家数据 ======================
+    let player = { 
+      diamonds: 1000, 
+      owned: [],           // 角色
+      weapons: [],         // 武器
+      totalCharDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0,
+      totalWeaponDraws: 0, wR: 0, wSR: 0, wSSR: 0, wUR: 0,
+      charSsrPity: 0, charUrPity: 0,
+      weaponSsrPity: 0, weaponUrPity: 0
     };
 
-    // ====================== 工具函数 ======================
-    function saveGame() {
-      localStorage.setItem('gachaGame', JSON.stringify(player));
+    let decomposeMode = false;
+    let selected = [];
+    let currentSort = "rarity";
+    let currentDrawPool = "char";
+    let currentInventoryTab = 0;
+    let currentRecordTab = 0;
+    let currentModalIndex = null;
+
+    let diamondCooldownEnd = 0;
+    let currentMinesweeperScore = 0;
+    let minesweeperBoard = [];
+    let mineRows = 0, mineCols = 0, mineCount = 0;
+    let minesweeperGameOver = false;   // 新增：防止踩雷后继续操作
+
+    function saveGame() { 
+      localStorage.setItem("gachaGame", JSON.stringify(player)); 
     }
 
     function loadGame() {
-      const saved = localStorage.getItem('gachaGame');
+      const saved = localStorage.getItem("gachaGame");
       if (saved) {
-        player = JSON.parse(saved);
-        document.getElementById('diamonds').textContent = player.diamonds;
+        let data = JSON.parse(saved);
+        if (data.gold !== undefined) data.diamonds = data.gold;
+        player = data;
       }
-    }
-
-    function switchTab(n) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
-      const panel = document.getElementById('panel' + n);
-      if (panel) panel.classList.remove('hidden');
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'bg-white', 'text-black'));
-      document.getElementById('tab' + n).classList.add('active', 'bg-white', 'text-black');
-      if (n === 1) renderInventory();
-    }
-
-    function setDrawPool(type) {
-      currentDrawPool = type;
-      document.getElementById('poolCharBtn').classList.toggle('active', type === 'char');
-      document.getElementById('poolWeaponBtn').classList.toggle('active', type === 'weapon');
-      document.getElementById('poolTitle').textContent = type === 'char' ? '角色池抽取' : '武器池抽取';
-    }
-
-    function drawCard(count) {
-      const cost = count === 1 ? 100 : 900;
-      if (player.diamonds < cost) return alert('钻石不足！');
-      player.diamonds -= cost;
-      document.getElementById('diamonds').textContent = player.diamonds;
-
-      const results = [];
-      for (let i = 0; i < count; i++) {
-        const isChar = currentDrawPool === 'char';
-        const pool = isChar ? characterPool : weaponPool;
-        let roll = Math.random() * 100;
-        let rarity;
-        if (roll < 60) rarity = 'R';
-        else if (roll < 85) rarity = 'SR';
-        else if (roll < 97) rarity = 'SSR';
-        else rarity = 'UR';
-
-        const filtered = pool.filter(c => c.rarity === rarity);
-        const item = filtered[Math.floor(Math.random() * filtered.length)];
-
-        if (isChar) {
-          const existing = player.owned.find(o => o.charId === item.id);
-          const newChar = {
-            id: Date.now() + i,
-            charId: item.id,
-            level: 1,
-            stars: 0,
-            equippedWeapon: null
-          };
-          player.owned.unshift(newChar);
-          results.push({ ...item, ownedId: newChar.id, isChar: true });
-        } else {
-          const newWeapon = { id: Date.now() + i, weaponId: item.id };
-          player.weapons.unshift(newWeapon);
-          results.push({ ...item, isChar: false });
-        }
-      }
-      showDrawResults(results);
+      if (!player.diamonds) player.diamonds = 1000;
+      if (!player.owned) player.owned = [];
+      if (!player.weapons) player.weapons = [];
+      document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();
     }
 
-    function showDrawResults(results) {
-      const modal = document.getElementById('drawModal');
-      const container = document.getElementById('drawResults');
-      container.innerHTML = '';
-      results.forEach((r, i) => {
-        const div = document.createElement('div');
-        div.className = `draw-card card-${r.rarity.toLowerCase()} bg-gray-800 rounded-3xl p-4 w-40 text-center`;
-        div.innerHTML = `
-          <img src="${r.image}" class="character-img mx-auto">
-          <div class="mt-3 font-bold">${r.name}</div>
-          <div class="rarity-${r.rarity.toLowerCase()} text-white text-xs px-4 py-1 rounded-2xl inline-block">${r.rarity}</div>
-        `;
-        container.appendChild(div);
-      });
-      modal.classList.remove('hidden');
+    function getRarityColor(r) {
+      if (r === "UR") return "card-ur";
+      if (r === "SSR") return "card-ssr";
+      if (r === "SR") return "card-sr";
+      return "card-r";
     }
 
-    function hideDrawModal() {
-      document.getElementById('drawModal').classList.add('hidden');
+    // ====================== 抽卡保底 ======================
+    function drawOne(poolType) {
+      const isChar = poolType === "char";
+      if (isChar) {
+        player.charSsrPity = (player.charSsrPity || 0) + 1;
+        player.charUrPity = (player.charUrPity || 0) + 1;
+      } else {
+        player.weaponSsrPity = (player.weaponSsrPity || 0) + 1;
+        player.weaponUrPity = (player.weaponUrPity || 0) + 1;
+      }
+
+      let item;
+      const pitySSR = isChar ? player.charSsrPity : player.weaponSsrPity;
+      const pityUR = isChar ? player.charUrPity : player.weaponUrPity;
+
+      if (pityUR >= 80) {
+        const pool = isChar ? characterPool : weaponPool;
+        const candidates = pool.filter(c => c.rarity === "UR");
+        item = candidates[Math.floor(Math.random() * candidates.length)];
+        if (isChar) { player.charSsrPity = 0; player.charUrPity = 0; }
+        else { player.weaponSsrPity = 0; player.weaponUrPity = 0; }
+      } else if (pitySSR >= 10) {
+        const pool = isChar ? characterPool : weaponPool;
+        const candidates = pool.filter(c => c.rarity === "SSR" || c.rarity === "UR");
+        item = candidates[Math.floor(Math.random() * candidates.length)];
+        if (isChar) player.charSsrPity = 0;
+        else player.weaponSsrPity = 0;
+      } else {
+        const total = Object.values(rarityWeights).reduce((a,b)=>a+b, 0);
+        let rand = Math.random() * total;
+        let sum = 0;
+        for (let r in rarityWeights) {
+          sum += rarityWeights[r];
+          if (rand <= sum) {
+            const pool = isChar ? characterPool : weaponPool;
+            const candidates = pool.filter(c => c.rarity === r);
+            item = candidates[Math.floor(Math.random() * candidates.length)];
+            break;
+          }
+        }
+      }
+
+      if (item.rarity === "SSR" || item.rarity === "UR") {
+        if (isChar) player.charSsrPity = 0;
+        else player.weaponSsrPity = 0;
+      }
+      if (item.rarity === "UR") {
+        if (isChar) player.charUrPity = 0;
+        else player.weaponUrPity = 0;
+      }
+      return item;
+    }
+
+    function drawCard(times) {
+      const cost = times === 1 ? 100 : 900;
+      if (player.diamonds < cost) return alert("钻石不够啦！去探索吧～");
+      player.diamonds -= cost;
+      document.getElementById("diamonds").textContent = player.diamonds;
+
+      let results = [];
+      for (let i = 0; i < times; i++) {
+        const item = drawOne(currentDrawPool);
+        if (currentDrawPool === "char") {
+          player.owned.push({ id: Date.now() + i, charId: item.id, level: 1, stars: 0, equippedWeapon: null });
+          player.totalCharDraws++;
+          if (item.rarity === "R") player.rCount++;
+          else if (item.rarity === "SR") player.srCount++;
+          else if (item.rarity === "SSR") player.ssrCount++;
+          else if (item.rarity === "UR") player.urCount++;
+        } else {
+          player.weapons.push({ id: Date.now() + i, weaponId: item.id });
+          player.totalWeaponDraws++;
+          if (item.rarity === "R") player.wR++;
+          else if (item.rarity === "SR") player.wSR++;
+          else if (item.rarity === "SSR") player.wSSR++;
+          else if (item.rarity === "UR") player.wUR++;
+        }
+        results.push(item);
+      }
+      saveGame();
+      showDrawAnimation(results, currentDrawPool);
+      if (!document.getElementById("panel1").classList.contains("hidden")) renderInventory();
+    }
+
+    function showDrawAnimation(results, poolType) {
+      const modal = document.getElementById("drawModal");
+      const container = document.getElementById("drawResults");
+      const title = document.getElementById("drawTitle");
+      container.innerHTML = "";
+      modal.classList.remove("hidden");
+      title.textContent = poolType === "char" ? (results.length === 1 ? "🎉 单抽角色" : "🎉 十连角色") : (results.length === 1 ? "🎉 单抽武器" : "🎉 十连武器");
+      results.forEach((item, i) => {
+        const delay = results.length === 1 ? 0 : i * 80;
+        const div = document.createElement("div");
+        div.style.animationDelay = delay + "ms";
+        const pool = poolType === "char" ? characterPool : weaponPool;
+        const data = pool.find(x => x.id === item.id);
+        div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
+        div.innerHTML = `<img src="${data.image}" class="character-img w-full rounded-2xl mx-auto draw-shine"><div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div><div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div><div class="text-xs text-gray-400">${data.enName || data.type}</div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function hideDrawModal() { document.getElementById("drawModal").classList.add("hidden"); }
+
+    // ====================== 库存渲染 ======================
+    function sortOwned(list, isChar) {
+      const copy = [...list];
+      copy.sort((a, b) => {
+        const pool = isChar ? characterPool : weaponPool;
+        const charA = pool.find(c => c.id === (isChar ? a.charId : a.weaponId));
+        const charB = pool.find(c => c.id === (isChar ? b.charId : b.weaponId));
+        const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
+        if (rDiff !== 0) return rDiff;
+        if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
+        if (isChar) {
+          if (a.stars !== b.stars) return b.stars - a.stars;
+          return b.level - a.level;
+        }
+        return 0;
+      });
+      return copy;
     }
 
     function renderInventory() {
-      const container = document.getElementById('inventory');
-      container.innerHTML = '';
-      let list = currentInventoryTab === 0 ? player.owned : player.weapons;
+      const container = document.getElementById("inventory");
+      container.innerHTML = "";
+      selected = [];
       const isChar = currentInventoryTab === 0;
+      const list = isChar ? player.owned : player.weapons;
+      const sorted = sortOwned(list, isChar);
 
-      // 排序
-      if (currentSort === 'stars') list.sort((a, b) => (b.stars || 0) - (a.stars || 0));
-      else if (currentSort === 'level') list.sort((a, b) => (b.level || 1) - (a.level || 1));
-      else list.sort((a, b) => {
-        const ra = isChar ? characterPool.find(c => c.id === a.charId).rarity : weaponPool.find(w => w.id === a.weaponId).rarity;
-        const rb = isChar ? characterPool.find(c => c.id === b.charId).rarity : weaponPool.find(w => w.id === b.weaponId).rarity;
-        const order = { UR: 4, SSR: 3, SR: 2, R: 1 };
-        return order[rb] - order[ra];
-      });
+      sorted.forEach((item) => {
+        const originalIndex = list.findIndex(o => o.id === item.id);
+        const pool = isChar ? characterPool : weaponPool;
+        const data = pool.find(c => c.id === (isChar ? item.charId : item.weaponId));
 
-      list.forEach((item, index) => {
-        const poolData = isChar ? characterPool.find(c => c.id === item.charId) : weaponPool.find(w => w.id === item.weaponId);
-        const div = document.createElement('div');
-        div.className = `card-${poolData.rarity.toLowerCase()} bg-gray-900 rounded-3xl p-4 cursor-pointer border-2`;
+        const div = document.createElement("div");
+        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(data.rarity)} hover:scale-105 transition`;
+
+        let html = '';
+
         if (isChar) {
-          div.innerHTML = `
-            <img src="${poolData.image}" class="character-img mx-auto">
-            <div class="font-bold text-center mt-2">${poolData.name}</div>
-            <div class="flex justify-center gap-1 mt-2">
-              ${Array(5).fill(0).map((_, i) => `<span class="star-${Math.min(item.stars || 0, 5)}">★</span>`).join('')}
+          let equippedName = "无";
+          if (item.equippedWeapon) {
+            const equippedObj = player.weapons.find(w => w.id === item.equippedWeapon);
+            if (equippedObj) {
+              const wpData = weaponPool.find(wp => wp.id === equippedObj.weaponId);
+              equippedName = wpData ? wpData.name : "无";
+            }
+          }
+
+          const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
+          const hp = Math.floor(data.baseHP * statMult);
+          const atk = Math.floor(data.baseATK * statMult);
+          const def = Math.floor(data.baseDEF * statMult);
+
+          html = `
+            <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
+            <div class="text-center">
+              <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
+              <div class="text-base sm:text-xl font-bold mb-1">${data.name}</div>
+              <div class="text-xs text-gray-400">${data.enName}</div>
+              <div class="flex justify-center items-center gap-1 mt-2 mb-3">
+                <span class="text-lg font-bold">Lv.${item.level}</span>
+                <span class="star-${Math.min(item.stars + 1, 5)} text-2xl">★</span><span class="text-sm text-gray-400">(${item.stars}/5)</span>
+              </div>
+              <div class="text-xs text-emerald-400">装备：${equippedName}</div>
+              <div class="flex justify-between text-sm mt-4">
+                <div>❤️ ${hp}</div><div>⚔️ ${atk}</div><div>🛡️ ${def}</div>
+              </div>
             </div>
-            <div class="text-xs text-center text-gray-400">Lv.${item.level || 1}</div>
           `;
-          div.onclick = () => showCharacterDetail(index);
         } else {
-          div.innerHTML = `<img src="${poolData.image}" class="character-img mx-auto"><div class="font-bold text-center mt-2">${poolData.name}</div>`;
-          div.onclick = () => showWeaponDetail(index);
+          let equippedBy = "";
+          for (let char of player.owned) {
+            if (char.equippedWeapon === item.id) {
+              const charData = characterPool.find(c => c.id === char.charId);
+              equippedBy = `<div class="absolute top-4 right-4 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-xl">已被${charData.name}装备</div>`;
+              break;
+            }
+          }
+
+          html = `
+            ${equippedBy}
+            <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
+            <div class="text-center">
+              <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
+              <div class="text-base sm:text-xl font-bold mb-1">${data.name}</div>
+              <div class="text-xs text-gray-400">${data.type}</div>
+            </div>
+          `;
         }
-        if (decomposeMode) {
-          const cb = document.createElement('input');
-          cb.type = 'checkbox';
-          cb.className = 'absolute top-3 right-3';
-          cb.dataset.index = index;
-          cb.onchange = (e) => toggleSelect(e.target);
-          div.style.position = 'relative';
-          div.appendChild(cb);
+
+        if (decomposeMode) html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${originalIndex}" onchange="toggleSelect(this)">` + html;
+        div.innerHTML = html;
+        if (!decomposeMode) {
+          if (isChar) div.onclick = () => showCharacterDetail(originalIndex);
+          else div.onclick = () => showWeaponDetail(originalIndex);
         }
         container.appendChild(div);
       });
+
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-12 col-span-full">${isChar ? '还没有角色，快去抽卡吧！' : '还没有武器，快去抽卡吧！'}</p>`;
+      }
     }
 
+    function setInventoryTab(n) {
+      currentInventoryTab = n;
+      document.querySelectorAll('.inv-tab').forEach((b,i) => b.classList.toggle('active', i===n));
+      renderInventory();
+    }
+
+    // ====================== 角色详情 + 武器装备 ======================
     function showCharacterDetail(index) {
       currentModalIndex = index;
       const item = player.owned[index];
-      const data = characterPool.find(c => c.id === item.charId);
-      const html = `
-        <div class="flex flex-col items-center">
-          <img src="${data.image}" class="character-img mb-4">
-          <h2 class="text-2xl font-bold">${data.name}</h2>
-          <div class="flex gap-6 mt-6 w-full">
-            <div>等级 <span class="font-mono">${item.level}</span></div>
-            <div>星级 <span class="font-mono">${'★'.repeat(item.stars || 0)}</span></div>
+      const char = characterPool.find(c => c.id === item.charId);
+      const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
+      const hp = Math.floor(char.baseHP * statMult);
+      const atk = Math.floor(char.baseATK * statMult);
+      const def = Math.floor(char.baseDEF * statMult);
+      const sameCount = player.owned.filter(o => o.charId === item.charId).length;
+
+      let weaponOptionsHTML = `<option value="">无武器</option>`;
+      player.weapons.forEach(w => {
+        const wp = weaponPool.find(x => x.id === w.weaponId);
+        const canEquip = (wp.rarity === "R" || wp.rarity === "SR") || (wp.owner === item.charId);
+        const isEquipped = player.owned.some(c => c.equippedWeapon === w.id);
+        if (canEquip && !isEquipped) {
+          weaponOptionsHTML += `<option value="${w.id}">${wp.name} (${wp.rarity})</option>`;
+        }
+      });
+
+      const equippedObj = item.equippedWeapon ? player.weapons.find(w => w.id === item.equippedWeapon) : null;
+      const equippedWp = equippedObj ? weaponPool.find(wp => wp.id === equippedObj.weaponId) : null;
+
+      document.getElementById("modalContent").innerHTML = `
+        <div class="text-center">
+          <img src="${char.image}" class="character-img mx-auto rounded-3xl mb-4">
+          <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-6 py-2 rounded-full text-white font-bold">${char.rarity}</div>
+          <h2 class="text-3xl sm:text-4xl font-bold my-3">${char.name}</h2>
+          <div class="text-sm text-gray-400 mb-4">${char.enName}</div>
+          <div class="flex justify-center items-center gap-4 text-xl mb-6">
+            <div>Lv.<span class="font-bold text-3xl">${item.level}</span></div>
+            <div class="flex items-center gap-px text-4xl">${Array(5).fill(0).map((_,i) => `<span class="star-${i < item.stars ? item.stars : 1}">${i < item.stars ? '★' : '☆'}</span>`).join('')}</div>
           </div>
-          <div class="mt-8 grid grid-cols-2 gap-4 w-full">
-            <button onclick="equipWeapon()" class="py-4 bg-teal-600 hover:bg-teal-700 rounded-2xl">装备选中武器</button>
-            <button onclick="levelUp()" class="py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl">升级 Lv.${item.level} → ${item.level+1}</button>
-            <button onclick="starUp()" class="py-4 bg-purple-600 hover:bg-purple-700 rounded-2xl">升星 ★${item.stars || 0} → ★${(item.stars || 0)+1}</button>
+          <div class="grid grid-cols-3 gap-6 my-8 text-xl">
+            <div class="text-center"><div class="text-red-400">❤️ 血量</div><div class="font-bold">${hp}</div></div>
+            <div class="text-center"><div class="text-orange-400">⚔️ 攻击</div><div class="font-bold">${atk}</div></div>
+            <div class="text-center"><div class="text-blue-400">🛡️ 防御</div><div class="font-bold">${def}</div></div>
           </div>
-          <button onclick="hideModal()" class="mt-8 text-gray-400">关闭</button>
-        </div>`;
-      document.getElementById('modalContent').innerHTML = html;
-      document.getElementById('modal').classList.remove('hidden');
+          <div class="mb-6">
+            <div class="text-sm text-gray-400 mb-2">当前装备武器</div>
+            <div class="text-lg font-medium">${equippedWp ? equippedWp.name : '无'}</div>
+          </div>
+          <select id="equipSelect" class="w-full bg-gray-800 text-white py-3 px-4 rounded-2xl mb-4">
+            ${weaponOptionsHTML}
+          </select>
+          <button onclick="equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold">装备选中武器</button>
+          <div class="grid grid-cols-2 gap-3 mt-6">
+            <button onclick="levelUp()" class="bg-blue-600 hover:bg-blue-700 py-4 rounded-2xl text-xl font-bold">升级 Lv.${item.level} → ${item.level+1}（${item.level*30}钻）</button>
+            <button onclick="starUp()" class="bg-purple-600 hover:bg-purple-700 py-4 rounded-2xl text-xl font-bold ${item.stars >= 5 ? 'opacity-50 cursor-not-allowed' : ''}">升星 ★${item.stars} → ★${item.stars+1}</button>
+          </div>
+          <button onclick="hideModal()" class="mt-6 text-gray-400">关闭</button>
+        </div>
+      `;
+      document.getElementById("modal").classList.remove("hidden");
     }
 
     function equipWeapon() {
       if (currentModalIndex === null) return;
-      alert('武器装备功能已保留（后续可扩展）');
+      const select = document.getElementById("equipSelect");
+      const weaponUniqueId = parseInt(select.value);
+      if (weaponUniqueId) {
+        // 防止重复装备
+        const alreadyEquipped = player.owned.some(c => c.equippedWeapon === weaponUniqueId);
+        if (alreadyEquipped) return alert("该武器已被其他角色装备！");
+      }
+      player.owned[currentModalIndex].equippedWeapon = weaponUniqueId || null;
+      saveGame();
       hideModal();
       renderInventory();
+    }
+
+    function showWeaponDetail(index) {
+      alert("武器暂不支持单独升级，可直接装备到对应角色！");
     }
 
     function levelUp() {
       if (currentModalIndex === null) return;
       const item = player.owned[currentModalIndex];
       const cost = item.level * 30;
-      if (player.diamonds < cost) return alert('钻石不够！');
+      if (player.diamonds < cost) return alert("钻石不够！");
+      if (!confirm(`确定花费 ${cost} 钻石升级到 Lv.${item.level + 1} 吗？`)) return;
       player.diamonds -= cost;
       item.level = Math.min(item.level + 1, 100);
-      document.getElementById('diamonds').textContent = player.diamonds;
+      document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();
       showCharacterDetail(currentModalIndex);
     }
@@ -735,36 +612,34 @@
     function starUp() {
       if (currentModalIndex === null) return;
       const item = player.owned[currentModalIndex];
-      if (item.stars >= 5) return alert('已经满星！');
-      const dupIndex = player.owned.findIndex(o => o.charId === item.charId && o.id !== item.id);
-      if (dupIndex === -1) return alert('没有可用的相同角色材料！');
-      player.owned.splice(dupIndex, 1);
+      if (item.stars >= 5) return alert("已经满星！");
+      const duplicateIndex = player.owned.findIndex(o => o.charId === item.charId && o.id !== item.id && o.stars <= item.stars);
+      if (duplicateIndex === -1) return alert("没有可用的相同角色材料！");
+      if (!confirm("确定消耗1个相同角色升星吗？")) return;
+      player.owned.splice(duplicateIndex, 1);
       item.stars++;
       saveGame();
       showCharacterDetail(currentModalIndex);
     }
 
-    function showWeaponDetail(index) {
-      alert('武器暂不支持单独升级，可直接装备到对应角色！');
-    }
-
     function hideModal() {
-      document.getElementById('modal').classList.add('hidden');
+      document.getElementById("modal").classList.add("hidden");
       currentModalIndex = null;
       renderInventory();
     }
 
+    // ====================== 分解逻辑 ======================
     function toggleDecomposeMode() {
       decomposeMode = !decomposeMode;
-      const btn = document.getElementById('decomposeBtn');
+      const btn = document.getElementById("decomposeBtn");
       btn.innerHTML = decomposeMode ? `<i class="fas fa-times"></i> 退出分解` : `<i class="fas fa-recycle"></i> 分解`;
-      document.getElementById('decomposeBar').classList.toggle('hidden', !decomposeMode);
+      document.getElementById("decomposeBar").classList.toggle("hidden", !decomposeMode);
       renderInventory();
     }
 
-    function toggleSelect(cb) {
-      const index = parseInt(cb.dataset.index);
-      if (cb.checked) selected.push(index);
+    function toggleSelect(checkbox) {
+      const index = parseInt(checkbox.dataset.index);
+      if (checkbox.checked) selected.push(index);
       else selected = selected.filter(i => i !== index);
       updateDecomposeBar();
     }
@@ -772,21 +647,23 @@
     function updateDecomposeBar() {
       const count = selected.length;
       let value = 0;
-      const list = currentInventoryTab === 0 ? player.owned : player.weapons;
+      const isChar = currentInventoryTab === 0;
+      const list = isChar ? player.owned : player.weapons;
       selected.forEach(i => {
         const item = list[i];
-        const data = currentInventoryTab === 0 ? characterPool.find(c => c.id === item.charId) : weaponPool.find(w => w.id === item.weaponId);
+        const pool = isChar ? characterPool : weaponPool;
+        const data = pool.find(c => c.id === (isChar ? item.charId : item.weaponId));
         value += decomposeValue[data.rarity];
       });
-      document.getElementById('selectedCount').textContent = `已选 ${count} 个`;
-      document.getElementById('decomposeValue').textContent = `预计获得 ${value} 钻石`;
+      document.getElementById("selectedCount").textContent = `已选 ${count} 个`;
+      document.getElementById("decomposeValue").textContent = `预计获得 ${value} 钻石`;
     }
 
     function selectAll() {
       selected = [];
       const checkboxes = document.querySelectorAll('#inventory input[type="checkbox"]');
-      const max = Math.min(checkboxes.length, 300);
-      for (let i = 0; i < max; i++) {
+      const maxSelect = Math.min(checkboxes.length, 300);
+      for (let i = 0; i < maxSelect; i++) {
         checkboxes[i].checked = true;
         selected.push(parseInt(checkboxes[i].dataset.index));
       }
@@ -795,202 +672,49 @@
 
     function decomposeSelected() {
       if (selected.length === 0) return;
-      if (selected.length > 300) return alert('一次最多分解300个！');
+      if (selected.length > 300) return alert("一次最多分解300个！");
       const isChar = currentInventoryTab === 0;
       const list = isChar ? player.owned : player.weapons;
       let total = 0;
       selected.sort((a, b) => b - a).forEach(i => {
         const item = list[i];
-        const data = isChar ? characterPool.find(c => c.id === item.charId) : weaponPool.find(w => w.id === item.weaponId);
+        const pool = isChar ? characterPool : weaponPool;
+        const data = pool.find(c => c.id === (isChar ? item.charId : item.weaponId));
         total += decomposeValue[data.rarity];
         list.splice(i, 1);
       });
       player.diamonds += total;
-      document.getElementById('diamonds').textContent = player.diamonds;
+      document.getElementById("diamonds").textContent = player.diamonds;
       saveGame();
       alert(`✅ 已分解 ${selected.length} 个，获得 ${total} 钻石！`);
       selected = [];
       decomposeMode = false;
-      document.getElementById('decomposeBar').classList.add('hidden');
+      document.getElementById("decomposeBar").classList.add("hidden");
       renderInventory();
     }
 
-    function setInventoryTab(n) {
-      currentInventoryTab = n;
-      document.querySelectorAll('.inv-tab').forEach((b, i) => b.classList.toggle('active', i === n));
-      renderInventory();
+    // ====================== 抽卡池切换 ======================
+    function setDrawPool(type) {
+      currentDrawPool = type;
+      document.getElementById("poolCharBtn").classList.toggle("active", type === "char");
+      document.getElementById("poolWeaponBtn").classList.toggle("active", type === "weapon");
+      document.getElementById("poolTitle").textContent = type === "char" ? "角色池抽取" : "武器池抽取";
     }
 
-    function getDiamonds() {
-      if (Date.now() - (player.lastDiamondTime || 0) < 10000) return;
-      const amount = Math.floor(Math.random() * 201) + 300;
-      player.diamonds += amount;
-      document.getElementById('diamonds').textContent = player.diamonds;
-      player.lastDiamondTime = Date.now();
-      saveGame();
-      const btn = document.getElementById('diamondBtn');
-      btn.classList.add('opacity-50', 'cursor-not-allowed');
-      const cd = document.getElementById('diamondCooldown');
-      let t = 10;
-      const timer = setInterval(() => {
-        t--;
-        cd.textContent = `${t}秒后可再次获取`;
-        if (t <= 0) {
-          clearInterval(timer);
-          btn.classList.remove('opacity-50', 'cursor-not-allowed');
-          cd.textContent = '';
-        }
-      }, 1000);
-    }
-
-    function openGambling() {
-      document.getElementById('gamblingModal').classList.remove('hidden');
-      document.getElementById('gamblingResult').innerHTML = '';
-    }
-
-    function hideGambling() {
-      document.getElementById('gamblingModal').classList.add('hidden');
-    }
-
-    function spinSlots() {
-      const bet = parseInt(document.getElementById('betAmount').value);
-      if (bet < 100 || bet > 10000 || bet > player.diamonds) return alert('下注金额不正确！');
-      player.diamonds -= bet;
-      document.getElementById('diamonds').textContent = player.diamonds;
-      const symbols = ['💎', '🃏', '🔥', '🌟', '⚡', '🧊'];
-      const r1 = symbols[Math.floor(Math.random() * symbols.length)];
-      const r2 = symbols[Math.floor(Math.random() * symbols.length)];
-      const r3 = symbols[Math.floor(Math.random() * symbols.length)];
-      document.getElementById('slots').innerHTML = `${r1} ${r2} ${r3}`;
-      let win = 0;
-      if (r1 === r2 && r2 === r3) win = bet * 8;
-      else if (r1 === r2 || r2 === r3) win = bet * 2;
-      if (win > 0) {
-        player.diamonds += win;
-        document.getElementById('diamonds').textContent = player.diamonds;
-        document.getElementById('gamblingResult').innerHTML = `<span class="text-green-400">🎉 恭喜中奖！获得 ${win} 钻石</span>`;
-      } else {
-        document.getElementById('gamblingResult').innerHTML = `<span class="text-red-400">😢 未中奖</span>`;
-      }
-      saveGame();
-    }
-
-    function openMinesweeper() {
-      document.getElementById('minesweeperModal').classList.remove('hidden');
-      startMinesweeper(8, 8, 10);
-    }
-
-    function hideMinesweeper() {
-      document.getElementById('minesweeperModal').classList.add('hidden');
-    }
-
-    let mineRows, mineCols, mineCount, currentMinesweeperScore = 0, minesweeperBoard = [];
-    function startMinesweeper(rows, cols, mines) {
-      mineRows = rows; mineCols = cols; mineCount = mines;
-      currentMinesweeperScore = 0;
-      document.getElementById('mineScore').textContent = '0 钻石';
-      minesweeperBoard = Array(rows).fill().map(() => Array(cols).fill().map(() => ({revealed: false, mine: false, flagged: false, adjacent: 0})));
-      let placed = 0;
-      while (placed < mines) {
-        const r = Math.floor(Math.random() * rows);
-        const c = Math.floor(Math.random() * cols);
-        if (!minesweeperBoard[r][c].mine) {
-          minesweeperBoard[r][c].mine = true;
-          placed++;
-        }
-      }
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          if (minesweeperBoard[r][c].mine) continue;
-          let count = 0;
-          for (let dr = -1; dr <= 1; dr++) {
-            for (let dc = -1; dc <= 1; dc++) {
-              if (dr === 0 && dc === 0) continue;
-              const nr = r + dr, nc = c + dc;
-              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && minesweeperBoard[nr][nc].mine) count++;
-            }
-          }
-          minesweeperBoard[r][c].adjacent = count;
-        }
-      }
-      renderMinesweeperBoard();
-    }
-
-    function renderMinesweeperBoard() {
-      const boardEl = document.getElementById('minesweeperBoard');
-      boardEl.innerHTML = '';
-      boardEl.style.gridTemplateColumns = `repeat(${mineCols}, 42px)`;
-      for (let r = 0; r < mineRows; r++) {
-        for (let c = 0; c < mineCols; c++) {
-          const cell = document.createElement('div');
-          cell.className = 'ms-cell bg-gray-600 border border-gray-400 hover:bg-gray-500 rounded cursor-pointer flex items-center justify-center text-xl font-bold';
-          cell.dataset.r = r; cell.dataset.c = c;
-          cell.addEventListener('click', handleMineClick);
-          cell.addEventListener('contextmenu', (e) => { e.preventDefault(); handleMineFlag(r, c); });
-          boardEl.appendChild(cell);
-        }
-      }
-    }
-
-    function handleMineClick(e) {
-      const r = parseInt(e.target.dataset.r);
-      const c = parseInt(e.target.dataset.c);
-      const cellData = minesweeperBoard[r][c];
-      if (cellData.revealed || cellData.flagged) return;
-      if (cellData.mine) {
-        alert('💥 踩雷了！');
-        hideMinesweeper();
-        return;
-      }
-      floodFill(r, c);
-    }
-
-    function floodFill(r, c) {
-      if (r < 0 || r >= mineRows || c < 0 || c >= mineCols) return;
-      const cellData = minesweeperBoard[r][c];
-      if (cellData.revealed || cellData.flagged || cellData.mine) return;
-      cellData.revealed = true;
-      const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-      if (cellEl) {
-        cellEl.classList.add('bg-gray-800');
-        if (cellData.adjacent > 0) {
-          cellEl.textContent = cellData.adjacent;
-          cellEl.style.color = ['#1e90ff','#00b700','#ff0000','#800080','#ffa500','#00ffff','#000000','#808080'][cellData.adjacent-1];
-        }
-      }
-      if (cellData.adjacent === 0) {
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue;
-            floodFill(r + dr, c + dc);
-          }
-        }
-      }
-    }
-
-    function handleMineFlag(r, c) {
-      const cellData = minesweeperBoard[r][c];
-      if (cellData.revealed) return;
-      cellData.flagged = !cellData.flagged;
-      const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-      if (cellEl) cellEl.textContent = cellData.flagged ? '🚩' : '';
-      if (cellData.flagged && cellData.mine) {
-        currentMinesweeperScore += 500;
-        document.getElementById('mineScore').textContent = `${currentMinesweeperScore} 钻石`;
-      }
-    }
-
-    function stopMinesweeper() {
-      player.diamonds += currentMinesweeperScore;
-      document.getElementById('diamonds').textContent = player.diamonds;
-      saveGame();
-      hideMinesweeper();
-      alert(`🎉 扫雷结束！获得 ${currentMinesweeperScore} 钻石`);
+    // ====================== 记录查询 ======================
+    function setRecordTab(n) {
+      currentRecordTab = n;
+      document.querySelectorAll('.record-tab').forEach((b,i) => b.classList.toggle('active', i===n));
+      showRecordModal();
     }
 
     function showRecordModal() {
       const isCharTab = currentRecordTab === 0;
       const total = isCharTab ? (player.totalCharDraws || 0) : (player.totalWeaponDraws || 0);
+      const ur = isCharTab ? player.urCount : player.wUR;
+      const ssrRate = total ? ((isCharTab ? player.ssrCount : player.wSSR) / total * 100).toFixed(2) : 0;
+      const urRate = total ? (ur / total * 100).toFixed(2) : 0;
+
       let html = `
         <div class="space-y-6">
           <div class="flex justify-between text-xl"><span>${isCharTab ? '角色' : '武器'}总抽卡次数</span><span class="font-bold">${total}</span></div>
@@ -998,31 +722,43 @@
             <div class="text-center"><div class="text-sm text-gray-400">R</div><div class="text-4xl font-bold text-blue-400">${isCharTab ? player.rCount : player.wR}</div></div>
             <div class="text-center"><div class="text-sm text-gray-400">SR</div><div class="text-4xl font-bold text-purple-400">${isCharTab ? player.srCount : player.wSR}</div></div>
             <div class="text-center"><div class="text-sm text-gray-400">SSR</div><div class="text-4xl font-bold text-yellow-400">${isCharTab ? player.ssrCount : player.wSSR}</div></div>
-            <div class="text-center"><div class="text-sm text-gray-400">UR</div><div class="text-4xl font-bold text-orange-400">${isCharTab ? player.urCount : player.wUR}</div></div>
+            <div class="text-center"><div class="text-sm text-gray-400">UR</div><div class="text-4xl font-bold text-orange-400">${ur}</div></div>
+          </div>
+          <div class="pt-4 border-t border-gray-700">
+            <div class="flex justify-between"><span>SSR获得率</span><span class="font-bold">${ssrRate}%</span></div>
+            <div class="flex justify-between"><span>UR获得率</span><span class="font-bold">${urRate}%</span></div>
+            <div class="flex justify-between mt-3"><span>UR大保底进度</span><span class="font-bold text-amber-400">${isCharTab ? (player.charUrPity || 0) : (player.weaponUrPity || 0)}/80</span></div>
           </div>
         </div>`;
-      document.getElementById('recordContent').innerHTML = html;
-      document.getElementById('recordModal').classList.remove('hidden');
+
+      const luckRate = parseFloat(urRate);
+      let luckText = "", luckClass = "";
+      if (luckRate <= 1) { luckText = "大非酋"; luckClass = "bg-gradient-to-r from-red-900 to-red-700 text-white"; }
+      else if (luckRate <= 2) { luckText = "非酋"; luckClass = "bg-gradient-to-r from-red-700 to-red-500 text-white"; }
+      else if (luckRate <= 3) { luckText = "正常玩家"; luckClass = "bg-gray-700 text-white"; }
+      else if (luckRate <= 4) { luckText = "小欧皇"; luckClass = "bg-gradient-to-r from-yellow-300 to-yellow-500 text-black"; }
+      else if (luckRate <= 5) { luckText = "欧皇"; luckClass = "bg-gradient-to-r from-yellow-400 to-amber-500 text-black"; }
+      else { luckText = "欧气满满"; luckClass = "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 text-white animate-pulse"; }
+
+      html += `<div id="luckBox" class="mt-6 p-6 rounded-3xl text-center text-2xl font-bold transition-all"><span class="${luckClass} px-8 py-4 rounded-3xl inline-block">${luckText}（UR概率 ${luckRate}%）</span></div>`;
+
+      document.getElementById("recordContent").innerHTML = html;
+      document.getElementById("recordModal").classList.remove("hidden");
     }
 
     function hideRecordModal() {
-      document.getElementById('recordModal').classList.add('hidden');
+      document.getElementById("recordModal").classList.add("hidden");
     }
 
-    function setRecordTab(n) {
-      currentRecordTab = n;
-      document.querySelectorAll('.record-tab').forEach((b, i) => b.classList.toggle('active', i === n));
-      showRecordModal();
-    }
-
+    // ====================== 存档 ======================
     function exportSave() {
       const dataStr = JSON.stringify(player, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-      const link = document.createElement('a');
-      link.setAttribute('href', dataUri);
-      link.setAttribute('download', 'gacha-save.json');
+      const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+      const link = document.createElement("a");
+      link.setAttribute("href", dataUri);
+      link.setAttribute("download", "gacha-save.json");
       link.click();
-      alert('✅ 存档已导出！');
+      alert("✅ 存档已导出！");
     }
 
     function importSave(e) {
@@ -1032,140 +768,191 @@
       reader.onload = function(ev) {
         try {
           player = JSON.parse(ev.target.result);
-          document.getElementById('diamonds').textContent = player.diamonds || 1000;
+          document.getElementById("diamonds").textContent = player.diamonds || 1000;
           saveGame();
-          alert('✅ 存档导入成功！');
+          alert("✅ 存档导入成功！");
           hideRecordModal();
           renderInventory();
-        } catch(err) { alert('❌ 文件格式错误'); }
+        } catch(err) { alert("❌ 文件格式错误"); }
       };
       reader.readAsText(file);
-      e.target.value = '';
+      e.target.value = "";
     }
 
-    // ====================== 战斗相关函数 ======================
-    function showTeamSelection() {
-      document.getElementById('teamSelectModal').classList.remove('hidden');
-      renderTeamSelectInventory();
-      BattleSystem.playerTeam = new Array(4).fill(null);
+    // ====================== 其他功能 ======================
+    function getDiamonds() {
+      if (Date.now() < diamondCooldownEnd) return;
+      const amount = Math.floor(Math.random() * 201) + 300;
+      player.diamonds += amount;
+      document.getElementById("diamonds").textContent = player.diamonds;
+      saveGame();
+      const btn = document.getElementById("diamondBtn");
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+      diamondCooldownEnd = Date.now() + 10000;
+      const cd = document.getElementById("diamondCooldown");
+      let timeLeft = 10;
+      const timer = setInterval(() => {
+        timeLeft--;
+        cd.textContent = `${timeLeft}秒后可再次获取`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          btn.classList.remove("opacity-50", "cursor-not-allowed");
+          cd.textContent = "";
+        }
+      }, 1000);
     }
 
-    function hideTeamSelection() {
-      document.getElementById('teamSelectModal').classList.add('hidden');
+    function openGambling() { 
+      document.getElementById("gamblingModal").classList.remove("hidden"); 
+      document.getElementById("gamblingResult").innerHTML = ""; 
     }
-
-    function renderTeamSelectInventory() {
-      const container = document.getElementById('teamSelectInventory');
-      container.innerHTML = '';
-      player.owned.forEach((owned, idx) => {
-        const data = characterPool.find(c => c.id === owned.charId);
-        if (!data) return;
-        const div = document.createElement('div');
-        div.className = `card-${data.rarity.toLowerCase()} bg-gray-900 rounded-3xl p-3 cursor-pointer border-2`;
-        div.innerHTML = `
-          <img src="${data.image}" class="w-20 h-20 mx-auto object-contain rounded-2xl">
-          <div class="text-center text-sm font-bold mt-2">${data.name}</div>
-        `;
-        div.onclick = () => addToTeam(owned, idx);
-        container.appendChild(div);
-      });
-    }
-
-    function addToTeam(owned, idx) {
-      const emptySlot = BattleSystem.playerTeam.findIndex(slot => slot === null);
-      if (emptySlot === -1) return alert('队伍已满！');
-      const poolData = characterPool.find(c => c.id === owned.charId);
-      const battleChar = new BattleCharacter(poolData, owned, emptySlot);
-      BattleSystem.playerTeam[emptySlot] = battleChar;
-      alert(`${poolData.name} 已加入阵型！`);
-    }
-
-    function selectPosition(pos) {
-      // 已通过 onclick 直接绑定
-    }
-
-    function startBattle() {
-      if (BattleSystem.playerTeam.filter(Boolean).length !== 4) {
-        return alert('必须组成完整的 4 人队伍！');
+    function hideGambling() { document.getElementById("gamblingModal").classList.add("hidden"); }
+    function spinSlots() { 
+      const bet = parseInt(document.getElementById("betAmount").value);
+      if (bet < 100 || bet > 10000 || bet > player.diamonds) return alert("下注金额不正确！");
+      player.diamonds -= bet;
+      document.getElementById("diamonds").textContent = player.diamonds;
+      const symbols = ["💎","🃏","🔥","🌟","⚡","🧊"];
+      const reel1 = symbols[Math.floor(Math.random()*symbols.length)];
+      const reel2 = symbols[Math.floor(Math.random()*symbols.length)];
+      const reel3 = symbols[Math.floor(Math.random()*symbols.length)];
+      document.getElementById("slots").innerHTML = `${reel1} ${reel2} ${reel3}`;
+      let win = 0;
+      if (reel1 === reel2 && reel2 === reel3) win = bet * 8;
+      else if (reel1 === reel2 || reel2 === reel3) win = bet * 2;
+      if (win > 0) {
+        player.diamonds += win;
+        document.getElementById("diamonds").textContent = player.diamonds;
+        document.getElementById("gamblingResult").innerHTML = `<span class="text-green-400">🎉 恭喜中奖！获得 ${win} 钻石</span>`;
+      } else {
+        document.getElementById("gamblingResult").innerHTML = `<span class="text-red-400">😢 未中奖</span>`;
       }
-      hideTeamSelection();
-      document.getElementById('battleModal').classList.remove('hidden');
-      BattleSystem.energy = 4;
-      BattleSystem.log = [];
-      BattleSystem.turn = 1;
-      BattleSystem.addLog('⚔️ 战斗开始！玩家先手');
-      BattleSystem.renderBattleUI();
+      saveGame();
     }
 
-    function endBattle(win = true) {
-      document.getElementById('battleModal').classList.add('hidden');
-      BattleSystem.playerTeam = new Array(4).fill(null);
-      if (win) alert('🎉 恭喜胜利！');
-      else alert('💀 战斗失败，下次再来！');
+    function openMinesweeper() { 
+      document.getElementById("minesweeperModal").classList.remove("hidden"); 
+      startMinesweeper(8,8,10); 
     }
-
-    function openBattleCharacterPanel(posIndex) {
-      const char = BattleSystem.playerTeam[posIndex];
-      if (!char || char.isDead) return;
-      BattleSystem.actingChar = { char, posIndex };
-      // 填充面板
-      document.getElementById('battleCharName').textContent = char.name;
-      document.getElementById('battleCharIllust').src = characterPool.find(c => c.id === char.charId).image;
-      const stats = char.getCombatStats();
-      document.getElementById('battleCharLevel').textContent = char.level;
-      document.getElementById('battleCharStars').innerHTML = '★'.repeat(char.stars);
-      document.getElementById('battleCharATK').textContent = stats.atk;
-      document.getElementById('battleCharHP').textContent = `${char.currentHP}/${char.getMaxHP()}`;
-      document.getElementById('battleCharDEF').textContent = stats.def;
-      document.getElementById('battleCharCrit').textContent = '5%';
-      // 技能按钮
-      document.getElementById('normalBtn').innerHTML = `普攻 <span class="text-xs text-gray-400 ml-auto">${char.skills[0].desc}</span>`;
-      document.getElementById('skill1Btn').innerHTML = `${char.skills[1].name} <span class="text-xs text-gray-400 ml-auto">消耗 ${char.skills[1].cost} 能量</span>`;
-      document.getElementById('skill2Btn').classList.add('hidden');
-      document.getElementById('battleCharModal').classList.remove('hidden');
+    function hideMinesweeper() { 
+      document.getElementById("minesweeperModal").classList.add("hidden"); 
+      currentMinesweeperScore = 0;
+      minesweeperGameOver = false;
     }
-
-    function hideBattleCharModal() {
-      document.getElementById('battleCharModal').classList.add('hidden');
-      BattleSystem.actingChar = null;
-    }
-
-    function performAction(type) {
-      if (!BattleSystem.actingChar) return;
-      const { char, posIndex } = BattleSystem.actingChar;
-      if (type === 'normal') {
-        const targetIndex = Math.floor(Math.random() * 2);
-        BattleSystem.executeSkill(char, 0, targetIndex);
-      } else if (type === 'skill1') {
-        const targetIndex = Math.floor(Math.random() * 2);
-        BattleSystem.executeSkill(char, 1, targetIndex);
+    function startMinesweeper(rows, cols, mines) { 
+      mineRows = rows; mineCols = cols; mineCount = mines;
+      currentMinesweeperScore = 0;
+      minesweeperGameOver = false;
+      document.getElementById("mineScore").textContent = "0 钻石";
+      minesweeperBoard = Array(rows).fill().map(() => Array(cols).fill().map(() => ({revealed: false, mine: false, flagged: false, adjacent: 0})));
+      let placed = 0;
+      while (placed < mines) {
+        const r = Math.floor(Math.random() * rows);
+        const c = Math.floor(Math.random() * cols);
+        if (!minesweeperBoard[r][c].mine) { minesweeperBoard[r][c].mine = true; placed++; }
       }
-      hideBattleCharModal();
-      BattleSystem.renderBattleUI();
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (minesweeperBoard[r][c].mine) continue;
+          let count = 0;
+          for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && minesweeperBoard[nr][nc].mine) count++;
+          }
+          minesweeperBoard[r][c].adjacent = count;
+        }
+      }
+      renderMinesweeperBoard();
+    }
+    function renderMinesweeperBoard() { 
+      const boardEl = document.getElementById("minesweeperBoard");
+      boardEl.innerHTML = "";
+      boardEl.style.gridTemplateColumns = `repeat(${mineCols}, 42px)`;
+      for (let r = 0; r < mineRows; r++) {
+        for (let c = 0; c < mineCols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "ms-cell bg-gray-600 border border-gray-400 hover:bg-gray-500 rounded cursor-pointer flex items-center justify-center text-xl font-bold";
+          cell.dataset.r = r; cell.dataset.c = c;
+          cell.addEventListener("click", handleMineClick);
+          cell.addEventListener("contextmenu", (e) => { e.preventDefault(); handleMineFlag(r, c); });
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+    function handleMineClick(e) { 
+      if (minesweeperGameOver) return;
+      const r = parseInt(e.target.dataset.r); 
+      const c = parseInt(e.target.dataset.c);
+      const cellData = minesweeperBoard[r][c];
+      if (cellData.revealed || cellData.flagged) return;
+      if (cellData.mine) { 
+        minesweeperGameOver = true;
+        alert("💥 踩雷了！游戏结束"); 
+        hideMinesweeper(); 
+        return; 
+      }
+      floodFill(r, c);
+    }
+    function floodFill(r, c) { 
+      if (r < 0 || r >= mineRows || c < 0 || c >= mineCols) return;
+      const cellData = minesweeperBoard[r][c];
+      if (cellData.revealed || cellData.flagged || cellData.mine) return;
+      cellData.revealed = true;
+      const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cellEl) {
+        cellEl.classList.add("bg-gray-800");
+        if (cellData.adjacent > 0) {
+          cellEl.textContent = cellData.adjacent;
+          cellEl.style.color = ["#1e90ff","#00b700","#ff0000","#800080","#ffa500","#00ffff","#000000","#808080"][cellData.adjacent-1];
+        }
+      }
+      if (cellData.adjacent === 0) {
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          floodFill(r + dr, c + dc);
+        }
+      }
+    }
+    function handleMineFlag(r, c) { 
+      if (minesweeperGameOver) return;
+      const cellData = minesweeperBoard[r][c];
+      if (cellData.revealed) return;
+      cellData.flagged = !cellData.flagged;
+      const cellEl = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cellEl) cellEl.textContent = cellData.flagged ? "🚩" : "";
+      if (cellData.flagged && cellData.mine) {
+        currentMinesweeperScore += 500;
+        document.getElementById("mineScore").textContent = `${currentMinesweeperScore} 钻石`;
+      }
+    }
+    function stopMinesweeper() {
+      if (minesweeperGameOver) return;
+      player.diamonds += currentMinesweeperScore;
+      document.getElementById("diamonds").textContent = player.diamonds;
+      saveGame();
+      hideMinesweeper();
+      alert(`🎉 扫雷结束！获得 ${currentMinesweeperScore} 钻石`);
     }
 
-    function selectTarget(enemyIndex) {
-      if (!BattleSystem.actingChar) return;
-      const { char } = BattleSystem.actingChar;
-      BattleSystem.executeSkill(char, 1, enemyIndex);
-      hideBattleCharModal();
+    function switchTab(n) {
+      document.querySelectorAll(".panel").forEach(p => p.classList.add("hidden"));
+      document.getElementById("panel" + n).classList.remove("hidden");
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active", "bg-white", "text-black"));
+      document.getElementById("tab" + n).classList.add("active", "bg-white", "text-black");
+      if (n === 1) {
+        decomposeMode = false;
+        document.getElementById("decomposeBar").classList.add("hidden");
+        renderInventory();
+      }
     }
 
-    function endPlayerTurn() {
-      // 检查是否所有角色都已行动（简化：直接进入敌人回合）
-      BattleSystem.enemyTurn();
-      BattleSystem.turn++;
-      BattleSystem.energy = Math.min(BattleSystem.energy + 2, BattleSystem.maxEnergy);
-      BattleSystem.renderBattleUI();
-      // 重置行动状态
-      BattleSystem.playerTeam.forEach(c => { if (c) c.hasActed = false; });
-    }
+    // 按用户要求保留这行代码（防止bug）
+    window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });
 
-    // ====================== 初始化 ======================
     window.onload = () => {
       loadGame();
       switchTab(0);
-      console.log('%c✅ 完整游戏代码已加载！战斗系统 + 所有原有功能 100% 保留', 'color:#22c55e;font-size:16px;font-weight:bold');
     };
   </script>
 </body>

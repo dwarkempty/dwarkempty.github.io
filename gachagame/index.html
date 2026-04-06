@@ -18,10 +18,47 @@
     .rarity-ur { background: linear-gradient(90deg, #ec4899, #8b5cf6, #22d3ee, #eab308); background-size: 300% 300%; animation: gradient-shift 3s ease infinite; }
     @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     .character-img { height: 160px; @apply sm:h-48 lg:h-52; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6)); }
-    .draw-card { animation: drawPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 0; }
-    @keyframes drawPop { 0% { transform: scale(0.3) rotate(-12deg); opacity: 0; } 70% { transform: scale(1.15) rotate(8deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
-    .draw-shine { animation: shine 1.8s ease infinite; }
-    @keyframes shine { 0% { filter: brightness(1); } 50% { filter: brightness(1.6); } 100% { filter: brightness(1); } }
+    
+    /* ==================== 加强抽卡动画 ==================== */
+    .draw-card { animation: drawPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 0; }
+    @keyframes drawPop { 
+      0% { transform: scale(0.3) rotate(-25deg); opacity: 0; } 
+      60% { transform: scale(1.25) rotate(12deg); } 
+      80% { transform: scale(0.95) rotate(-8deg); } 
+      100% { transform: scale(1) rotate(0deg); opacity: 1; } 
+    }
+    .draw-shine { animation: shine 1.2s ease infinite; position: relative; }
+    .draw-shine::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 40%;
+      height: 300%;
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.9), transparent);
+      animation: drawShineMove 2s linear infinite;
+      opacity: 0.6;
+    }
+    @keyframes shine { 0% { filter: brightness(1); } 50% { filter: brightness(1.8); } 100% { filter: brightness(1); } }
+    @keyframes drawShineMove { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+
+    /* ==================== 升星动画 ==================== */
+    .star-burst {
+      animation: starBurst 800ms ease-out forwards;
+    }
+    @keyframes starBurst {
+      0% { transform: scale(0.6) rotate(0deg); opacity: 1; }
+      40% { transform: scale(1.6) rotate(180deg); }
+      70% { transform: scale(1.2) rotate(300deg); }
+      100% { transform: scale(1) rotate(360deg); opacity: 0; }
+    }
+
+    /* UI动效通用 */
+    .btn-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-hover:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); }
+    .stat-box { transition: all 0.4s ease; }
+    .modal-content { animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
     .ms-cell { width: 42px; height: 42px; font-size: 22px; display: flex; align-items: center; justify-content: center; user-select: none; border: 2px solid #374151; }
     .star-1 { color: #22c55e; text-shadow: 0 0 8px #22c55e; }
     .star-2 { color: #3b82f6; text-shadow: 0 0 8px #3b82f6; }
@@ -44,28 +81,28 @@
     </div>
 
     <div class="flex flex-wrap gap-2 bg-gray-900 p-2 rounded-3xl mb-8 w-fit mx-auto">
-      <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🃏 抽卡</button>
-      <button onclick="switchTab(1)" id="tab1" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🏠 养成</button>
-      <button onclick="switchTab(2)" id="tab2" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium">🔍 探索</button>
+      <button onclick="switchTab(0)" id="tab0" class="tab-btn active px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium btn-hover">🃏 抽卡</button>
+      <button onclick="switchTab(1)" id="tab1" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium btn-hover">🏠 养成</button>
+      <button onclick="switchTab(2)" id="tab2" class="tab-btn px-6 py-3 sm:px-8 sm:py-3 text-base sm:text-lg rounded-2xl font-medium btn-hover">🔍 探索</button>
     </div>
 
     <!-- 抽卡界面 -->
     <div id="panel0" class="panel">
       <div class="text-center py-8 sm:py-12">
         <div class="flex justify-center gap-3 mb-6">
-          <button onclick="setDrawPool('char')" id="poolCharBtn" class="pool-btn active px-6 py-2.5 rounded-2xl font-medium flex-1 sm:flex-none">🧙 角色池</button>
-          <button onclick="setDrawPool('weapon')" id="poolWeaponBtn" class="pool-btn px-6 py-2.5 rounded-2xl font-medium flex-1 sm:flex-none">⚔️ 武器池</button>
+          <button onclick="setDrawPool('char')" id="poolCharBtn" class="pool-btn active px-6 py-2.5 rounded-2xl font-medium flex-1 sm:flex-none btn-hover">🧙 角色池</button>
+          <button onclick="setDrawPool('weapon')" id="poolWeaponBtn" class="pool-btn px-6 py-2.5 rounded-2xl font-medium flex-1 sm:flex-none btn-hover">⚔️ 武器池</button>
         </div>
         <h2 id="poolTitle" class="text-2xl sm:text-3xl font-bold mb-6">角色池抽取</h2>
         
         <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
-          <button onclick="drawCard(1)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">单抽 <span class="text-yellow-300">100钻石</span></button>
-          <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition">十连 <span class="text-yellow-300">900钻石</span></button>
+          <button onclick="drawCard(1)" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition btn-hover">单抽 <span class="text-yellow-300">100钻石</span></button>
+          <button onclick="drawCard(10)" class="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 sm:px-10 py-5 sm:py-6 rounded-3xl text-xl sm:text-2xl font-bold shadow-xl transition btn-hover">十连 <span class="text-yellow-300">900钻石</span></button>
         </div>
         <p class="mt-8 text-gray-400 text-sm sm:text-base">概率：R 60% • SR 25% • SSR 12% • UR 3%</p>
         <p class="mt-2 text-emerald-400 text-xs sm:text-sm">保底：10抽必出SSR，80抽必出UR（提前出UR重置大保底）</p>
         
-        <button onclick="showRecordModal()" class="mt-8 inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-2xl text-base font-medium">
+        <button onclick="showRecordModal()" class="mt-8 inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-2xl text-base font-medium btn-hover">
           <i class="fas fa-history"></i> 记录查询
         </button>
       </div>
@@ -75,8 +112,8 @@
     <div id="panel1" class="panel hidden">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div class="flex gap-2">
-          <button onclick="setInventoryTab(0)" id="invTab0" class="inv-tab active px-6 py-3 rounded-2xl font-medium">🧙 角色仓库</button>
-          <button onclick="setInventoryTab(1)" id="invTab1" class="inv-tab px-6 py-3 rounded-2xl font-medium">⚔️ 武器仓库</button>
+          <button onclick="setInventoryTab(0)" id="invTab0" class="inv-tab active px-6 py-3 rounded-2xl font-medium btn-hover">🧙 角色仓库</button>
+          <button onclick="setInventoryTab(1)" id="invTab1" class="inv-tab px-6 py-3 rounded-2xl font-medium btn-hover">⚔️ 武器仓库</button>
         </div>
         <div class="flex items-center gap-4 w-full sm:w-auto">
           <select id="sortSelect" onchange="currentSort = this.value; renderInventory()" class="bg-gray-800 text-white px-4 py-2.5 rounded-2xl border border-gray-700 focus:outline-none text-sm sm:text-base flex-1 sm:flex-none">
@@ -84,7 +121,7 @@
             <option value="stars">排序：星级优先</option>
             <option value="level">排序：等级优先</option>
           </select>
-          <button onclick="toggleDecomposeMode()" id="decomposeBtn" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2 whitespace-nowrap">
+          <button onclick="toggleDecomposeMode()" id="decomposeBtn" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl font-medium flex items-center gap-2 whitespace-nowrap btn-hover">
             <i class="fas fa-recycle"></i> 分解
           </button>
         </div>
@@ -96,9 +133,9 @@
           <span id="decomposeValue" class="text-yellow-300 font-bold">预计获得 0 钻石</span>
         </div>
         <div class="flex gap-3 w-full sm:w-auto">
-          <button onclick="selectAll()" class="flex-1 sm:flex-none px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">全选（最多300个）</button>
-          <button onclick="decomposeSelected()" class="flex-1 sm:flex-none px-8 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-bold">确认分解</button>
-          <button onclick="toggleDecomposeMode()" class="flex-1 sm:flex-none px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm">取消</button>
+          <button onclick="selectAll()" class="flex-1 sm:flex-none px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm btn-hover">全选（最多300个）</button>
+          <button onclick="decomposeSelected()" class="flex-1 sm:flex-none px-8 py-2 bg-red-600 hover:bg-red-700 rounded-2xl font-bold btn-hover">确认分解</button>
+          <button onclick="toggleDecomposeMode()" class="flex-1 sm:flex-none px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-2xl text-sm btn-hover">取消</button>
         </div>
       </div>
 
@@ -109,7 +146,7 @@
     <div id="panel2" class="panel hidden text-center py-8 sm:py-12">
       <h2 class="text-3xl font-bold mb-8">🔍 探索</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
-        <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
+        <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
           <i class="fas fa-gem text-5xl"></i>
           <div>
             <div class="text-2xl font-bold">获取钻石</div>
@@ -117,14 +154,14 @@
             <div id="diamondCooldown" class="text-xs text-emerald-300 mt-2"></div>
           </div>
         </button>
-        <button onclick="openGambling()" class="bg-amber-600 hover:bg-amber-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
+        <button onclick="openGambling()" class="bg-amber-600 hover:bg-amber-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
           <i class="fas fa-dice text-5xl"></i>
           <div>
             <div class="text-2xl font-bold">赌博</div>
             <div class="text-sm text-amber-200">老虎机</div>
           </div>
         </button>
-        <button onclick="openMinesweeper()" class="bg-red-600 hover:bg-red-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition">
+        <button onclick="openMinesweeper()" class="bg-red-600 hover:bg-red-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
           <i class="fas fa-bomb text-5xl"></i>
           <div>
             <div class="text-2xl font-bold">扫雷</div>
@@ -140,13 +177,13 @@
     <div class="max-w-[95vw] sm:max-w-5xl w-full bg-gray-900 rounded-3xl p-6 sm:p-8 relative">
       <div class="text-center mb-6 sm:mb-8"><h2 id="drawTitle" class="text-3xl sm:text-4xl font-bold text-yellow-300">🎉 抽卡结果</h2></div>
       <div id="drawResults" class="flex flex-wrap justify-center gap-4 sm:gap-6 min-h-[320px] sm:min-h-[420px]"></div>
-      <div class="text-center mt-6 sm:mt-8"><button onclick="hideDrawModal()" class="w-full sm:w-auto px-12 py-4 bg-white text-black rounded-2xl font-bold text-xl hover:bg-yellow-300 transition">返回游戏</button></div>
+      <div class="text-center mt-6 sm:mt-8"><button onclick="hideDrawModal()" class="w-full sm:w-auto px-12 py-4 bg-white text-black rounded-2xl font-bold text-xl hover:bg-yellow-300 transition btn-hover">返回游戏</button></div>
     </div>
   </div>
 
-  <!-- 角色详情弹窗 -->
+  <!-- 角色详情弹窗（严格按照草图格式制作） -->
   <div id="modal" onclick="if(event.target===this)hideModal()" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[10000] p-4">
-    <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-full sm:max-w-lg w-full mx-auto overflow-hidden">
+    <div onclick="event.stopImmediatePropagation()" class="modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-auto overflow-hidden border-4 border-orange-500">
       <div id="modalContent" class="p-6"></div>
     </div>
   </div>
@@ -160,7 +197,7 @@
         <input id="betAmount" type="number" value="1000" min="100" max="10000" step="100" class="bg-gray-800 text-center text-3xl font-bold w-40 py-2 rounded-2xl">
         <span class="ml-2 text-gray-400">钻石</span>
       </div>
-      <button onclick="spinSlots()" class="w-full py-5 bg-gradient-to-r from-amber-500 to-red-500 text-2xl font-bold rounded-3xl">开始转动</button>
+      <button onclick="spinSlots()" class="w-full py-5 bg-gradient-to-r from-amber-500 to-red-500 text-2xl font-bold rounded-3xl btn-hover">开始转动</button>
       <p id="gamblingResult" class="text-center mt-6 min-h-[28px] text-lg"></p>
       <button onclick="hideGambling()" class="mt-6 text-gray-400 block mx-auto">关闭</button>
     </div>
@@ -173,15 +210,15 @@
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-2xl font-bold">💣 扫雷</h3>
           <div class="flex gap-3">
-            <button onclick="startMinesweeper(8,8,10)" class="px-4 py-1 bg-green-600 rounded-xl text-sm">简单</button>
-            <button onclick="startMinesweeper(10,10,20)" class="px-4 py-1 bg-yellow-600 rounded-xl text-sm">中等</button>
-            <button onclick="startMinesweeper(12,12,30)" class="px-4 py-1 bg-red-600 rounded-xl text-sm">困难</button>
+            <button onclick="startMinesweeper(8,8,10)" class="px-4 py-1 bg-green-600 rounded-xl text-sm btn-hover">简单</button>
+            <button onclick="startMinesweeper(10,10,20)" class="px-4 py-1 bg-yellow-600 rounded-xl text-sm btn-hover">中等</button>
+            <button onclick="startMinesweeper(12,12,30)" class="px-4 py-1 bg-red-600 rounded-xl text-sm btn-hover">困难</button>
           </div>
           <div id="mineScore" class="text-xl font-bold text-yellow-400">0 钻石</div>
         </div>
         <div id="minesweeperBoard" class="grid mx-auto gap-px bg-gray-700 p-2 rounded-2xl" style="width: fit-content;"></div>
         <div class="text-center mt-6">
-          <button onclick="stopMinesweeper()" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl">停止游戏（保存当前收益）</button>
+          <button onclick="stopMinesweeper()" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl btn-hover">停止游戏（保存当前收益）</button>
         </div>
       </div>
     </div>
@@ -192,46 +229,41 @@
     <div class="bg-gray-900 rounded-3xl max-w-lg w-full p-8">
       <h2 class="text-3xl font-bold text-center mb-6">📊 抽卡记录</h2>
       <div class="flex gap-2 mb-6">
-        <button onclick="setRecordTab(0)" id="recordTab0" class="record-tab active flex-1 py-2 rounded-2xl">角色记录</button>
-        <button onclick="setRecordTab(1)" id="recordTab1" class="record-tab flex-1 py-2 rounded-2xl">武器记录</button>
+        <button onclick="setRecordTab(0)" id="recordTab0" class="record-tab active flex-1 py-2 rounded-2xl btn-hover">角色记录</button>
+        <button onclick="setRecordTab(1)" id="recordTab1" class="record-tab flex-1 py-2 rounded-2xl btn-hover">武器记录</button>
       </div>
-      
-      <div id="recordContent">
-        <!-- 动态填充 -->
-      </div>
-
+      <div id="recordContent"></div>
       <div class="pt-6 border-t border-gray-700 flex flex-col sm:flex-row gap-3">
-        <button onclick="exportSave()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2">
+        <button onclick="exportSave()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2 btn-hover">
           <i class="fas fa-download"></i> 导出存档
         </button>
-        <button onclick="document.getElementById('importFile').click()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2">
+        <button onclick="document.getElementById('importFile').click()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-3 rounded-2xl text-base font-medium flex items-center justify-center gap-2 btn-hover">
           <i class="fas fa-upload"></i> 导入存档
         </button>
         <input type="file" id="importFile" accept=".json" class="hidden" onchange="importSave(event)">
       </div>
-
-      <button onclick="hideRecordModal()" class="mt-8 w-full py-4 bg-white text-black rounded-2xl text-xl font-bold">关闭</button>
+      <button onclick="hideRecordModal()" class="mt-8 w-full py-4 bg-white text-black rounded-2xl text-xl font-bold btn-hover">关闭</button>
     </div>
   </div>
 
   <script>
-    // ====================== 数据池 ======================
+    // ====================== 数据池（新增类别 + 新数值系统） ======================
     const characterPool = [
-      {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, image:"images/Allen_Illustration.jpg"},
-      {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, image:"images/Sally_Illustration.jpg"},
-      {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, image:"images/Buck_Illustration.jpg"},
-      {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, image:"images/Lily_Illustration.jpg"},
-      {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, image:"images/Kael_Illustration.jpg"},
-      {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, image:"images/Mia_Illustration.jpg"},
-      {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, image:"images/Sorey_Illustration.jpg"},
-      {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, image:"images/Shadowblade_Illustration.jpg"},
-      {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, image:"images/Sylvia_Illustration.jpg"},
-      {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, image:"images/Alesha_Illustration.jpg"},
-      {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, image:"images/Galan_Illustration.jpg"},
-      {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Fenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, image:"images/Phoenix_Illustration.jpg"},
-      {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, image:"images/Lunaviel_Illustration.jpg"},
-      {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, image:"images/Chrono_Illustration.jpg"},
-      {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, image:"images/Elwin_Illustration.jpg"}
+      {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg"},
+      {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg"},
+      {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, category:"近卫", image:"images/Buck_Illustration.jpg"},
+      {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, category:"辅助", image:"images/Lily_Illustration.jpg"},
+      {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, category:"强袭", image:"images/Kael_Illustration.jpg"},
+      {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, category:"辅助", image:"images/Mia_Illustration.jpg"},
+      {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, category:"强袭", image:"images/Sorey_Illustration.jpg"},
+      {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, category:"强袭", image:"images/Shadowblade_Illustration.jpg"},
+      {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, category:"辅助", image:"images/Sylvia_Illustration.jpg"},
+      {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, category:"强袭", image:"images/Alesha_Illustration.jpg"},
+      {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, category:"近卫", image:"images/Galan_Illustration.jpg"},
+      {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Fenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
+      {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
+      {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg"},
+      {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, category:"辅助", image:"images/Elwin_Illustration.jpg"}
     ];
 
     const weaponPool = [
@@ -259,8 +291,8 @@
     // ====================== 玩家数据 ======================
     let player = { 
       diamonds: 1000, 
-      owned: [],           // 角色
-      weapons: [],         // 武器
+      owned: [], 
+      weapons: [], 
       totalCharDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0,
       totalWeaponDraws: 0, wR: 0, wSR: 0, wSSR: 0, wUR: 0,
       charSsrPity: 0, charUrPity: 0,
@@ -279,11 +311,9 @@
     let currentMinesweeperScore = 0;
     let minesweeperBoard = [];
     let mineRows = 0, mineCols = 0, mineCount = 0;
-    let minesweeperGameOver = false;   // 新增：防止踩雷后继续操作
+    let minesweeperGameOver = false;
 
-    function saveGame() { 
-      localStorage.setItem("gachaGame", JSON.stringify(player)); 
-    }
+    function saveGame() { localStorage.setItem("gachaGame", JSON.stringify(player)); }
 
     function loadGame() {
       const saved = localStorage.getItem("gachaGame");
@@ -304,6 +334,16 @@
       if (r === "SSR") return "card-ssr";
       if (r === "SR") return "card-sr";
       return "card-r";
+    }
+
+    // ====================== 新数值系统：计算属性 ======================
+    function calculateStats(item, char) {
+      const levelMult = Math.pow(1.06, item.level);        // 每一级6%（严格按你举例：10级用^10）
+      const starMult = 1 + item.stars * 0.25;             // 每一星25%
+      const hp = Math.floor(char.baseHP * levelMult * starMult);
+      const atk = Math.floor(char.baseATK * levelMult * starMult);
+      const def = Math.floor(char.baseDEF * levelMult * starMult);
+      return { hp, atk, def };
     }
 
     // ====================== 抽卡保底 ======================
@@ -397,6 +437,7 @@
       container.innerHTML = "";
       modal.classList.remove("hidden");
       title.textContent = poolType === "char" ? (results.length === 1 ? "🎉 单抽角色" : "🎉 十连角色") : (results.length === 1 ? "🎉 单抽武器" : "🎉 十连武器");
+
       results.forEach((item, i) => {
         const delay = results.length === 1 ? 0 : i * 80;
         const div = document.createElement("div");
@@ -404,7 +445,12 @@
         const pool = poolType === "char" ? characterPool : weaponPool;
         const data = pool.find(x => x.id === item.id);
         div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
-        div.innerHTML = `<img src="${data.image}" class="character-img w-full rounded-2xl mx-auto draw-shine"><div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div><div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div><div class="text-xs text-gray-400">${data.enName || data.type}</div>`;
+        div.innerHTML = `
+          <img src="${data.image}" class="character-img w-full rounded-2xl mx-auto draw-shine">
+          <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div>
+          <div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div>
+          <div class="text-xs text-gray-400">${data.category || data.enName || data.type}</div>
+        `;
         container.appendChild(div);
       });
     }
@@ -444,10 +490,9 @@
         const data = pool.find(c => c.id === (isChar ? item.charId : item.weaponId));
 
         const div = document.createElement("div");
-        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(data.rarity)} hover:scale-105 transition`;
+        div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${getRarityColor(data.rarity)} hover:scale-105 transition btn-hover`;
 
         let html = '';
-
         if (isChar) {
           let equippedName = "无";
           if (item.equippedWeapon) {
@@ -457,25 +502,20 @@
               equippedName = wpData ? wpData.name : "无";
             }
           }
-
-          const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
-          const hp = Math.floor(data.baseHP * statMult);
-          const atk = Math.floor(data.baseATK * statMult);
-          const def = Math.floor(data.baseDEF * statMult);
-
+          const stats = calculateStats(item, data);
           html = `
             <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
             <div class="text-center">
               <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
               <div class="text-base sm:text-xl font-bold mb-1">${data.name}</div>
-              <div class="text-xs text-gray-400">${data.enName}</div>
+              <div class="text-xs text-gray-400">${data.category}</div>
               <div class="flex justify-center items-center gap-1 mt-2 mb-3">
                 <span class="text-lg font-bold">Lv.${item.level}</span>
                 <span class="star-${Math.min(item.stars + 1, 5)} text-2xl">★</span><span class="text-sm text-gray-400">(${item.stars}/5)</span>
               </div>
               <div class="text-xs text-emerald-400">装备：${equippedName}</div>
               <div class="flex justify-between text-sm mt-4">
-                <div>❤️ ${hp}</div><div>⚔️ ${atk}</div><div>🛡️ ${def}</div>
+                <div>❤️ ${stats.hp}</div><div>⚔️ ${stats.atk}</div><div>🛡️ ${stats.def}</div>
               </div>
             </div>
           `;
@@ -488,7 +528,6 @@
               break;
             }
           }
-
           html = `
             ${equippedBy}
             <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
@@ -520,16 +559,12 @@
       renderInventory();
     }
 
-    // ====================== 角色详情 + 武器装备 ======================
+    // ====================== 角色详情弹窗（严格按草图格式） ======================
     function showCharacterDetail(index) {
       currentModalIndex = index;
       const item = player.owned[index];
       const char = characterPool.find(c => c.id === item.charId);
-      const statMult = 1 + (item.level - 1) * 0.08 + item.stars * 0.25;
-      const hp = Math.floor(char.baseHP * statMult);
-      const atk = Math.floor(char.baseATK * statMult);
-      const def = Math.floor(char.baseDEF * statMult);
-      const sameCount = player.owned.filter(o => o.charId === item.charId).length;
+      const stats = calculateStats(item, char);
 
       let weaponOptionsHTML = `<option value="">无武器</option>`;
       player.weapons.forEach(w => {
@@ -544,34 +579,80 @@
       const equippedObj = item.equippedWeapon ? player.weapons.find(w => w.id === item.equippedWeapon) : null;
       const equippedWp = equippedObj ? weaponPool.find(wp => wp.id === equippedObj.weaponId) : null;
 
+      // 严格按照草图布局制作
       document.getElementById("modalContent").innerHTML = `
-        <div class="text-center">
-          <img src="${char.image}" class="character-img mx-auto rounded-3xl mb-4">
-          <div class="rarity-${char.rarity.toLowerCase()} text-xs inline-block px-6 py-2 rounded-full text-white font-bold">${char.rarity}</div>
-          <h2 class="text-3xl sm:text-4xl font-bold my-3">${char.name}</h2>
-          <div class="text-sm text-gray-400 mb-4">${char.enName}</div>
-          <div class="flex justify-center items-center gap-4 text-xl mb-6">
-            <div>Lv.<span class="font-bold text-3xl">${item.level}</span></div>
-            <div class="flex items-center gap-px text-4xl">${Array(5).fill(0).map((_,i) => `<span class="star-${i < item.stars ? item.stars : 1}">${i < item.stars ? '★' : '☆'}</span>`).join('')}</div>
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- 左侧立绘 + 装备武器 -->
+          <div class="flex-1 flex flex-col">
+            <!-- 立绘 -->
+            <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">
+              <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
+              <div class="absolute top-4 left-4 bg-orange-500 text-white text-xs px-3 py-1 rounded-full font-bold">${char.category}</div>
+            </div>
+            <!-- 装备武器 -->
+            <div class="mt-4 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950">
+              <div class="text-center text-lg font-bold mb-2">装备武器</div>
+              <div class="bg-gray-800 rounded-2xl p-3 text-center text-base">${equippedWp ? equippedWp.name : '无'}</div>
+            </div>
           </div>
-          <div class="grid grid-cols-3 gap-6 my-8 text-xl">
-            <div class="text-center"><div class="text-red-400">❤️ 血量</div><div class="font-bold">${hp}</div></div>
-            <div class="text-center"><div class="text-orange-400">⚔️ 攻击</div><div class="font-bold">${atk}</div></div>
-            <div class="text-center"><div class="text-blue-400">🛡️ 防御</div><div class="font-bold">${def}</div></div>
+
+          <!-- 右侧属性面板 -->
+          <div class="flex-1">
+            <div class="flex justify-between gap-3 mb-6">
+              <!-- 等级 -->
+              <div class="flex-1 border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">等级</div>
+                <div class="text-4xl font-bold">Lv.${item.level}</div>
+              </div>
+              <!-- 星级 -->
+              <div class="flex-1 border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">星级</div>
+                <div class="text-4xl font-bold flex items-center justify-center gap-1">${Array(5).fill(0).map((_,i)=>`<span class="${i < item.stars ? 'star-5' : 'text-gray-500'}">★</span>`).join('')}</div>
+              </div>
+            </div>
+
+            <!-- 属性网格 -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">攻击</div>
+                <div class="text-3xl font-bold">${stats.atk}</div>
+              </div>
+              <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">暴击率</div>
+                <div class="text-3xl font-bold">5%</div>
+              </div>
+              <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">血量</div>
+                <div class="text-3xl font-bold">${stats.hp}</div>
+              </div>
+              <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">暴击伤害</div>
+                <div class="text-3xl font-bold">50%</div>
+              </div>
+              <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">防御</div>
+                <div class="text-3xl font-bold">${stats.def}</div>
+              </div>
+              <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+                <div class="text-sm text-orange-400">减伤</div>
+                <div class="text-3xl font-bold">0%</div>
+              </div>
+            </div>
+
+            <!-- 升级 / 升星按钮 -->
+            <div class="grid grid-cols-2 gap-3 mt-8">
+              <button onclick="levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
+                <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}钻）
+              </button>
+              <button onclick="starUp()" class="btn-hover bg-purple-600 hover:bg-purple-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2 ${item.stars >= 5 ? 'opacity-50 cursor-not-allowed' : ''}">
+                <i class="fas fa-star"></i> 升星 ★${item.stars} → ★${item.stars+1}
+              </button>
+            </div>
           </div>
-          <div class="mb-6">
-            <div class="text-sm text-gray-400 mb-2">当前装备武器</div>
-            <div class="text-lg font-medium">${equippedWp ? equippedWp.name : '无'}</div>
-          </div>
-          <select id="equipSelect" class="w-full bg-gray-800 text-white py-3 px-4 rounded-2xl mb-4">
-            ${weaponOptionsHTML}
-          </select>
-          <button onclick="equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold">装备选中武器</button>
-          <div class="grid grid-cols-2 gap-3 mt-6">
-            <button onclick="levelUp()" class="bg-blue-600 hover:bg-blue-700 py-4 rounded-2xl text-xl font-bold">升级 Lv.${item.level} → ${item.level+1}（${item.level*30}钻）</button>
-            <button onclick="starUp()" class="bg-purple-600 hover:bg-purple-700 py-4 rounded-2xl text-xl font-bold ${item.stars >= 5 ? 'opacity-50 cursor-not-allowed' : ''}">升星 ★${item.stars} → ★${item.stars+1}</button>
-          </div>
-          <button onclick="hideModal()" class="mt-6 text-gray-400">关闭</button>
+        </div>
+
+        <div class="text-center mt-8">
+          <button onclick="hideModal()" class="text-gray-400 text-lg btn-hover">关闭</button>
         </div>
       `;
       document.getElementById("modal").classList.remove("hidden");
@@ -582,7 +663,6 @@
       const select = document.getElementById("equipSelect");
       const weaponUniqueId = parseInt(select.value);
       if (weaponUniqueId) {
-        // 防止重复装备
         const alreadyEquipped = player.owned.some(c => c.equippedWeapon === weaponUniqueId);
         if (alreadyEquipped) return alert("该武器已被其他角色装备！");
       }
@@ -601,7 +681,7 @@
       const item = player.owned[currentModalIndex];
       const cost = item.level * 30;
       if (player.diamonds < cost) return alert("钻石不够！");
-      if (!confirm(`确定花费 ${cost} 钻石升级到 Lv.${item.level + 1} 吗？`)) return;
+      if (!confirm(`确定花费 ${cost} 钻石升级吗？`)) return;
       player.diamonds -= cost;
       item.level = Math.min(item.level + 1, 100);
       document.getElementById("diamonds").textContent = player.diamonds;
@@ -609,6 +689,7 @@
       showCharacterDetail(currentModalIndex);
     }
 
+    // ====================== 升星 + 升星动画 ======================
     function starUp() {
       if (currentModalIndex === null) return;
       const item = player.owned[currentModalIndex];
@@ -616,10 +697,27 @@
       const duplicateIndex = player.owned.findIndex(o => o.charId === item.charId && o.id !== item.id && o.stars <= item.stars);
       if (duplicateIndex === -1) return alert("没有可用的相同角色材料！");
       if (!confirm("确定消耗1个相同角色升星吗？")) return;
+
       player.owned.splice(duplicateIndex, 1);
       item.stars++;
+
       saveGame();
-      showCharacterDetail(currentModalIndex);
+
+      // 触发升星动画
+      const modalEl = document.getElementById("modal");
+      const burst = document.createElement("div");
+      burst.className = "fixed inset-0 flex items-center justify-center pointer-events-none z-[99999]";
+      burst.innerHTML = `
+        <div class="text-8xl flex gap-4 star-burst">
+          ★★★
+        </div>
+      `;
+      document.body.appendChild(burst);
+
+      setTimeout(() => {
+        burst.remove();
+        showCharacterDetail(currentModalIndex);   // 刷新界面
+      }, 900);
     }
 
     function hideModal() {
@@ -693,7 +791,7 @@
       renderInventory();
     }
 
-    // ====================== 抽卡池切换 ======================
+    // ====================== 其他功能（抽卡池、记录、存档、探索） ======================
     function setDrawPool(type) {
       currentDrawPool = type;
       document.getElementById("poolCharBtn").classList.toggle("active", type === "char");
@@ -701,7 +799,6 @@
       document.getElementById("poolTitle").textContent = type === "char" ? "角色池抽取" : "武器池抽取";
     }
 
-    // ====================== 记录查询 ======================
     function setRecordTab(n) {
       currentRecordTab = n;
       document.querySelectorAll('.record-tab').forEach((b,i) => b.classList.toggle('active', i===n));
@@ -746,11 +843,8 @@
       document.getElementById("recordModal").classList.remove("hidden");
     }
 
-    function hideRecordModal() {
-      document.getElementById("recordModal").classList.add("hidden");
-    }
+    function hideRecordModal() { document.getElementById("recordModal").classList.add("hidden"); }
 
-    // ====================== 存档 ======================
     function exportSave() {
       const dataStr = JSON.stringify(player, null, 2);
       const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
@@ -779,7 +873,6 @@
       e.target.value = "";
     }
 
-    // ====================== 其他功能 ======================
     function getDiamonds() {
       if (Date.now() < diamondCooldownEnd) return;
       const amount = Math.floor(Math.random() * 201) + 300;
@@ -802,10 +895,7 @@
       }, 1000);
     }
 
-    function openGambling() { 
-      document.getElementById("gamblingModal").classList.remove("hidden"); 
-      document.getElementById("gamblingResult").innerHTML = ""; 
-    }
+    function openGambling() { document.getElementById("gamblingModal").classList.remove("hidden"); document.getElementById("gamblingResult").innerHTML = ""; }
     function hideGambling() { document.getElementById("gamblingModal").classList.add("hidden"); }
     function spinSlots() { 
       const bet = parseInt(document.getElementById("betAmount").value);
@@ -830,10 +920,7 @@
       saveGame();
     }
 
-    function openMinesweeper() { 
-      document.getElementById("minesweeperModal").classList.remove("hidden"); 
-      startMinesweeper(8,8,10); 
-    }
+    function openMinesweeper() { document.getElementById("minesweeperModal").classList.remove("hidden"); startMinesweeper(8,8,10); }
     function hideMinesweeper() { 
       document.getElementById("minesweeperModal").classList.add("hidden"); 
       currentMinesweeperScore = 0;
@@ -947,7 +1034,7 @@
       }
     }
 
-    // 按用户要求保留这行代码（防止bug）
+    // 按你要求保留这行（防止bug）
     window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });
 
     window.onload = () => {

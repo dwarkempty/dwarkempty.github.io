@@ -1,17 +1,19 @@
-// js/battle.js - 完整最终版（玩家回合制 + 技能选择 + 目标选择 + 详情界面）
-let currentBattleTeam = [null, null, null, null]; // 0=后排a, 1=前排a, 2=后排b, 3=前排b
+// js/battle.js
+let currentBattleTeam = [null, null, null, null];
 let battleEnergy = 4;
 const MAX_ENERGY = 6;
 const ENERGY_PER_TURN = 2;
 
-let hasActed = [false, false, false, false]; // 本回合是否已行动
+let hasActed = [false, false, false, false];
+let playerHP = [0, 0, 0, 0];
+let playerMaxHP = [0, 0, 0, 0];
 
 let currentEnemyTargets = [
-  { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65, defense: 40 },
-  { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90, defense: 25 }
+  { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65, defense: 40, status: {} },
+  { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90, defense: 25, status: {} }
 ];
 
-let playerStatuses = [{}, {}, {}, {}]; // 每个位置的状态（后续扩展）
+let playerStatuses = [{}, {}, {}, {}]; // 每个位置的状态
 
 // ====================== R级角色技能数据 ======================
 const characterSkillMap = {
@@ -98,30 +100,41 @@ function executeSkill(position, isNormalAttack) {
 function enemyTurn() {
   document.getElementById("battleLog").innerHTML += `<div class="text-red-400 font-bold">【敌方回合开始】</div>`;
 
-  for (let enemy of currentEnemyTargets) {
+  for (let i = 0; i < currentEnemyTargets.length; i++) {
+    const enemy = currentEnemyTargets[i];
     if (enemy.hp <= 0) continue;
+
     const targetIndex = Math.floor(Math.random() * 4);
     const targetChar = currentBattleTeam[targetIndex];
     if (!targetChar) continue;
 
     const damage = Math.floor(enemy.atk * 0.9);
-    // 简单扣血（后续可加护盾）
-    // 这里暂时不做玩家血量扣减（留给下一阶段完整生命值系统）
+    playerHP[targetIndex] = Math.max(0, playerHP[targetIndex] - damage);
+
     document.getElementById("battleLog").innerHTML += `<div class="text-red-400">${enemy.name} 攻击 ${targetChar.name}，造成 ${damage} 伤害</div>`;
   }
 
-  // 检查胜负
+  checkBattleEnd();
+  renderBattleUI();
+}
+
+// ====================== 胜负判断 ======================
+function checkBattleEnd() {
   const allEnemiesDead = currentEnemyTargets.every(e => e.hp <= 0);
   if (allEnemiesDead) {
-    setTimeout(() => alert("🎉 战斗胜利！"), 300);
+    alert("🎉 战斗胜利！获得 300 钻石 + 500 金币");
+    player.diamonds += 300;
+    player.gold += 500;
+    window.saveGame();
+    hideBattleModal();
     return;
   }
 
-  // 重置玩家行动
-  hasActed = [false, false, false, false];
-  battleEnergy = Math.min(battleEnergy + ENERGY_PER_TURN, MAX_ENERGY);
-  document.getElementById("battleLog").innerHTML += `<div class="text-cyan-400">⚡ 玩家回合开始！能量恢复至 ${battleEnergy}/${MAX_ENERGY}</div>`;
-  renderBattleUI();
+  const allPlayersDead = playerHP.every(hp => hp <= 0);
+  if (allPlayersDead) {
+    alert("💀 战斗失败...");
+    hideBattleModal();
+  }
 }
 
 // ====================== 渲染主战斗界面 ======================
@@ -133,13 +146,24 @@ function renderBattleUI() {
     if (currentBattleTeam[i]) {
       const data = window.getCharacterData(currentBattleTeam[i].charId);
       const acted = hasActed[i] ? 'opacity-50 pointer-events-none' : '';
+      const hpPercent = Math.max(0, Math.floor((playerHP[i] / playerMaxHP[i]) * 100));
       el.innerHTML = `
         <img src="${data.image}" class="w-20 h-20 mx-auto rounded-2xl mb-2 ${acted}">
         <div class="text-sm font-bold ${acted}">${data.name}</div>
+        <div class="text-xs text-gray-400">${playerHP[i]} / ${playerMaxHP[i]}</div>
+        <div class="h-1.5 bg-gray-700 rounded mt-1 overflow-hidden"><div class="h-full bg-emerald-500" style="width:${hpPercent}%"></div></div>
       `;
     } else {
       el.innerHTML = `<div class="text-gray-500 text-sm">空位</div>`;
     }
+  }
+
+  // 敌人血条
+  for (let i = 0; i < 2; i++) {
+    const enemy = currentEnemyTargets[i];
+    const hpPercent = Math.max(0, Math.floor((enemy.hp / enemy.maxHp) * 100));
+    document.getElementById(`enemy-hp-${i}`).textContent = `${enemy.hp} / ${enemy.maxHp}`;
+    document.getElementById(`enemy-hp-bar-${i}`).style.width = `${hpPercent}%`;
   }
 }
 

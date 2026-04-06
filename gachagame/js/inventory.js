@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统（完整无省略，性能优化，无任何战斗/技能相关代码）
+// js/inventory.js - 仓库渲染 + 养成系统
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -117,7 +117,12 @@ function showCharacterDetail(index) {
 
   const borderClass = window.getRarityBorderClass(char.rarity);
 
-  document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-auto overflow-hidden border-4 ${borderClass}`;
+  document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
+
+  // 【关键修复】星级使用彩色样式
+  const starHTML = Array(5).fill(0).map((_, i) => {
+    return `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`;
+  }).join('');
 
   document.getElementById("modalContent").innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
@@ -143,7 +148,7 @@ function showCharacterDetail(index) {
           <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
         </div>
 
-        <!-- 角色描述（已移除技能部分） -->
+        <!-- 角色描述 -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950 text-sm leading-relaxed">
           <div class="font-bold text-orange-400 mb-3">角色描述</div>
           <p>${char.description || '一位神秘的冒险者。'}</p>
@@ -159,7 +164,7 @@ function showCharacterDetail(index) {
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">星级</div>
-            <div class="text-4xl font-bold">${"★".repeat(item.stars)}</div>
+            <div class="text-4xl font-bold flex items-center justify-center gap-1">${starHTML}</div>
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">攻击</div>
@@ -216,7 +221,7 @@ function showWeaponDetail(index) {
 
   const borderClass = window.getRarityBorderClass(weapon.rarity);
 
-  document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-auto overflow-hidden border-4 ${borderClass}`;
+  document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
 
   document.getElementById("modalContent").innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
@@ -279,6 +284,7 @@ function showWeaponDetail(index) {
   document.getElementById("modal").classList.remove("hidden");
 }
 
+// 其余函数保持不变（equipWeapon、levelUp、starUp、hideModal、toggleDecomposeMode 等）
 function equipWeapon() {
   if (currentModalIndex === null || currentModalType !== "char") return;
   const select = document.getElementById("equipSelect");

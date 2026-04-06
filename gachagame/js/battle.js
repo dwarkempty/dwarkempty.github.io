@@ -1,5 +1,5 @@
-// js/battle.js
-let currentBattleTeam = [null, null, null, null];
+// js/battle.js - 下一阶段完整最终版（生命值 + 状态 + 敌人AI + 胜负判断）
+let currentBattleTeam = [null, null, null, null]; // 0=后排a, 1=前排a, 2=后排b, 3=前排b
 let battleEnergy = 4;
 const MAX_ENERGY = 6;
 const ENERGY_PER_TURN = 2;
@@ -13,48 +13,23 @@ let currentEnemyTargets = [
   { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90, defense: 25, status: {} }
 ];
 
-let playerStatuses = [{}, {}, {}, {}]; // 每个位置的状态
+let playerStatuses = [{}, {}, {}, {}];
 
 // ====================== R级角色技能数据 ======================
 const characterSkillMap = {
-  1: { // 森林游侠·艾伦
-    description: "出身幽暗森林的年轻游侠，精通弓箭与自然追踪。性格坚韧乐观，热爱冒险与保护生态。虽经验尚浅，但精准的箭术能为团队提供可靠的远程支援，是新手冒险者最常见的伙伴。",
-    normalAttack: "普通攻击：对敌方单体造成80%总攻击的物理伤害",
-    skill1Name: "【穿林箭】",
-    skill1Desc: "消耗1点能量，对敌方单体造成120%总攻击的物理伤害，并降低目标10%防御，持续2回合。若目标处于后排，该技能额外无视5%的防御",
-    skill1Cost: 1
-  },
-  2: { // 火焰学徒·莎莉
-    description: "魔法学徒莎莉，天生亲和火焰元素。活泼热情但控制力不足，常在战斗中制造小爆炸。学习火焰魔法，希望成为强大法师，是队伍中活力满满的火力输出手。",
-    normalAttack: "普通攻击：对敌方单体造成75%总攻击的火焰魔法伤害",
-    skill1Name: "【火球冲击】",
-    skill1Desc: "消耗1点能量，对敌方单体造成110%总攻击的火焰魔法伤害，有30%概率点燃目标（每回合造成相当于自身5%总攻击的额外持续伤害，持续2回合）",
-    skill1Cost: 1
-  },
-  3: { // 铁壁卫士·巴克
-    description: "身躯如铁塔般的佣兵卫士，拥有惊人的耐力和防御力。忠诚可靠，总是冲在最前线保护同伴。话语不多，但行动胜于千言，是新手队伍最值得信赖的盾牌。",
-    normalAttack: "普通攻击：对敌方单体造成70%总攻击的物理伤害",
-    skill1Name: "【铁壁守护】",
-    skill1Desc: "消耗1点能量，为自身或一名前排队友生成护盾（吸收相当于自身1.5倍总防御的伤害），持续2回合，并提升自身20%减伤1回合",
-    skill1Cost: 1
-  },
-  4: { // 月影精灵·莉莉
-    description: "月影森林的精灵少女，沐浴在月光下成长。温柔恬静，擅长月影魔法，能治愈伤口并增强盟友。虽战斗力不强，但她是团队不可或缺的治愈之光，深受大家喜爱。",
-    normalAttack: "普通攻击：对敌方单体造成65%总攻击的魔法伤害",
-    skill1Name: "【月光祈福】",
-    skill1Desc: "消耗1点能量，为己方单体回复相当于自身80%总攻击的生命值，并提升目标10%攻击力，持续2回合。若目标为前排角色，额外为其附加5%暴击率加成",
-    skill1Cost: 1
-  }
+  1: { description: "出身幽暗森林的年轻游侠，精通弓箭与自然追踪。性格坚韧乐观，热爱冒险与保护生态。虽经验尚浅，但精准的箭术能为团队提供可靠的远程支援，是新手冒险者最常见的伙伴。", normalAttack: "普通攻击：对敌方单体造成80%总攻击的物理伤害", skill1Name: "【穿林箭】", skill1Desc: "消耗1点能量，对敌方单体造成120%总攻击的物理伤害，并降低目标10%防御，持续2回合。若目标处于后排，该技能额外无视5%的防御", skill1Cost: 1 },
+  2: { description: "魔法学徒莎莉，天生亲和火焰元素。活泼热情但控制力不足，常在战斗中制造小爆炸。学习火焰魔法，希望成为强大法师，是队伍中活力满满的火力输出手。", normalAttack: "普通攻击：对敌方单体造成75%总攻击的火焰魔法伤害", skill1Name: "【火球冲击】", skill1Desc: "消耗1点能量，对敌方单体造成110%总攻击的火焰魔法伤害，有30%概率点燃目标（每回合造成相当于自身5%总攻击的额外持续伤害，持续2回合）", skill1Cost: 1 },
+  3: { description: "身躯如铁塔般的佣兵卫士，拥有惊人的耐力和防御力。忠诚可靠，总是冲在最前线保护同伴。话语不多，但行动胜于千言，是新手队伍最值得信赖的盾牌。", normalAttack: "普通攻击：对敌方单体造成70%总攻击的物理伤害", skill1Name: "【铁壁守护】", skill1Desc: "消耗1点能量，为自身或一名前排队友生成护盾（吸收相当于自身1.5倍总防御的伤害），持续2回合，并提升自身20%减伤1回合", skill1Cost: 1 },
+  4: { description: "月影森林的精灵少女，沐浴在月光下成长。温柔恬静，擅长月影魔法，能治愈伤口并增强盟友。虽战斗力不强，但她是团队不可或缺的治愈之光，深受大家喜爱。", normalAttack: "普通攻击：对敌方单体造成65%总攻击的魔法伤害", skill1Name: "【月光祈福】", skill1Desc: "消耗1点能量，为己方单体回复相当于自身80%总攻击的生命值，并提升目标10%攻击力，持续2回合。若目标为前排角色，额外为其附加5%暴击率加成", skill1Cost: 1 }
 };
 
-// ====================== 伤害计算公式 ======================
-function calculateDamage(attackerStats, defender, isCritPossible = true) {
+// ====================== 伤害计算 ======================
+function calculateDamage(attackerStats, defender) {
   let damage = attackerStats.atk;
-  const critChance = attackerStats.critRate || 0.05;
-  const isCrit = isCritPossible && Math.random() < critChance;
+  const isCrit = Math.random() < (attackerStats.critRate || 0.05);
   if (isCrit) damage = Math.floor(damage * (1 + (attackerStats.critDamage || 0.5)));
-  const defenseReduce = defender.defense || 30;
-  damage = Math.floor(damage * (1 - defenseReduce / (defenseReduce + 100)));
+  const def = defender.defense || 30;
+  damage = Math.floor(damage * (1 - def / (def + 100)));
   return Math.max(1, damage);
 }
 
@@ -74,9 +49,7 @@ function executeSkill(position, isNormalAttack) {
     damage = calculateDamage(stats, currentEnemyTargets[0]);
     logText = `${charData.name} 发动【普攻】！造成 ${damage} 伤害`;
   } else {
-    if (!skillInfo || battleEnergy < skillInfo.skill1Cost) {
-      return alert("能量不足！");
-    }
+    if (!skillInfo || battleEnergy < skillInfo.skill1Cost) return alert("能量不足！");
     battleEnergy -= skillInfo.skill1Cost;
     damage = Math.floor(stats.atk * 1.2);
     logText = `${charData.name} 释放 ${skillInfo.skill1Name}！造成 ${damage} 伤害`;
@@ -91,9 +64,7 @@ function executeSkill(position, isNormalAttack) {
   hasActed[position] = true;
   renderBattleUI();
 
-  if (hasActed.every(v => v)) {
-    setTimeout(enemyTurn, 800);
-  }
+  if (hasActed.every(v => v)) setTimeout(enemyTurn, 800);
 }
 
 // ====================== 敌方回合 ======================
@@ -137,7 +108,7 @@ function checkBattleEnd() {
   }
 }
 
-// ====================== 渲染主战斗界面 ======================
+// ====================== 渲染主界面 ======================
 function renderBattleUI() {
   document.getElementById("battleEnergy").innerHTML = `${battleEnergy} / ${MAX_ENERGY} <span class="text-xs text-gray-400">⚡</span>`;
 
@@ -167,7 +138,7 @@ function renderBattleUI() {
   }
 }
 
-// ====================== 战斗中点击角色详情界面 ======================
+// ====================== 战斗中点击角色详情 ======================
 function showBattleCharDetail(index) {
   const char = currentBattleTeam[index];
   if (!char) return;
@@ -192,7 +163,6 @@ function showBattleCharDetail(index) {
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">防御</div><div class="text-3xl">${stats.def}</div></div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">减伤</div><div class="text-3xl">0%</div></div>
         </div>
-
         <div class="grid grid-cols-2 gap-4 mt-8">
           <button onclick="window.executeSkill(${index}, true)" class="py-6 bg-emerald-600 hover:bg-emerald-700 rounded-3xl text-xl font-bold">普攻</button>
           <button onclick="window.executeSkill(${index}, false)" class="py-6 bg-amber-600 hover:bg-amber-700 rounded-3xl text-xl font-bold">
@@ -201,7 +171,6 @@ function showBattleCharDetail(index) {
         </div>
       </div>
     </div>
-
     <div class="text-center mt-8">
       <button onclick="window.hideBattleCharDetailModal()" class="px-12 py-4 bg-gray-700 hover:bg-gray-600 rounded-3xl text-xl">关闭</button>
     </div>
@@ -215,16 +184,7 @@ function hideBattleCharDetailModal() {
   document.getElementById("battleCharDetailModal").classList.add("hidden");
 }
 
-// ====================== 回合结束 ======================
-function endBattleTurn() {
-  battleEnergy = Math.min(battleEnergy + ENERGY_PER_TURN, MAX_ENERGY);
-  document.getElementById("battleLog").innerHTML += `<div class="text-cyan-400">⚡ 恢复 ${ENERGY_PER_TURN} 点能量 → 当前 ${battleEnergy}/${MAX_ENERGY}</div>`;
-  hasActed = [false, false, false, false];
-  renderBattleUI();
-  document.getElementById("battleLog").innerHTML += `<div class="text-red-400">敌方行动中...（暂为占位）</div>`;
-}
-
-// ====================== 选人界面相关函数 ======================
+// ====================== 选人界面 ======================
 function openBattleTest() {
   currentBattleTeam = [null, null, null, null];
   battleEnergy = 4;
@@ -270,6 +230,10 @@ function addToBattleTeam(item) {
   const emptyIndex = currentBattleTeam.findIndex(slot => slot === null);
   if (emptyIndex === -1) return alert("阵型已满！");
   currentBattleTeam[emptyIndex] = { ...item };
+  // 初始化该角色的生命值
+  const stats = window.calculateStats(item, window.getCharacterData(item.charId), null);
+  playerHP[emptyIndex] = stats.hp;
+  playerMaxHP[emptyIndex] = stats.hp;
   renderBattleSelectInventory();
   renderBattleSlots();
 }
@@ -312,11 +276,15 @@ function hideBattleModal() {
   currentBattleTeam = [null, null, null, null];
 }
 
-// ====================== 暴露 ======================
+function endBattleTurn() {
+  enemyTurn(); // 结束玩家回合 → 直接进入敌方回合
+}
+
+// ====================== 暴露所有函数 ======================
 window.executeSkill = executeSkill;
 window.showBattleCharDetail = showBattleCharDetail;
 window.hideBattleCharDetailModal = hideBattleCharDetailModal;
-window.endBattleTurn = enemyTurn;
+window.endBattleTurn = endBattleTurn;
 window.openBattleTest = openBattleTest;
 window.showBattleSelectModal = showBattleSelectModal;
 window.hideBattleSelectModal = hideBattleSelectModal;

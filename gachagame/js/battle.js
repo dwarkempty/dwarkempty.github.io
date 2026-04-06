@@ -4,6 +4,12 @@ let battleEnergy = 4;
 const MAX_ENERGY = 6;
 const ENERGY_PER_TURN = 2;
 
+let hasActed = [false, false, false, false]; // 本回合是否已行动
+let currentEnemyTargets = [ // 两个敌人（后续可扩展）
+  { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65 },
+  { id: 2, name: "影林刺客", hp: 850,  maxHp: 850,  atk: 90 }
+];
+
 // ====================== R级角色技能数据（后续SSR/UR在此扩展） ======================
 const characterSkillMap = {
   1: { // 森林游侠·艾伦
@@ -36,6 +42,133 @@ const characterSkillMap = {
   }
   // 后续在此继续添加 SR/SSR/UR 的技能数据
 };
+
+// ====================== 技能执行核心 ======================
+function executeSkill(position, isNormalAttack) {
+  const char = currentBattleTeam[position];
+  if (!char || hasActed[position]) return;
+
+  const skillInfo = window.characterSkillMap[char.charId];
+  const charData = window.getCharacterData(char.charId);
+  const stats = window.calculateStats(char, charData, null);
+
+  let damage = 0;
+  let logText = "";
+
+  if (isNormalAttack) {
+    damage = Math.floor(stats.atk * 0.8);
+    logText = `${charData.name} 发动普攻！造成 ${damage} 伤害`;
+  } else {
+    // 主动技
+    if (!skillInfo || battleEnergy < skillInfo.skill1Cost) {
+      return alert("能量不足或暂无主动技能！");
+    }
+    battleEnergy -= skillInfo.skill1Cost;
+    damage = Math.floor(stats.atk * 1.2); // 暂用120%（后续可按角色不同调整）
+    logText = `${charData.name} 释放 ${skillInfo.skill1Name}！造成 ${damage} 伤害`;
+  }
+
+  // 简单伤害：随机打一个敌人
+  const targetIndex = Math.floor(Math.random() * currentEnemyTargets.length);
+  currentEnemyTargets[targetIndex].hp = Math.max(0, currentEnemyTargets[targetIndex].hp - damage);
+
+  // 日志
+  document.getElementById("battleLog").innerHTML += `<div class="text-emerald-400">${logText}</div>`;
+  document.getElementById("battleLog").scrollTop = 9999;
+
+  // 标记已行动
+  hasActed[position] = true;
+  renderBattleUI();
+
+  // 检查是否全部行动完毕
+  if (hasActed.every(v => v)) {
+    setTimeout(() => {
+      alert("✅ 本回合玩家行动结束！\n（敌方行动暂为占位，下一阶段实现）");
+      endBattleTurn();
+    }, 600);
+  }
+}
+
+// ====================== 渲染主战斗界面 ======================
+function renderBattleUI() {
+  document.getElementById("battleEnergy").innerHTML = `${battleEnergy} / ${MAX_ENERGY} <span class="text-xs text-gray-400">⚡</span>`;
+
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById(`my-${i}`);
+    if (currentBattleTeam[i]) {
+      const data = window.getCharacterData(currentBattleTeam[i].charId);
+      const acted = hasActed[i] ? 'opacity-50' : '';
+      el.innerHTML = `
+        <img src="${data.image}" class="w-20 h-20 mx-auto rounded-2xl mb-2 ${acted}">
+        <div class="text-sm font-bold ${acted}">${data.name}</div>
+      `;
+      el.style.pointerEvents = hasActed[i] ? 'none' : 'auto';
+    } else {
+      el.innerHTML = `<div class="text-gray-500 text-sm">空位</div>`;
+    }
+  }
+}
+
+// ====================== 战斗中点击角色 → 详情界面（新增技能按钮） ======================
+function showBattleCharDetail(index) {
+  const char = currentBattleTeam[index];
+  if (!char) return;
+  const data = window.getCharacterData(char.charId);
+  const stats = window.calculateStats(char, data, null);
+  const skill = window.characterSkillMap[char.charId] || { description: "暂无描述", normalAttack: "普通攻击", skill1Name: "暂无技能", skill1Desc: "" };
+
+  const html = `
+    <div class="flex gap-8">
+      <div class="flex-1 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex items-center justify-center">
+        <img src="${data.image}" class="character-img w-full max-h-[420px] rounded-2xl">
+      </div>
+      <div class="flex-1">
+        <div class="text-4xl font-bold mb-6">${data.name}</div>
+        <!-- 属性格子（保持你原来的8格布局） -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">等级</div><div class="text-3xl">${char.level}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">星级</div><div class="text-3xl">${"★".repeat(char.stars)}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">攻击</div><div class="text-3xl">${stats.atk}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击率</div><div class="text-3xl">${(stats.critRate*100).toFixed(0)}%</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">血量</div><div class="text-3xl">${stats.hp}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击伤害</div><div class="text-3xl">${(stats.critDamage*100).toFixed(0)}%</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">防御</div><div class="text-3xl">${stats.def}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">减伤</div><div class="text-3xl">0%</div></div>
+        </div>
+
+        <!-- 技能选择按钮 -->
+        <div class="grid grid-cols-2 gap-4 mt-8">
+          <button onclick="window.executeSkill(${index}, true)" class="py-6 bg-emerald-600 hover:bg-emerald-700 rounded-3xl text-xl font-bold">普攻</button>
+          <button onclick="window.executeSkill(${index}, false)" class="py-6 bg-amber-600 hover:bg-amber-700 rounded-3xl text-xl font-bold">
+            ${skill.skill1Name || "主动技"}<br><span class="text-xs">消耗 ${skill.skill1Cost || 1} 能量</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-8">
+      <button onclick="window.hideBattleCharDetailModal()" class="px-12 py-4 bg-gray-700 hover:bg-gray-600 rounded-3xl text-xl">关闭</button>
+    </div>
+  `;
+
+  document.getElementById("battleDetailContent").innerHTML = html;
+  document.getElementById("battleCharDetailModal").classList.remove("hidden");
+}
+
+// ====================== 回合结束 ======================
+function endBattleTurn() {
+  // 恢复能量
+  battleEnergy = Math.min(battleEnergy + ENERGY_PER_TURN, MAX_ENERGY);
+  document.getElementById("battleLog").innerHTML += `<div class="text-cyan-400">⚡ 恢复 ${ENERGY_PER_TURN} 点能量 → 当前 ${battleEnergy}/${MAX_ENERGY}</div>`;
+
+  // 重置行动标记
+  hasActed = [false, false, false, false];
+
+  renderBattleUI();
+
+  // 敌方行动（简单占位，后续可扩展）
+  document.getElementById("battleLog").innerHTML += `<div class="text-red-400">敌方行动中...（暂为占位）</div>`;
+}
 
 function openBattleTest() {
   currentBattleTeam = [null, null, null, null];
@@ -241,6 +374,7 @@ function hideBattleCharDetailModal() {
 }
 
 // ====================== 暴露函数 ======================
+window.executeSkill = executeSkill;
 window.openBattleTest = openBattleTest;
 window.showBattleSelectModal = showBattleSelectModal;
 window.hideBattleSelectModal = hideBattleSelectModal;

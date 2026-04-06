@@ -196,7 +196,7 @@ function renderBattleUI() {
   }
 }
 
-// ====================== 战斗中点击角色详情 ======================
+// ====================== 战斗中点击角色详情（新增buff/debuff栏） ======================
 function showBattleCharDetail(index) {
   const char = currentBattleTeam[index];
   if (!char) return;
@@ -221,7 +221,14 @@ function showBattleCharDetail(index) {
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">防御</div><div class="text-3xl">${stats.def}</div></div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">减伤</div><div class="text-3xl">0%</div></div>
         </div>
-        <div class="grid grid-cols-2 gap-4 mt-8">
+
+        <!-- 新增：当前所受buff/debuff栏 -->
+        <div class="mt-6 bg-gray-800 rounded-3xl p-4 text-center border border-orange-400">
+          <div class="text-orange-400 font-bold mb-2">当前所受状态</div>
+          <div class="text-sm text-gray-300">暂无状态（后续扩展）</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mt-6">
           <button onclick="window.executeSkill(${index}, true)" class="py-6 bg-emerald-600 hover:bg-emerald-700 rounded-3xl text-xl font-bold">普攻</button>
           <button onclick="window.executeSkill(${index}, false)" class="py-6 bg-amber-600 hover:bg-amber-700 rounded-3xl text-xl font-bold">
             ${skill.skill1Name}<br><span class="text-xs">消耗 ${skill.skill1Cost} 能量</span>
@@ -229,6 +236,7 @@ function showBattleCharDetail(index) {
         </div>
       </div>
     </div>
+
     <div class="text-center mt-8">
       <button onclick="window.hideBattleCharDetailModal()" class="px-12 py-4 bg-gray-700 hover:bg-gray-600 rounded-3xl text-xl">关闭</button>
     </div>
@@ -240,6 +248,24 @@ function showBattleCharDetail(index) {
 
 function hideBattleCharDetailModal() {
   document.getElementById("battleCharDetailModal").classList.add("hidden");
+}
+
+// ====================== 退出战斗重置 ======================
+function hideBattleModal() {
+  document.getElementById("battleModal").classList.add("hidden");
+  // 完整重置所有战斗数据
+  currentBattleTeam = [null, null, null, null];
+  battleEnergy = 4;
+  hasActed = [false, false, false, false];
+  playerHP = [0, 0, 0, 0];
+  playerMaxHP = [0, 0, 0, 0];
+  playerStatuses = [{}, {}, {}, {}];
+  currentEnemyTargets = [
+    { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65, defense: 40, status: {} },
+    { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90, defense: 25, status: {} }
+  ];
+  // 清空日志
+  document.getElementById("battleLog").innerHTML = "";
 }
 
 // ====================== 选人界面 ======================

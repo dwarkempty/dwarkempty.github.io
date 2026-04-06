@@ -22,6 +22,5 @@ window.onload = () => {
 
 window.addEventListener('beforeunload', () => {
   localStorage.removeItem("gachaGame");
-  // 可选：开发模式下显示提示（正式发布时可注释掉）
-  // console.log("💾 存档已自动清除（开发重置模式）");
+  console.log("💾 存档已自动清除（开发重置模式）");
 });

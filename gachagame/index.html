@@ -71,9 +71,20 @@
       <h1 class="text-3xl sm:text-4xl font-bold flex items-center gap-3">
         <i class="fas fa-dragon text-orange-400"></i> 抽卡养成大冒险
       </h1>
-      <div class="flex items-center gap-2 bg-gray-900 px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-lg sm:text-xl">
-        <i class="fas fa-gem text-cyan-400"></i>
-        <span id="diamonds" class="font-bold">1000</span>
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2 bg-gray-900 px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-lg sm:text-xl">
+          <i class="fas fa-gem text-cyan-400"></i>
+          <span id="diamonds" class="font-bold">1000</span>
+        </div>
+        <div class="flex items-center gap-2 bg-gray-900 px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-lg sm:text-xl">
+          <i class="fas fa-coins text-yellow-400"></i>
+          <span id="gold" class="font-bold">0</span>
+        </div>
+        <div class="flex items-center gap-2 bg-gray-900 px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-lg sm:text-xl">
+          <i class="fas fa-flask text-purple-400"></i>
+          <span id="magicPotion" class="font-bold">0</span>
+        </div>
+        <button onclick="openConsolePrompt()" class="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-xl">控制台</button>
       </div>
     </div>
 
@@ -142,13 +153,29 @@
     <!-- 探索界面 -->
     <div id="panel2" class="panel hidden text-center py-8 sm:py-12">
       <h2 class="text-3xl font-bold mb-8">🔍 探索</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
         <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
           <i class="fas fa-gem text-5xl"></i>
           <div>
             <div class="text-2xl font-bold">获取钻石</div>
             <div class="text-sm text-emerald-200">300~500钻石</div>
             <div id="diamondCooldown" class="text-xs text-emerald-300 mt-2"></div>
+          </div>
+        </button>
+        <button onclick="getGold()" id="goldBtn" class="bg-yellow-600 hover:bg-yellow-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
+          <i class="fas fa-coins text-5xl"></i>
+          <div>
+            <div class="text-2xl font-bold">获取金币</div>
+            <div class="text-sm text-yellow-200">500~1000金币</div>
+            <div id="goldCooldown" class="text-xs text-yellow-300 mt-2"></div>
+          </div>
+        </button>
+        <button onclick="getMagicPotion()" id="potionBtn" class="bg-purple-600 hover:bg-purple-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
+          <i class="fas fa-flask text-5xl"></i>
+          <div>
+            <div class="text-2xl font-bold">魔药炼制</div>
+            <div class="text-sm text-purple-200">5~10魔药</div>
+            <div id="potionCooldown" class="text-xs text-purple-300 mt-2"></div>
           </div>
         </button>
         <button onclick="openGambling()" class="bg-amber-600 hover:bg-amber-700 p-6 rounded-3xl flex flex-col items-center gap-3 transition btn-hover">
@@ -243,6 +270,19 @@
     </div>
   </div>
 
+  <!-- 开发者控制台Modal -->
+  <div id="consoleModal" onclick="if(event.target.id==='consoleModal')hideConsole()" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[13000] p-4">
+    <div class="bg-gray-900 rounded-3xl max-w-lg w-full p-8">
+      <h2 class="text-3xl font-bold text-center mb-6 flex items-center justify-center gap-3">
+        <i class="fas fa-terminal text-green-400"></i> 开发者控制台
+      </h2>
+      <input id="consoleInput" type="text" placeholder="输入命令，例如：give 999 50" class="w-full bg-gray-800 text-white px-5 py-4 rounded-2xl text-lg mb-6 font-mono">
+      <button onclick="executeConsoleCommand()" class="w-full py-4 bg-green-600 hover:bg-green-700 rounded-2xl text-xl font-bold">执行命令</button>
+      <div id="consoleLog" class="mt-6 text-sm font-mono text-green-300 h-48 overflow-y-auto bg-black/30 rounded-2xl p-4"></div>
+      <button onclick="hideConsole()" class="mt-8 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl">关闭控制台</button>
+    </div>
+  </div>
+
   <script>
     // ====================== 数据池 ======================
     const characterPool = [
@@ -288,6 +328,8 @@
     // ====================== 玩家数据 ======================
     let player = { 
       diamonds: 1000, 
+      gold: 0,
+      magicPotion: 0,
       owned: [], 
       weapons: [], 
       totalCharDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0,
@@ -306,6 +348,8 @@
     let currentModalType = "char";
 
     let diamondCooldownEnd = 0;
+    let goldCooldownEnd = 0;
+    let potionCooldownEnd = 0;
     let currentMinesweeperScore = 0;
     let minesweeperBoard = [];
     let mineRows = 0, mineCols = 0, mineCount = 0;
@@ -321,9 +365,13 @@
         player = data;
       }
       if (!player.diamonds) player.diamonds = 1000;
+      if (!player.gold) player.gold = 0;
+      if (!player.magicPotion) player.magicPotion = 0;
       if (!player.owned) player.owned = [];
       if (!player.weapons) player.weapons = [];
       document.getElementById("diamonds").textContent = player.diamonds;
+      document.getElementById("gold").textContent = player.gold;
+      document.getElementById("magicPotion").textContent = player.magicPotion;
       saveGame();
     }
 
@@ -498,14 +546,8 @@
         const rDiff = rarityOrder[charB.rarity] - rarityOrder[charA.rarity];
         if (rDiff !== 0) return rDiff;
         if (charA.name !== charB.name) return charA.name.localeCompare(charB.name);
-        if (isChar) {
-          if (a.stars !== b.stars) return b.stars - a.stars;
-          return b.level - a.level;
-        } else {
-          if (a.stars !== b.stars) return b.stars - a.stars;
-          return b.level - a.level;
-        }
-        return 0;
+        if (a.stars !== b.stars) return b.stars - a.stars;
+        return b.level - a.level;
       });
       return copy;
     }
@@ -693,7 +735,7 @@
 
             <div class="grid grid-cols-2 gap-3 mt-8">
               <button onclick="levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
-                <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}钻）
+                <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
               </button>
               <button onclick="starUp()" class="btn-hover bg-purple-600 hover:bg-purple-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2 ${item.stars >= 5 ? 'opacity-50 cursor-not-allowed' : ''}">
                 <i class="fas fa-star"></i> 升星 ★${item.stars} → ★${item.stars+1}
@@ -766,7 +808,7 @@
 
             <div class="grid grid-cols-2 gap-3 mt-8">
               <button onclick="levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
-                <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}钻）
+                <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
               </button>
               <button onclick="starUp()" class="btn-hover bg-purple-600 hover:bg-purple-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2 ${item.stars >= 5 ? 'opacity-50 cursor-not-allowed' : ''}">
                 <i class="fas fa-star"></i> 升星 ★${item.stars} → ★${item.stars+1}
@@ -802,10 +844,10 @@
       if (currentModalType === "char") item = player.owned[currentModalIndex];
       else item = player.weapons[currentModalIndex];
       const cost = item.level * 30;
-      if (player.diamonds < cost) return alert("钻石不够！");
-      player.diamonds -= cost;
+      if (player.gold < cost) return alert("金币不够！");
+      player.gold -= cost;
       item.level = Math.min(item.level + 1, 100);
-      document.getElementById("diamonds").textContent = player.diamonds;
+      document.getElementById("gold").textContent = player.gold;
       saveGame();
       if (currentModalType === "char") showCharacterDetail(currentModalIndex);
       else showWeaponDetail(currentModalIndex);
@@ -824,11 +866,17 @@
       if (item.stars >= 5) return alert("已经满星！");
       const duplicateIndex = list.findIndex(o => (currentModalType === "char" ? o.charId : o.weaponId) === (currentModalType === "char" ? item.charId : item.weaponId) && o.id !== item.id && o.stars <= item.stars);
       if (duplicateIndex === -1) return alert("没有可用的相同材料！");
-      if (!confirm("确定消耗1个相同材料升星吗？")) return;
 
+      const potionCost = 10 + item.stars * 10;
+      if (player.magicPotion < potionCost) return alert(`魔药不足！需要 ${potionCost} 个魔药`);
+
+      if (!confirm(`确定消耗 ${potionCost} 个魔药 + 1个相同材料升星吗？`)) return;
+
+      player.magicPotion -= potionCost;
       list.splice(duplicateIndex, 1);
       item.stars++;
 
+      document.getElementById("magicPotion").textContent = player.magicPotion;
       saveGame();
 
       const burst = document.createElement("div");
@@ -986,6 +1034,8 @@
         try {
           player = JSON.parse(ev.target.result);
           document.getElementById("diamonds").textContent = player.diamonds || 1000;
+          document.getElementById("gold").textContent = player.gold || 0;
+          document.getElementById("magicPotion").textContent = player.magicPotion || 0;
           saveGame();
           alert("✅ 存档导入成功！");
           hideRecordModal();
@@ -996,6 +1046,7 @@
       e.target.value = "";
     }
 
+    // ====================== 探索功能 ======================
     function getDiamonds() {
       if (Date.now() < diamondCooldownEnd) return;
       const amount = Math.floor(Math.random() * 201) + 300;
@@ -1006,6 +1057,50 @@
       btn.classList.add("opacity-50", "cursor-not-allowed");
       diamondCooldownEnd = Date.now() + 10000;
       const cd = document.getElementById("diamondCooldown");
+      let timeLeft = 10;
+      const timer = setInterval(() => {
+        timeLeft--;
+        cd.textContent = `${timeLeft}秒后可再次获取`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          btn.classList.remove("opacity-50", "cursor-not-allowed");
+          cd.textContent = "";
+        }
+      }, 1000);
+    }
+
+    function getGold() {
+      if (Date.now() < goldCooldownEnd) return;
+      const amount = Math.floor(Math.random() * 501) + 500;
+      player.gold += amount;
+      document.getElementById("gold").textContent = player.gold;
+      saveGame();
+      const btn = document.getElementById("goldBtn");
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+      goldCooldownEnd = Date.now() + 10000;
+      const cd = document.getElementById("goldCooldown");
+      let timeLeft = 10;
+      const timer = setInterval(() => {
+        timeLeft--;
+        cd.textContent = `${timeLeft}秒后可再次获取`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          btn.classList.remove("opacity-50", "cursor-not-allowed");
+          cd.textContent = "";
+        }
+      }, 1000);
+    }
+
+    function getMagicPotion() {
+      if (Date.now() < potionCooldownEnd) return;
+      const amount = Math.floor(Math.random() * 6) + 5;
+      player.magicPotion += amount;
+      document.getElementById("magicPotion").textContent = player.magicPotion;
+      saveGame();
+      const btn = document.getElementById("potionBtn");
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+      potionCooldownEnd = Date.now() + 10000;
+      const cd = document.getElementById("potionCooldown");
       let timeLeft = 10;
       const timer = setInterval(() => {
         timeLeft--;
@@ -1155,6 +1250,60 @@
         document.getElementById("decomposeBar").classList.add("hidden");
         renderInventory();
       }
+    }
+
+    // ====================== 开发者控制台 ======================
+    function openConsolePrompt() {
+      const code = prompt("请输入作者命令开启控制台：");
+      if (code === "114514") {
+        document.getElementById("consoleModal").classList.remove("hidden");
+        document.getElementById("consoleLog").innerHTML = "控制台已开启<br>可用命令：<br>give {物品id} {数量}<br>give {角色id} {等级} {星级}<br>give {武器id} {等级} {星级}";
+      } else {
+        alert("命令错误！");
+      }
+    }
+
+    function hideConsole() {
+      document.getElementById("consoleModal").classList.add("hidden");
+    }
+
+    function executeConsoleCommand() {
+      const input = document.getElementById("consoleInput").value.trim();
+      const log = document.getElementById("consoleLog");
+      log.innerHTML += `<span class="text-green-400">&gt; ${input}</span><br>`;
+
+      const parts = input.split(" ");
+      if (parts[0].toLowerCase() === "give") {
+        const id = parseInt(parts[1]);
+        let amount = parseInt(parts[2]) || 1;
+
+        if (id === 999) {
+          // 魔药
+          player.magicPotion += amount;
+          document.getElementById("magicPotion").textContent = player.magicPotion;
+          log.innerHTML += `已获得 ${amount} 个魔药<br>`;
+        } else if (id >= 1 && id <= 15) {
+          // 角色
+          const level = parseInt(parts[2]) || 1;
+          const stars = parseInt(parts[3]) || 0;
+          player.owned.push({ id: Date.now(), charId: id, level: Math.min(level, 100), stars: Math.min(stars, 5), equippedWeapon: null });
+          log.innerHTML += `已获得角色 ${characterPool.find(c => c.id === id).name} Lv.${level} ★${stars}<br>`;
+        } else if (id >= 100 && id <= 115) {
+          // 武器 (武器id = 角色id + 99)
+          const weaponRealId = id - 99;
+          const level = parseInt(parts[2]) || 1;
+          const stars = parseInt(parts[3]) || 0;
+          player.weapons.push({ id: Date.now(), weaponId: weaponRealId, level: Math.min(level, 100), stars: Math.min(stars, 5) });
+          log.innerHTML += `已获得武器 ${weaponPool.find(w => w.id === weaponRealId).name} Lv.${level} ★${stars}<br>`;
+        } else {
+          log.innerHTML += `未知物品ID<br>`;
+        }
+        saveGame();
+      } else {
+        log.innerHTML += `未知命令<br>`;
+      }
+      document.getElementById("consoleInput").value = "";
+      log.scrollTop = log.scrollHeight;
     }
 
     window.addEventListener('beforeunload', () => { localStorage.removeItem("gachaGame"); });

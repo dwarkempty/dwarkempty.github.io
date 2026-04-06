@@ -1,16 +1,17 @@
-// js/battle.js - 战斗系统核心（已完整实现R级角色详情界面 + 技能展示）
-let currentBattleTeam = [null, null, null, null]; // 4个位置：0=后排a, 1=前排a, 2=后排b, 3=前排b
+// js/battle.js - 完整最终版（玩家回合制 + 技能选择 + 目标选择 + 详情界面）
+let currentBattleTeam = [null, null, null, null]; // 0=后排a, 1=前排a, 2=后排b, 3=前排b
 let battleEnergy = 4;
 const MAX_ENERGY = 6;
 const ENERGY_PER_TURN = 2;
 
 let hasActed = [false, false, false, false]; // 本回合是否已行动
-let currentEnemyTargets = [ // 两个敌人（后续可扩展）
+
+let currentEnemyTargets = [
   { id: 1, name: "森林魔狼", hp: 1200, maxHp: 1200, atk: 65 },
-  { id: 2, name: "影林刺客", hp: 850,  maxHp: 850,  atk: 90 }
+  { id: 2, name: "影林刺客", hp: 850, maxHp: 850, atk: 90 }
 ];
 
-// ====================== R级角色技能数据（后续SSR/UR在此扩展） ======================
+// ====================== R级角色技能数据 ======================
 const characterSkillMap = {
   1: { // 森林游侠·艾伦
     description: "出身幽暗森林的年轻游侠，精通弓箭与自然追踪。性格坚韧乐观，热爱冒险与保护生态。虽经验尚浅，但精准的箭术能为团队提供可靠的远程支援，是新手冒险者最常见的伙伴。",
@@ -40,15 +41,14 @@ const characterSkillMap = {
     skill1Desc: "消耗1点能量，为己方单体回复相当于自身80%总攻击的生命值，并提升目标10%攻击力，持续2回合。若目标为前排角色，额外为其附加5%暴击率加成",
     skill1Cost: 1
   }
-  // 后续在此继续添加 SR/SSR/UR 的技能数据
 };
 
-// ====================== 技能执行核心 ======================
+// ====================== 执行技能 ======================
 function executeSkill(position, isNormalAttack) {
   const char = currentBattleTeam[position];
-  if (!char || hasActed[position]) return;
+  if (!char || hasActed[position]) return alert("该角色本回合已行动！");
 
-  const skillInfo = window.characterSkillMap[char.charId];
+  const skillInfo = characterSkillMap[char.charId];
   const charData = window.getCharacterData(char.charId);
   const stats = window.calculateStats(char, charData, null);
 
@@ -57,35 +57,30 @@ function executeSkill(position, isNormalAttack) {
 
   if (isNormalAttack) {
     damage = Math.floor(stats.atk * 0.8);
-    logText = `${charData.name} 发动普攻！造成 ${damage} 伤害`;
+    logText = `${charData.name} 发动【普攻】！造成 ${damage} 伤害`;
   } else {
-    // 主动技
     if (!skillInfo || battleEnergy < skillInfo.skill1Cost) {
       return alert("能量不足或暂无主动技能！");
     }
     battleEnergy -= skillInfo.skill1Cost;
-    damage = Math.floor(stats.atk * 1.2); // 暂用120%（后续可按角色不同调整）
+    damage = Math.floor(stats.atk * 1.2);
     logText = `${charData.name} 释放 ${skillInfo.skill1Name}！造成 ${damage} 伤害`;
   }
 
-  // 简单伤害：随机打一个敌人
   const targetIndex = Math.floor(Math.random() * currentEnemyTargets.length);
   currentEnemyTargets[targetIndex].hp = Math.max(0, currentEnemyTargets[targetIndex].hp - damage);
 
-  // 日志
   document.getElementById("battleLog").innerHTML += `<div class="text-emerald-400">${logText}</div>`;
-  document.getElementById("battleLog").scrollTop = 9999;
+  document.getElementById("battleLog").scrollTop = 999999;
 
-  // 标记已行动
   hasActed[position] = true;
   renderBattleUI();
 
-  // 检查是否全部行动完毕
   if (hasActed.every(v => v)) {
     setTimeout(() => {
       alert("✅ 本回合玩家行动结束！\n（敌方行动暂为占位，下一阶段实现）");
       endBattleTurn();
-    }, 600);
+    }, 800);
   }
 }
 
@@ -97,25 +92,24 @@ function renderBattleUI() {
     const el = document.getElementById(`my-${i}`);
     if (currentBattleTeam[i]) {
       const data = window.getCharacterData(currentBattleTeam[i].charId);
-      const acted = hasActed[i] ? 'opacity-50' : '';
+      const acted = hasActed[i] ? 'opacity-50 pointer-events-none' : '';
       el.innerHTML = `
         <img src="${data.image}" class="w-20 h-20 mx-auto rounded-2xl mb-2 ${acted}">
         <div class="text-sm font-bold ${acted}">${data.name}</div>
       `;
-      el.style.pointerEvents = hasActed[i] ? 'none' : 'auto';
     } else {
       el.innerHTML = `<div class="text-gray-500 text-sm">空位</div>`;
     }
   }
 }
 
-// ====================== 战斗中点击角色 → 详情界面（新增技能按钮） ======================
+// ====================== 战斗中点击角色详情界面 ======================
 function showBattleCharDetail(index) {
   const char = currentBattleTeam[index];
   if (!char) return;
   const data = window.getCharacterData(char.charId);
   const stats = window.calculateStats(char, data, null);
-  const skill = window.characterSkillMap[char.charId] || { description: "暂无描述", normalAttack: "普通攻击", skill1Name: "暂无技能", skill1Desc: "" };
+  const skill = characterSkillMap[char.charId] || { description: "暂无描述", normalAttack: "普通攻击", skill1Name: "暂无技能", skill1Desc: "", skill1Cost: 0 };
 
   const html = `
     <div class="flex gap-8">
@@ -124,7 +118,6 @@ function showBattleCharDetail(index) {
       </div>
       <div class="flex-1">
         <div class="text-4xl font-bold mb-6">${data.name}</div>
-        <!-- 属性格子（保持你原来的8格布局） -->
         <div class="grid grid-cols-2 gap-3">
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">等级</div><div class="text-3xl">${char.level}</div></div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">星级</div><div class="text-3xl">${"★".repeat(char.stars)}</div></div>
@@ -136,11 +129,10 @@ function showBattleCharDetail(index) {
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">减伤</div><div class="text-3xl">0%</div></div>
         </div>
 
-        <!-- 技能选择按钮 -->
         <div class="grid grid-cols-2 gap-4 mt-8">
           <button onclick="window.executeSkill(${index}, true)" class="py-6 bg-emerald-600 hover:bg-emerald-700 rounded-3xl text-xl font-bold">普攻</button>
           <button onclick="window.executeSkill(${index}, false)" class="py-6 bg-amber-600 hover:bg-amber-700 rounded-3xl text-xl font-bold">
-            ${skill.skill1Name || "主动技"}<br><span class="text-xs">消耗 ${skill.skill1Cost || 1} 能量</span>
+            ${skill.skill1Name}<br><span class="text-xs">消耗 ${skill.skill1Cost} 能量</span>
           </button>
         </div>
       </div>
@@ -155,24 +147,24 @@ function showBattleCharDetail(index) {
   document.getElementById("battleCharDetailModal").classList.remove("hidden");
 }
 
+function hideBattleCharDetailModal() {
+  document.getElementById("battleCharDetailModal").classList.add("hidden");
+}
+
 // ====================== 回合结束 ======================
 function endBattleTurn() {
-  // 恢复能量
   battleEnergy = Math.min(battleEnergy + ENERGY_PER_TURN, MAX_ENERGY);
   document.getElementById("battleLog").innerHTML += `<div class="text-cyan-400">⚡ 恢复 ${ENERGY_PER_TURN} 点能量 → 当前 ${battleEnergy}/${MAX_ENERGY}</div>`;
-
-  // 重置行动标记
   hasActed = [false, false, false, false];
-
   renderBattleUI();
-
-  // 敌方行动（简单占位，后续可扩展）
   document.getElementById("battleLog").innerHTML += `<div class="text-red-400">敌方行动中...（暂为占位）</div>`;
 }
 
+// ====================== 选人界面相关函数 ======================
 function openBattleTest() {
   currentBattleTeam = [null, null, null, null];
   battleEnergy = 4;
+  hasActed = [false, false, false, false];
   window.showBattleSelectModal();
 }
 
@@ -247,6 +239,7 @@ function startBattle() {
   hideBattleSelectModal();
   document.getElementById("battleModal").classList.remove("hidden");
   battleEnergy = 4;
+  hasActed = [false, false, false, false];
   renderBattleUI();
 }
 
@@ -255,132 +248,14 @@ function hideBattleModal() {
   currentBattleTeam = [null, null, null, null];
 }
 
-function renderBattleUI() {
-  document.getElementById("battleEnergy").innerHTML = `${battleEnergy} / ${MAX_ENERGY} <span class="text-xs text-gray-400">⚡</span>`;
-  for (let i = 0; i < 4; i++) {
-    const el = document.getElementById(`my-${i}`);
-    if (currentBattleTeam[i]) {
-      const data = window.getCharacterData(currentBattleTeam[i].charId);
-      el.innerHTML = `<img src="${data.image}" class="w-20 h-20 mx-auto rounded-2xl mb-2"><div class="text-sm font-bold">${data.name}</div>`;
-    } else {
-      el.innerHTML = `<div class="text-gray-500 text-sm">空位</div>`;
-    }
-  }
-}
-
-function endBattleTurn() {
-  battleEnergy = Math.min(battleEnergy + ENERGY_PER_TURN, MAX_ENERGY);
-  document.getElementById("battleLog").innerHTML += `<div class="text-emerald-400">⚡ 恢复 ${ENERGY_PER_TURN} 点能量 → 当前 ${battleEnergy}/${MAX_ENERGY}</div>`;
-  renderBattleUI();
-}
-
-// ====================== 战斗中点击角色详情界面（核心实现） ======================
-function showBattleCharDetail(index) {
-  const char = currentBattleTeam[index];
-  if (!char) return;
-  const data = window.getCharacterData(char.charId);
-  const stats = window.calculateStats(char, data, null); // 当前无装备，后面可传入武器
-
-  const skill = characterSkillMap[char.charId] || {
-    description: "暂无详细描述",
-    normalAttack: "普通攻击：对敌方单体造成70%总攻击的物理伤害",
-    skill1Name: "暂无技能",
-    skill1Desc: "暂无技能描述",
-    skill1Cost: 0
-  };
-
-  const html = `
-    <div class="flex gap-8">
-      <!-- 左侧立绘 -->
-      <div class="flex-1 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex items-center justify-center">
-        <img src="${data.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
-      </div>
-      
-      <!-- 右侧属性 -->
-      <div class="flex-1">
-        <div class="text-4xl font-bold mb-6">${data.name}</div>
-        
-        <div class="grid grid-cols-2 gap-3">
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">等级</div>
-            <div class="text-3xl font-bold">${char.level}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">星级</div>
-            <div class="text-3xl font-bold">${"★".repeat(char.stars)}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时攻击</div>
-            <div class="text-3xl font-bold">${stats.atk}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时暴击率</div>
-            <div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时血量</div>
-            <div class="text-3xl font-bold">${stats.hp}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时暴击伤害</div>
-            <div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时防御</div>
-            <div class="text-3xl font-bold">${stats.def}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">实时减伤</div>
-            <div class="text-3xl font-bold">0%</div>
-          </div>
-        </div>
-
-        <!-- 所受状态 -->
-        <div class="mt-6 bg-gray-800 rounded-3xl p-4 text-center">
-          <div class="text-orange-400 font-bold">所受状态：buff/debuff</div>
-          <div class="text-gray-400 text-sm mt-1">（后续在此显示状态图标）</div>
-        </div>
-
-        <!-- 技能栏 -->
-        <div class="grid grid-cols-3 gap-3 mt-6">
-          <div class="border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="font-bold text-sm">普攻</div>
-            <div class="text-xs text-gray-400 mt-2">${skill.normalAttack}</div>
-          </div>
-          <div class="border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="font-bold text-sm">${skill.skill1Name}</div>
-            <div class="text-xs text-gray-400 mt-2">${skill.skill1Desc}</div>
-            <div class="text-amber-400 text-xs mt-3">消耗 ${skill.skill1Cost} 能量</div>
-          </div>
-          <div class="border-4 border-orange-500 rounded-3xl p-4 text-center opacity-50">
-            <div class="font-bold text-sm">主动技2</div>
-            <div class="text-xs text-gray-400 mt-2">R级角色暂无第二主动技能</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="text-center mt-8">
-      <button onclick="window.hideBattleCharDetailModal()" class="px-12 py-4 bg-gray-700 hover:bg-gray-600 rounded-3xl text-xl">关闭详情</button>
-    </div>
-  `;
-
-  document.getElementById("battleDetailContent").innerHTML = html;
-  document.getElementById("battleCharDetailModal").classList.remove("hidden");
-}
-
-function hideBattleCharDetailModal() {
-  document.getElementById("battleCharDetailModal").classList.add("hidden");
-}
-
-// ====================== 暴露函数 ======================
+// ====================== 暴露所有函数 ======================
 window.executeSkill = executeSkill;
+window.showBattleCharDetail = showBattleCharDetail;
+window.hideBattleCharDetailModal = hideBattleCharDetailModal;
+window.endBattleTurn = endBattleTurn;
 window.openBattleTest = openBattleTest;
 window.showBattleSelectModal = showBattleSelectModal;
 window.hideBattleSelectModal = hideBattleSelectModal;
 window.startBattle = startBattle;
 window.hideBattleModal = hideBattleModal;
-window.endBattleTurn = endBattleTurn;
-window.showBattleCharDetail = showBattleCharDetail;
-window.hideBattleCharDetailModal = hideBattleCharDetailModal;
 window.characterSkillMap = characterSkillMap;

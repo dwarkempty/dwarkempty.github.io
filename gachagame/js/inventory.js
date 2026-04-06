@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统（完整无省略，性能优化）
+// js/inventory.js - 仓库渲染 + 养成系统（完整无省略，性能优化，无任何战斗/技能相关代码）
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -113,15 +113,6 @@ function showCharacterDetail(index) {
   if (item.equippedWeapon) equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
   const stats = window.calculateStats(item, char, equippedItem);
 
-  // 获取技能描述
-  const skillInfo = window.characterSkillMap[item.charId] || {
-    description: "暂无详细描述",
-    normalAttack: "普通攻击：对敌方单体造成70%总攻击的物理伤害",
-    skill1Name: "暂无技能",
-    skill1Desc: "暂无技能描述",
-    skill1Cost: 0
-  };
-
   const equippedName = equippedItem ? window.getWeaponData(equippedItem.weaponId).name : "无武器";
 
   const borderClass = window.getRarityBorderClass(char.rarity);
@@ -130,9 +121,8 @@ function showCharacterDetail(index) {
 
   document.getElementById("modalContent").innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
-      <!-- 左侧：立绘 + 装备 + 描述 -->
+      <!-- 左侧：立绘 + 装备 -->
       <div class="flex-1 flex flex-col">
-        <!-- 立绘 -->
         <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">
           <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
         </div>
@@ -153,20 +143,10 @@ function showCharacterDetail(index) {
           <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
         </div>
 
-        <!-- 角色描述 + 技能描述 -->
+        <!-- 角色描述（已移除技能部分） -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950 text-sm leading-relaxed">
           <div class="font-bold text-orange-400 mb-3">角色描述</div>
-          <p>${skillInfo.description}</p>
-          <div class="mt-6 pt-4 border-t border-gray-700">
-            <div class="font-bold text-orange-400 mb-2">技能描述</div>
-            <div class="text-xs bg-gray-800 rounded-2xl p-3 mb-2">
-              <span class="text-emerald-400">普攻：</span>${skillInfo.normalAttack}
-            </div>
-            <div class="text-xs bg-gray-800 rounded-2xl p-3">
-              <span class="text-amber-400">${skillInfo.skill1Name}</span><br>
-              ${skillInfo.skill1Desc}
-            </div>
-          </div>
+          <p>${char.description || '一位神秘的冒险者。'}</p>
         </div>
       </div>
 

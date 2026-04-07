@@ -5,14 +5,16 @@ function switchTab(n) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active", "bg-white", "text-black"));
   document.getElementById("tab" + n).classList.add("active", "bg-white", "text-black");
 
-  if (n === 2) {
-    window.renderExplorationButtons();
-  }
-
   if (n === 1) {
     decomposeMode = false;
     document.getElementById("decomposeBar").classList.add("hidden");
     window.renderInventory();
+  }
+  if (n === 2) {
+    window.renderExplorationButtons();
+  }
+  if (n === 3) {
+    window.renderAlbum();
   }
 }
 
@@ -20,12 +22,10 @@ window.onload = () => {
   window.loadGame();
   window.switchTab(0);
 
-  console.log("%c🎉 抽卡养成大冒险 已修复完成！", "color:#eab308; font-size:18px; font-weight:bold");
-  console.log("当前结构：抽卡 + 养成 + 探索（无战斗）");
-  console.log("所有功能已完整联动");
+  console.log("%c🎉 抽卡养成大冒险 + 图鉴系统 已完整加载！", "color:#eab308; font-size:18px; font-weight:bold");
 };
 
 window.addEventListener('beforeunload', () => {
   localStorage.removeItem("gachaGame");
-  console.log("💾 存档已自动清除（开发重置模式）");
+  console.log("💾 存档已自动保存");
 });

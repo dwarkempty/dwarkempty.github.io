@@ -80,10 +80,13 @@ function drawCard(times) {
     results.push(item);
   }
   window.saveGame();
-  window.showDrawAnimation(results, currentDrawPool);   // 调用 ui.js 中的动画
-  if (!document.getElementById("panel1").classList.contains("hidden")) {
+  window.showDrawAnimation(results, currentDrawPool);
+
+  if (document.getElementById("panel1") && !document.getElementById("panel1").classList.contains("hidden")) {
     window.renderInventory();
   }
+
+  console.log(`🎉 抽卡完成！新增 ${results.length} 个物品，已自动刷新仓库`);
 }
 
 // 暴露

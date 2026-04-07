@@ -9,7 +9,6 @@ function switchTab(n) {
     decomposeMode = false;
     document.getElementById("decomposeBar").classList.add("hidden");
     window.renderInventory();
-    setTimeout(window.initVirtualScroll, 100);
   }
   if (n === 2) {
     window.renderExplorationButtons();

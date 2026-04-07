@@ -1,14 +1,14 @@
 // js/inventory.js - 仓库渲染 + 养成系统
-const ITEM_HEIGHT = 280;        // 每张卡片高度（px）
-const ITEMS_PER_ROW = 6;        // 大屏幕每行显示数量
+const ITEM_HEIGHT = 280;
+const ITEMS_PER_ROW = 6;
 
 let visibleStartIndex = 0;
-let selected = [];
+let selected = [];                    // 全局只声明一次
 let currentInventoryTab = 0;
 let decomposeMode = false;
 let currentSort = "rarity";
 
-// ====================== 辅助函数 =====================
+// ====================== 辅助函数 ======================
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -37,16 +37,13 @@ function renderVirtualInventory() {
     return;
   }
 
-  // 计算总高度，让滚动条正常工作
   const totalHeight = Math.ceil(totalItems / ITEMS_PER_ROW) * ITEM_HEIGHT;
   container.style.height = totalHeight + "px";
   container.innerHTML = "";
 
-  // 计算当前可见范围
   const scrollTop = scrollContainer.scrollTop;
-  const viewportHeight = 620;
   visibleStartIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) * ITEMS_PER_ROW);
-  const visibleEndIndex = Math.min(totalItems, visibleStartIndex + ITEMS_PER_ROW * 5); // 多渲染几行防闪烁
+  const visibleEndIndex = Math.min(totalItems, visibleStartIndex + ITEMS_PER_ROW * 5);
 
   const visibleItems = sorted.slice(visibleStartIndex, visibleEndIndex);
 
@@ -59,64 +56,7 @@ function renderVirtualInventory() {
     div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${window.getRarityColor(data.rarity)} hover:scale-105 transition btn-hover`;
     div.style.height = ITEM_HEIGHT + "px";
 
-    let html = '';
-    if (isChar) {
-      let equippedName = "无";
-      let equippedItem = null;
-      if (item.equippedWeapon) {
-        equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
-        if (equippedItem) equippedName = window.getWeaponData(equippedItem.weaponId)?.name || "无";
-      }
-      const stats = window.calculateStats(item, data, equippedItem);
-      html = `
-        <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
-        <div class="text-center">
-          <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
-          <div class="text-base sm:text-xl font-bold mb-1">${data.name}</div>
-          <div class="text-xs text-gray-400">${data.category}</div>
-          <div class="flex justify-center items-center gap-1 mt-2 mb-3">
-            <span class="text-lg font-bold">Lv.${item.level}</span>
-            <span class="star-${Math.min(item.stars + 1, 5)} text-2xl">★</span><span class="text-sm text-gray-400">(${item.stars}/5)</span>
-          </div>
-          <div class="text-xs text-emerald-400">装备：${equippedName}</div>
-          <div class="flex justify-between text-sm mt-4">
-            <div>❤️ ${stats.hp}</div><div>⚔️ ${stats.atk}</div><div>🛡️ ${stats.def}</div>
-          </div>
-        </div>
-      `;
-    } else {
-      let equippedBy = "";
-      for (let char of player.owned) {
-        if (char.equippedWeapon === item.id) {
-          const charData = window.getCharacterData(char.charId);
-          equippedBy = `<div class="absolute top-4 right-4 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-xl">已被${charData.name}装备</div>`;
-          break;
-        }
-      }
-      const wStats = window.calculateWeaponStats(item, data);
-      html = `
-        ${equippedBy}
-        <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
-        <div class="text-center">
-          <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
-          <div class="text-base sm:text-xl font-bold mb-1">${data.name}</div>
-          <div class="text-xs text-gray-400">${data.type}</div>
-          <div class="flex justify-center items-center gap-1 mt-2 mb-3">
-            <span class="text-lg font-bold">Lv.${item.level}</span>
-            <span class="star-${Math.min(item.stars + 1, 5)} text-2xl">★</span><span class="text-sm text-gray-400">(${item.stars}/5)</span>
-          </div>
-          <div class="flex justify-between text-xs mt-2">
-            <div>❤️ +${wStats.hp}</div>
-            <div>⚔️ +${wStats.atk}</div>
-            <div>🛡️ +${wStats.def}</div>
-          </div>
-          <div class="flex justify-between text-xs mt-1">
-            <div>暴击 +${(wStats.critRate*100).toFixed(0)}%</div>
-            <div>暴伤 +${(wStats.critDamage*100).toFixed(0)}%</div>
-          </div>
-        </div>
-      `;
-    }
+    let html = isChar ? getCharacterCardHTML(item, data) : getWeaponCardHTML(item, data);
 
     if (decomposeMode) {
       html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${realIndex}" onchange="window.toggleSelect(this)">` + html;
@@ -129,6 +69,67 @@ function renderVirtualInventory() {
     }
     container.appendChild(div);
   });
+}
+
+// 卡片HTML抽离（保持代码干净）
+function getCharacterCardHTML(item, data) {
+  let equippedName = "无";
+  let equippedItem = null;
+  if (item.equippedWeapon) {
+    equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
+    if (equippedItem) equippedName = window.getWeaponData(equippedItem.weaponId)?.name || "无";
+  }
+  const stats = window.calculateStats(item, data, equippedItem);
+  return `
+    <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
+    <div class="text-center">
+      <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
+      <div class="text-base sm:text-xl font-bold mb-1">${data.name}</div>
+      <div class="text-xs text-gray-400">${data.category}</div>
+      <div class="flex justify-center items-center gap-1 mt-2 mb-3">
+        <span class="text-lg font-bold">Lv.${item.level}</span>
+        <span class="star-${Math.min(item.stars + 1, 5)} text-2xl">★</span><span class="text-sm text-gray-400">(${item.stars}/5)</span>
+      </div>
+      <div class="text-xs text-emerald-400">装备：${equippedName}</div>
+      <div class="flex justify-between text-sm mt-4">
+        <div>❤️ ${stats.hp}</div><div>⚔️ ${stats.atk}</div><div>🛡️ ${stats.def}</div>
+      </div>
+    </div>
+  `;
+}
+
+function getWeaponCardHTML(item, data) {
+  let equippedBy = "";
+  for (let char of player.owned) {
+    if (char.equippedWeapon === item.id) {
+      const charData = window.getCharacterData(char.charId);
+      equippedBy = `<div class="absolute top-4 right-4 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-xl">已被${charData.name}装备</div>`;
+      break;
+    }
+  }
+  const wStats = window.calculateWeaponStats(item, data);
+  return `
+    ${equippedBy}
+    <img src="${data.image}" class="character-img w-full rounded-2xl mb-3">
+    <div class="text-center">
+      <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mb-2">${data.rarity}</div>
+      <div class="text-base sm:text-xl font-bold mb-1">${data.name}</div>
+      <div class="text-xs text-gray-400">${data.type}</div>
+      <div class="flex justify-center items-center gap-1 mt-2 mb-3">
+        <span class="text-lg font-bold">Lv.${item.level}</span>
+        <span class="star-${Math.min(item.stars + 1, 5)} text-2xl">★</span><span class="text-sm text-gray-400">(${item.stars}/5)</span>
+      </div>
+      <div class="flex justify-between text-xs mt-2">
+        <div>❤️ +${wStats.hp}</div>
+        <div>⚔️ +${wStats.atk}</div>
+        <div>🛡️ +${wStats.def}</div>
+      </div>
+      <div class="flex justify-between text-xs mt-1">
+        <div>暴击 +${(wStats.critRate*100).toFixed(0)}%</div>
+        <div>暴伤 +${(wStats.critDamage*100).toFixed(0)}%</div>
+      </div>
+    </div>
+  `;
 }
 
 function initVirtualScroll() {

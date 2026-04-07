@@ -22,8 +22,8 @@ function renderInventory() {
   const sorted = sortOwned(list, isChar);
 
   sorted.forEach((item) => {
-    const originalIndex = list.findIndex(o => o.id === item.id);
     const data = isChar ? window.getCharacterData(item.charId) : window.getWeaponData(item.weaponId);
+    if (!data) return; // 防止无效数据导致崩溃
 
     const div = document.createElement("div");
     div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${window.getRarityColor(data.rarity)} hover:scale-105 transition btn-hover`;
@@ -34,10 +34,7 @@ function renderInventory() {
       let equippedItem = null;
       if (item.equippedWeapon) {
         equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
-        if (equippedItem) {
-          const wpData = window.getWeaponData(equippedItem.weaponId);
-          equippedName = wpData ? wpData.name : "无";
-        }
+        if (equippedItem) equippedName = window.getWeaponData(equippedItem.weaponId)?.name || "无";
       }
       const stats = window.calculateStats(item, data, equippedItem);
       html = `
@@ -90,11 +87,13 @@ function renderInventory() {
       `;
     }
 
-    if (decomposeMode) html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${originalIndex}" onchange="window.toggleSelect(this)">` + html;
+    if (decomposeMode) html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${list.findIndex(o => o.id === item.id)}" onchange="window.toggleSelect(this)">` + html;
     div.innerHTML = html;
+
+    // 使用 item.id 查找，更稳定
     if (!decomposeMode) {
-      if (isChar) div.onclick = () => window.showCharacterDetail(originalIndex);
-      else div.onclick = () => window.showWeaponDetail(originalIndex);
+      if (isChar) div.onclick = () => window.showCharacterDetailById(item.id);
+      else div.onclick = () => window.showWeaponDetailById(item.id);
     }
     container.appendChild(div);
   });
@@ -102,6 +101,22 @@ function renderInventory() {
   if (list.length === 0) {
     container.innerHTML = `<p class="text-center text-gray-500 py-12 col-span-full">${isChar ? '还没有角色，快去抽卡吧！' : '还没有武器，快去抽卡吧！'}</p>`;
   }
+}
+
+function showCharacterDetailById(itemId) {
+  const index = player.owned.findIndex(o => o.id === itemId);
+  if (index === -1) return;
+  currentModalIndex = index;
+  currentModalType = "char";
+  window.showCharacterDetail(index); // 调用原有函数
+}
+
+function showWeaponDetailById(itemId) {
+  const index = player.weapons.findIndex(o => o.id === itemId);
+  if (index === -1) return;
+  currentModalIndex = index;
+  currentModalType = "weapon";
+  window.showWeaponDetail(index);
 }
 
 function showCharacterDetail(index) {
@@ -119,7 +134,7 @@ function showCharacterDetail(index) {
 
   document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
 
-  // 【关键修复】星级使用彩色样式
+  // 星级使用彩色样式
   const starHTML = Array(5).fill(0).map((_, i) => {
     return `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`;
   }).join('');
@@ -432,6 +447,8 @@ window.renderInventory = renderInventory;
 window.sortOwned = sortOwned;
 window.showCharacterDetail = showCharacterDetail;
 window.showWeaponDetail = showWeaponDetail;
+window.showCharacterDetailById = showCharacterDetailById;
+window.showWeaponDetailById = showWeaponDetailById;
 window.equipWeapon = equipWeapon;
 window.levelUp = levelUp;
 window.starUp = starUp;

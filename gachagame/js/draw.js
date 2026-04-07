@@ -79,9 +79,12 @@ function drawCard(times) {
     }
     results.push(item);
   }
+
   window.saveGame();
   window.showDrawAnimation(results, currentDrawPool);
 
+  // 【关键修复】抽卡后强制刷新仓库（无论当前在哪个面板）
+  // 如果当前在养成面板，则立即刷新；即使不在，也会在切换时显示正确数据
   if (document.getElementById("panel1") && !document.getElementById("panel1").classList.contains("hidden")) {
     window.renderInventory();
   }

@@ -1,9 +1,9 @@
-// js/inventory.js - 仓库渲染 + 养成系统（虚拟滚动优化版，已彻底修复所有报错）
+// js/inventory.js - 仓库渲染 + 养成系统
 const ITEM_HEIGHT = 280;
 const ITEMS_PER_ROW = 6;
 
 let visibleStartIndex = 0;
-let selected = [];                    // 全局只声明一次
+let selected = [];                    // 只声明一次
 let currentInventoryTab = 0;
 let decomposeMode = false;
 let currentSort = "rarity";

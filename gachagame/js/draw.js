@@ -1,4 +1,4 @@
-// js/draw.js - 抽卡核心逻辑（保底 + 概率 + 动画）
+// js/draw.js - 抽卡核心逻辑（已彻底修复“抽卡后仓库不显示”bug）
 function drawOne(poolType) {
   const isChar = poolType === "char";
   if (isChar) {
@@ -40,7 +40,6 @@ function drawOne(poolType) {
     }
   }
 
-  // 重置保底
   if (item.rarity === "SSR" || item.rarity === "UR") {
     if (isChar) player.charSsrPity = 0;
     else player.weaponSsrPity = 0;
@@ -83,13 +82,10 @@ function drawCard(times) {
   window.saveGame();
   window.showDrawAnimation(results, currentDrawPool);
 
-  // 【关键修复】抽卡后强制刷新仓库（无论当前在哪个面板）
-  // 如果当前在养成面板，则立即刷新；即使不在，也会在切换时显示正确数据
-  if (document.getElementById("panel1") && !document.getElementById("panel1").classList.contains("hidden")) {
-    window.renderInventory();
-  }
+  // 【关键修复】抽卡后无论当前在哪个面板，都强制刷新仓库
+  window.renderInventory();
 
-  console.log(`🎉 抽卡完成！新增 ${results.length} 个物品，已自动刷新仓库`);
+  console.log(`🎉 抽卡完成！新增 ${results.length} 个物品，已强制刷新仓库`);
 }
 
 // 暴露

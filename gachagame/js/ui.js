@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台（完整无省略，无战斗相关代码）
+// js/ui.js - UI 动画、Modal、记录查询、控制台
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -117,7 +117,7 @@ function openConsolePrompt() {
   const code = prompt("请输入作者命令开启控制台：");
   if (code === "114514") {
     document.getElementById("consoleModal").classList.remove("hidden");
-    document.getElementById("consoleLog").innerHTML = "控制台已开启<br>可用命令：<br>give {物品id} {数量}<br>give {角色id} {等级} {星级}<br>give {武器id} {等级} {星级}";
+    document.getElementById("consoleLog").innerHTML = "控制台已开启<br>可用命令示例：<br>give 5 50 3 （角色id 5，等级50，星级3）<br>give 105 30 2 （武器id 105，等级30，星级2）";
   } else {
     alert("命令错误！");
   }
@@ -127,6 +127,7 @@ function hideConsole() {
   document.getElementById("consoleModal").classList.add("hidden");
 }
 
+// 控制台give命令 + 自动刷新仓库
 function executeConsoleCommand() {
   const input = document.getElementById("consoleInput").value.trim();
   const log = document.getElementById("consoleLog");
@@ -140,30 +141,43 @@ function executeConsoleCommand() {
     if (id === 998) {
       player.diamonds += amount;
       document.getElementById("diamonds").textContent = player.diamonds;
-      log.innerHTML += `已获得 ${amount} 钻石<br>`;
+      log.innerHTML += `✅ 已获得 ${amount} 钻石<br>`;
     } else if (id === 997) {
       player.gold += amount;
       document.getElementById("gold").textContent = player.gold;
-      log.innerHTML += `已获得 ${amount} 金币<br>`;
+      log.innerHTML += `✅ 已获得 ${amount} 金币<br>`;
     } else if (id === 999) {
       player.magicPotion += amount;
       document.getElementById("magicPotion").textContent = player.magicPotion;
-      log.innerHTML += `已获得 ${amount} 个魔药<br>`;
+      log.innerHTML += `✅ 已获得 ${amount} 个魔药<br>`;
     } else if (id >= 1 && id <= 15) {
+      // give角色
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
-      player.owned.push({ id: Date.now(), charId: id, level: Math.min(level, 100), stars: Math.min(stars, 5), equippedWeapon: null });
-      log.innerHTML += `已获得角色 ${window.getCharacterData(id).name} Lv.${level} ★${stars}<br>`;
-    } else if (id >= 100 && id <= 115) {
+      player.owned.push({ 
+        id: Date.now(), 
+        charId: id, 
+        level: Math.min(level, 100), 
+        stars: Math.min(stars, 5), 
+        equippedWeapon: null 
+      });
+      log.innerHTML += `✅ 已获得角色 ${window.getCharacterData(id).name} Lv.${level} ★${stars}<br>`;
+    } else if (id >= 100 && id <= 114) {   // 安全范围限制为100-114
       const weaponRealId = id - 99;
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
-      player.weapons.push({ id: Date.now(), weaponId: weaponRealId, level: Math.min(level, 100), stars: Math.min(stars, 5) });
-      log.innerHTML += `已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
+      player.weapons.push({ 
+        id: Date.now(), 
+        weaponId: weaponRealId, 
+        level: Math.min(level, 100), 
+        stars: Math.min(stars, 5) 
+      });
+      log.innerHTML += `✅ 已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
     } else {
-      log.innerHTML += `未知物品ID<br>`;
+      log.innerHTML += `❌ 未知物品ID（角色1-15，武器100-114）<br>`;
     }
     window.saveGame();
+    window.renderInventory();   // 自动刷新仓库
   } else {
     log.innerHTML += `未知命令<br>`;
   }

@@ -1,4 +1,14 @@
 // js/inventory.js - 仓库渲染 + 养成系统
+const ITEM_HEIGHT = 280;        // 每张卡片高度（px）
+const ITEMS_PER_ROW = 6;        // 大屏幕每行显示数量
+
+let visibleStartIndex = 0;
+let selected = [];
+let currentInventoryTab = 0;
+let decomposeMode = false;
+let currentSort = "rarity";
+
+// ====================== 辅助函数 =====================
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -13,20 +23,41 @@ function sortOwned(list, isChar) {
   return copy;
 }
 
-function renderInventory() {
+// ====================== 虚拟滚动核心渲染 ======================
+function renderVirtualInventory() {
   const container = document.getElementById("inventory");
-  container.innerHTML = "";
-  selected = [];
+  const scrollContainer = document.getElementById("inventoryContainer");
   const isChar = currentInventoryTab === 0;
   const list = isChar ? player.owned : player.weapons;
   const sorted = sortOwned(list, isChar);
+  const totalItems = sorted.length;
 
-  sorted.forEach((item) => {
+  if (totalItems === 0) {
+    container.innerHTML = `<p class="text-center text-gray-500 py-12 col-span-full">${isChar ? '还没有角色，快去抽卡吧！' : '还没有武器，快去抽卡吧！'}</p>`;
+    return;
+  }
+
+  // 计算总高度，让滚动条正常工作
+  const totalHeight = Math.ceil(totalItems / ITEMS_PER_ROW) * ITEM_HEIGHT;
+  container.style.height = totalHeight + "px";
+  container.innerHTML = "";
+
+  // 计算当前可见范围
+  const scrollTop = scrollContainer.scrollTop;
+  const viewportHeight = 620;
+  visibleStartIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) * ITEMS_PER_ROW);
+  const visibleEndIndex = Math.min(totalItems, visibleStartIndex + ITEMS_PER_ROW * 5); // 多渲染几行防闪烁
+
+  const visibleItems = sorted.slice(visibleStartIndex, visibleEndIndex);
+
+  visibleItems.forEach((item, i) => {
+    const realIndex = visibleStartIndex + i;
     const data = isChar ? window.getCharacterData(item.charId) : window.getWeaponData(item.weaponId);
-    if (!data) return; // 防止无效数据导致崩溃
+    if (!data) return;
 
     const div = document.createElement("div");
     div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${window.getRarityColor(data.rarity)} hover:scale-105 transition btn-hover`;
+    div.style.height = ITEM_HEIGHT + "px";
 
     let html = '';
     if (isChar) {
@@ -87,38 +118,27 @@ function renderInventory() {
       `;
     }
 
-    if (decomposeMode) html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${list.findIndex(o => o.id === item.id)}" onchange="window.toggleSelect(this)">` + html;
+    if (decomposeMode) {
+      html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${realIndex}" onchange="window.toggleSelect(this)">` + html;
+    }
     div.innerHTML = html;
 
-    // 使用 item.id 查找，更稳定
     if (!decomposeMode) {
-      if (isChar) div.onclick = () => window.showCharacterDetailById(item.id);
-      else div.onclick = () => window.showWeaponDetailById(item.id);
+      if (isChar) div.onclick = () => window.showCharacterDetail(realIndex);
+      else div.onclick = () => window.showWeaponDetail(realIndex);
     }
     container.appendChild(div);
   });
+}
 
-  if (list.length === 0) {
-    container.innerHTML = `<p class="text-center text-gray-500 py-12 col-span-full">${isChar ? '还没有角色，快去抽卡吧！' : '还没有武器，快去抽卡吧！'}</p>`;
+function initVirtualScroll() {
+  const scrollContainer = document.getElementById("inventoryContainer");
+  if (scrollContainer) {
+    scrollContainer.onscroll = () => renderVirtualInventory();
   }
 }
 
-function showCharacterDetailById(itemId) {
-  const index = player.owned.findIndex(o => o.id === itemId);
-  if (index === -1) return;
-  currentModalIndex = index;
-  currentModalType = "char";
-  window.showCharacterDetail(index); // 调用原有函数
-}
-
-function showWeaponDetailById(itemId) {
-  const index = player.weapons.findIndex(o => o.id === itemId);
-  if (index === -1) return;
-  currentModalIndex = index;
-  currentModalType = "weapon";
-  window.showWeaponDetail(index);
-}
-
+// ====================== 以下为你原来的所有函数 ======================
 function showCharacterDetail(index) {
   currentModalIndex = index;
   currentModalType = "char";
@@ -129,25 +149,20 @@ function showCharacterDetail(index) {
   const stats = window.calculateStats(item, char, equippedItem);
 
   const equippedName = equippedItem ? window.getWeaponData(equippedItem.weaponId).name : "无武器";
-
   const borderClass = window.getRarityBorderClass(char.rarity);
+
+  const starHTML = Array(5).fill(0).map((_, i) => 
+    `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`
+  ).join('');
 
   document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
 
-  // 星级使用彩色样式
-  const starHTML = Array(5).fill(0).map((_, i) => {
-    return `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`;
-  }).join('');
-
   document.getElementById("modalContent").innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
-      <!-- 左侧：立绘 + 装备 -->
       <div class="flex-1 flex flex-col">
         <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">
           <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
         </div>
-
-        <!-- 装备武器 -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950">
           <div class="text-center text-lg font-bold mb-3">装备武器</div>
           <div class="bg-gray-800 rounded-2xl p-3 text-center text-base mb-3">${equippedName}</div>
@@ -162,52 +177,22 @@ function showCharacterDetail(index) {
           </select>
           <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
         </div>
-
-        <!-- 角色描述 -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950 text-sm leading-relaxed">
           <div class="font-bold text-orange-400 mb-3">角色描述</div>
           <p>${char.description || '一位神秘的冒险者。'}</p>
         </div>
       </div>
-
-      <!-- 右侧：属性 + 按钮 -->
       <div class="flex-1">
         <div class="grid grid-cols-2 gap-3">
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">等级</div>
-            <div class="text-4xl font-bold">${item.level}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">星级</div>
-            <div class="text-4xl font-bold flex items-center justify-center gap-1">${starHTML}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">攻击</div>
-            <div class="text-3xl font-bold">${stats.atk}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">暴击率</div>
-            <div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">血量</div>
-            <div class="text-3xl font-bold">${stats.hp}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">暴击伤害</div>
-            <div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">防御</div>
-            <div class="text-3xl font-bold">${stats.def}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">减伤</div>
-            <div class="text-3xl font-bold">0%</div>
-          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">等级</div><div class="text-4xl font-bold">${item.level}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">星级</div><div class="text-4xl font-bold flex items-center justify-center gap-1">${starHTML}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">攻击</div><div class="text-3xl font-bold">${stats.atk}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击率</div><div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">血量</div><div class="text-3xl font-bold">${stats.hp}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击伤害</div><div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">防御</div><div class="text-3xl font-bold">${stats.def}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">减伤</div><div class="text-3xl font-bold">0%</div></div>
         </div>
-
-        <!-- 升级 & 升星按钮 -->
         <div class="grid grid-cols-2 gap-3 mt-8">
           <button onclick="window.levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
             <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
@@ -218,12 +203,10 @@ function showCharacterDetail(index) {
         </div>
       </div>
     </div>
-
     <div class="text-center mt-8">
       <button onclick="window.hideModal()" class="text-gray-400 text-lg btn-hover">关闭</button>
     </div>
   `;
-
   document.getElementById("modal").classList.remove("hidden");
 }
 
@@ -233,7 +216,6 @@ function showWeaponDetail(index) {
   const item = player.weapons[index];
   const weapon = window.getWeaponData(item.weaponId);
   const wStats = window.calculateWeaponStats(item, weapon);
-
   const borderClass = window.getRarityBorderClass(weapon.rarity);
 
   document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
@@ -245,7 +227,6 @@ function showWeaponDetail(index) {
           <img src="${weapon.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
         </div>
       </div>
-
       <div class="flex-1">
         <div class="flex justify-between gap-3 mb-6">
           <div class="flex-1 border-4 border-orange-500 rounded-3xl p-4 text-center">
@@ -257,30 +238,13 @@ function showWeaponDetail(index) {
             <div class="text-4xl font-bold flex items-center justify-center gap-1">${Array(5).fill(0).map((_,i)=>`<span class="${i < item.stars ? 'star-5' : 'text-gray-500'}">★</span>`).join('')}</div>
           </div>
         </div>
-
         <div class="grid grid-cols-2 gap-3">
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">攻击</div>
-            <div class="text-3xl font-bold">+${wStats.atk}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">暴击率</div>
-            <div class="text-3xl font-bold">+${(wStats.critRate*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">血量</div>
-            <div class="text-3xl font-bold">+${wStats.hp}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">暴击伤害</div>
-            <div class="text-3xl font-bold">+${(wStats.critDamage*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">防御</div>
-            <div class="text-3xl font-bold">+${wStats.def}</div>
-          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">攻击</div><div class="text-3xl font-bold">+${wStats.atk}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击率</div><div class="text-3xl font-bold">+${(wStats.critRate*100).toFixed(0)}%</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">血量</div><div class="text-3xl font-bold">+${wStats.hp}</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">暴击伤害</div><div class="text-3xl font-bold">+${(wStats.critDamage*100).toFixed(0)}%</div></div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center"><div class="text-sm text-orange-400">防御</div><div class="text-3xl font-bold">+${wStats.def}</div></div>
         </div>
-
         <div class="grid grid-cols-2 gap-3 mt-8">
           <button onclick="window.levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
             <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
@@ -291,7 +255,6 @@ function showWeaponDetail(index) {
         </div>
       </div>
     </div>
-
     <div class="text-center mt-8">
       <button onclick="window.hideModal()" class="text-gray-400 text-lg btn-hover">关闭</button>
     </div>
@@ -299,7 +262,7 @@ function showWeaponDetail(index) {
   document.getElementById("modal").classList.remove("hidden");
 }
 
-// 其余函数保持不变（equipWeapon、levelUp、starUp、hideModal、toggleDecomposeMode 等）
+// 其余函数
 function equipWeapon() {
   if (currentModalIndex === null || currentModalType !== "char") return;
   const select = document.getElementById("equipSelect");
@@ -442,13 +405,11 @@ function setInventoryTab(n) {
   window.renderInventory();
 }
 
-// 暴露所有函数
-window.renderInventory = renderInventory;
+// ====================== 暴露所有函数 ======================
+window.renderInventory = renderVirtualInventory;
 window.sortOwned = sortOwned;
 window.showCharacterDetail = showCharacterDetail;
 window.showWeaponDetail = showWeaponDetail;
-window.showCharacterDetailById = showCharacterDetailById;
-window.showWeaponDetailById = showWeaponDetailById;
 window.equipWeapon = equipWeapon;
 window.levelUp = levelUp;
 window.starUp = starUp;
@@ -459,3 +420,4 @@ window.updateDecomposeBar = updateDecomposeBar;
 window.selectAll = selectAll;
 window.decomposeSelected = decomposeSelected;
 window.setInventoryTab = setInventoryTab;
+window.initVirtualScroll = initVirtualScroll;

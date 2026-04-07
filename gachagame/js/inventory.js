@@ -1,11 +1,11 @@
 const ITEM_HEIGHT = 280;
 const ITEMS_PER_ROW = 6;
 
-var visibleStartIndex = 0;
-var selected = [];           
-var currentInventoryTab = 0;
-var decomposeMode = false;
-var currentSort = "rarity";
+let visibleStartIndex = 0;
+let selected = []; // 只声明一次
+let currentInventoryTab = 0;
+let decomposeMode = false;
+let currentSort = "rarity";
 
 // ====================== 辅助函数 ======================
 function sortOwned(list, isChar) {

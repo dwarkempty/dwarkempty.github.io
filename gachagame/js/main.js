@@ -27,6 +27,6 @@ window.onload = () => {
 };
 
 window.addEventListener('beforeunload', () => {
-  localStorage.removeItem("gachaGame");
+  // localStorage.removeItem("gachaGame");
   console.log("💾 存档已自动保存");
 });

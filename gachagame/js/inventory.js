@@ -1,4 +1,3 @@
-// js/inventory.js - 仓库渲染 + 养成系统
 const ITEM_HEIGHT = 280;
 const ITEMS_PER_ROW = 6;
 

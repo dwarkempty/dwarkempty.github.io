@@ -1,4 +1,4 @@
-// js/exploration.js - 探索系统、赌博、21点、扫雷（完整无省略，无任何战斗相关代码）
+// js/exploration.js - 探索系统、赌博、21点、扫雷
 let diamondCooldownEnd = 0;
 let goldCooldownEnd = 0;
 let potionCooldownEnd = 0;
@@ -428,7 +428,7 @@ function stopMinesweeper() {
   window.hideMinesweeper();
 }
 
-// ====================== 动态生成探索按钮（已移除战斗测试按钮） ======================
+// ====================== 动态生成探索按钮 ======================
 function renderExplorationButtons() {
   const grid = document.getElementById("explorationGrid");
   grid.innerHTML = `

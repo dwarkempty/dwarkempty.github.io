@@ -34,10 +34,7 @@ function renderInventory() {
       let equippedItem = null;
       if (item.equippedWeapon) {
         equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
-        if (equippedItem) {
-          const wpData = window.getWeaponData(equippedItem.weaponId);
-          equippedName = wpData ? wpData.name : "无";
-        }
+        if (equippedItem) equippedName = window.getWeaponData(equippedItem.weaponId)?.name || "无";
       }
       const stats = window.calculateStats(item, data, equippedItem);
       html = `
@@ -90,9 +87,7 @@ function renderInventory() {
       `;
     }
 
-    if (decomposeMode) {
-      html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${list.findIndex(o => o.id === item.id)}" onchange="window.toggleSelect(this)">` + html;
-    }
+    if (decomposeMode) html = `<input type="checkbox" class="absolute top-4 right-4 w-6 h-6 accent-red-500 z-10" data-index="${list.findIndex(o => o.id === item.id)}" onchange="window.toggleSelect(this)">` + html;
     div.innerHTML = html;
 
     if (!decomposeMode) {
@@ -135,9 +130,7 @@ function showCharacterDetail(index) {
   const equippedName = equippedItem ? window.getWeaponData(equippedItem.weaponId).name : "无武器";
   const borderClass = window.getRarityBorderClass(char.rarity);
 
-  const starHTML = Array(5).fill(0).map((_, i) => {
-    return `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`;
-  }).join('');
+  const starHTML = Array(5).fill(0).map((_, i) => `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`).join('');
 
   document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
 
@@ -202,8 +195,8 @@ function showCharacterDetail(index) {
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-8">
-          <button onclick="window.levelUp()" class="btn-hover bg-blue-600 hover:bg-blue-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
-            <i class="fas fa-arrow-up"></i> 升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）
+          <button onclick="window.levelUp()" class="btn-hover ${item.level >= 100 ? 'bg-gray-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
+            <i class="fas fa-arrow-up"></i> ${item.level >= 100 ? '已满级' : `升级 Lv.${item.level} → ${item.level+1}（${item.level*30}金币）`}
           </button>
           <button onclick="window.starUp()" class="btn-hover bg-purple-600 hover:bg-purple-700 py-5 rounded-3xl text-xl font-bold flex items-center justify-center gap-2 ${item.stars >= 5 ? 'opacity-50 cursor-not-allowed' : ''}">
             <i class="fas fa-star"></i> 升星 ★${item.stars} → ★${item.stars+1}
@@ -305,10 +298,11 @@ function levelUp() {
   let item;
   if (currentModalType === "char") item = player.owned[currentModalIndex];
   else item = player.weapons[currentModalIndex];
+  if (item.level >= 100) return alert("已满级！");
   const cost = item.level * 30;
   if (player.gold < cost) return alert("金币不够！");
   player.gold -= cost;
-  item.level = Math.min(item.level + 1, 100);
+  item.level++;
   document.getElementById("gold").textContent = player.gold;
   window.saveGame();
   if (currentModalType === "char") window.showCharacterDetail(currentModalIndex);
@@ -400,11 +394,9 @@ function selectAll() {
   window.updateDecomposeBar();
 }
 
-// 支持类型分解
 function decomposeSelected() {
   if (selected.length === 0) return;
   if (selected.length > 500) return alert("一次最多分解500个！");
-
   const decomposeType = document.getElementById("decomposeType").value;
   const isChar = currentInventoryTab === 0;
   const list = isChar ? player.owned : player.weapons;
@@ -415,10 +407,8 @@ function decomposeSelected() {
     const item = list[i];
     const data = isChar ? window.getCharacterData(item.charId) : window.getWeaponData(item.weaponId);
     let canDecompose = true;
-
     if (decomposeType === "r" && data.rarity !== "R") canDecompose = false;
     if (decomposeType === "sr" && (data.rarity !== "R" && data.rarity !== "SR")) canDecompose = false;
-
     if (canDecompose) {
       total += window.decomposeValue[data.rarity];
       toRemove.push(i);
@@ -442,7 +432,7 @@ function setInventoryTab(n) {
   window.renderInventory();
 }
 
-// 暴露所有函数
+// 暴露
 window.renderInventory = renderInventory;
 window.sortOwned = sortOwned;
 window.showCharacterDetail = showCharacterDetail;

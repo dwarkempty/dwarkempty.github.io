@@ -40,6 +40,7 @@ function drawOne(poolType) {
     }
   }
 
+// 重置保底
   if (item.rarity === "SSR" || item.rarity === "UR") {
     if (isChar) player.charSsrPity = 0;
     else player.weaponSsrPity = 0;
@@ -48,6 +49,14 @@ function drawOne(poolType) {
     if (isChar) player.charUrPity = 0;
     else player.weaponUrPity = 0;
   }
+
+  // 永久记录解锁
+  if (isChar) {
+    if (!player.unlockedChars.includes(item.id)) player.unlockedChars.push(item.id);
+  } else {
+    if (!player.unlockedWeapons.includes(item.id)) player.unlockedWeapons.push(item.id);
+  }
+
   return item;
 }
 
@@ -82,7 +91,6 @@ function drawCard(times) {
   window.saveGame();
   window.showDrawAnimation(results, currentDrawPool);
 
-  // 【关键修复】抽卡后无论当前在哪个面板，都强制刷新仓库
   window.renderInventory();
 
   console.log(`🎉 抽卡完成！新增 ${results.length} 个物品，已强制刷新仓库`);

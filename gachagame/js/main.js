@@ -18,9 +18,16 @@ function switchTab(n) {
   }
 }
 
+function hideAnnouncement() {
+  document.getElementById("announcementModal").classList.add("hidden");
+}
+
 window.onload = () => {
   window.loadGame();
   window.switchTab(0);
+
+  // 每次进入网页弹出公告
+  document.getElementById("announcementModal").classList.remove("hidden");
 
   console.log("%c🎉 抽卡养成大冒险 + 图鉴系统 已完整加载！", "color:#eab308; font-size:18px; font-weight:bold");
 };

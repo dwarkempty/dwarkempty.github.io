@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统（完整无省略，最终稳定版）
+// js/inventory.js - 仓库渲染 + 养成系统
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -107,7 +107,6 @@ function renderInventory() {
   }
 }
 
-// 通过唯一id查找详情（更稳定，解决give后无法点击问题）
 function showCharacterDetailById(itemId) {
   const index = player.owned.findIndex(o => o.id === itemId);
   if (index === -1) return;
@@ -393,7 +392,7 @@ function updateDecomposeBar() {
 function selectAll() {
   selected = [];
   const checkboxes = document.querySelectorAll('#inventory input[type="checkbox"]');
-  const maxSelect = Math.min(checkboxes.length, 300);
+  const maxSelect = Math.min(checkboxes.length, 500);
   for (let i = 0; i < maxSelect; i++) {
     checkboxes[i].checked = true;
     selected.push(parseInt(checkboxes[i].dataset.index));
@@ -401,22 +400,36 @@ function selectAll() {
   window.updateDecomposeBar();
 }
 
+// 支持类型分解
 function decomposeSelected() {
   if (selected.length === 0) return;
-  if (selected.length > 300) return alert("一次最多分解300个！");
+  if (selected.length > 500) return alert("一次最多分解500个！");
+
+  const decomposeType = document.getElementById("decomposeType").value;
   const isChar = currentInventoryTab === 0;
   const list = isChar ? player.owned : player.weapons;
   let total = 0;
+  const toRemove = [];
+
   selected.sort((a, b) => b - a).forEach(i => {
     const item = list[i];
     const data = isChar ? window.getCharacterData(item.charId) : window.getWeaponData(item.weaponId);
-    total += window.decomposeValue[data.rarity];
-    list.splice(i, 1);
+    let canDecompose = true;
+
+    if (decomposeType === "r" && data.rarity !== "R") canDecompose = false;
+    if (decomposeType === "sr" && (data.rarity !== "R" && data.rarity !== "SR")) canDecompose = false;
+
+    if (canDecompose) {
+      total += window.decomposeValue[data.rarity];
+      toRemove.push(i);
+    }
   });
+
+  toRemove.forEach(i => list.splice(i, 1));
   player.diamonds += total;
   document.getElementById("diamonds").textContent = player.diamonds;
   window.saveGame();
-  alert(`✅ 已分解 ${selected.length} 个，获得 ${total} 钻石！`);
+  alert(`✅ 已分解 ${toRemove.length} 个，获得 ${total} 钻石！`);
   selected = [];
   decomposeMode = false;
   document.getElementById("decomposeBar").classList.add("hidden");

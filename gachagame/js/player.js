@@ -1,10 +1,12 @@
-// js/player.js - 玩家数据 + 存档 + 属性计算（性能优化版）
+// js/player.js - 玩家数据 + 存档 + 属性计算
 let player = {
   diamonds: 1000,
   gold: 0,
   magicPotion: 0,
-  owned: [],           // 角色 [{id, charId, level, stars, equippedWeapon}]
-  weapons: [],         // 武器 [{id, weaponId, level, stars}]
+  owned: [],           // 当前拥有的角色
+  weapons: [],         // 当前拥有的武器
+  unlockedChars: [],   // 永久解锁的角色ID（图鉴用）
+  unlockedWeapons: [], // 永久解锁的武器ID（图鉴用）
   totalCharDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0,
   totalWeaponDraws: 0, wR: 0, wSR: 0, wSSR: 0, wUR: 0,
   charSsrPity: 0, charUrPity: 0,
@@ -28,13 +30,16 @@ function loadGame() {
   const saved = localStorage.getItem("gachaGame");
   if (saved) {
     let data = JSON.parse(saved);
-    player = { ...player, ...data }; // 兼容旧存档
+    player = { ...player, ...data };
   }
   // 保底默认值
   if (!player.charSsrPity) player.charSsrPity = 0;
   if (!player.charUrPity) player.charUrPity = 0;
   if (!player.weaponSsrPity) player.weaponSsrPity = 0;
   if (!player.weaponUrPity) player.weaponUrPity = 0;
+  // 永久解锁数组默认值
+  if (!player.unlockedChars) player.unlockedChars = [];
+  if (!player.unlockedWeapons) player.unlockedWeapons = [];
 
   document.getElementById("diamonds").textContent = player.diamonds;
   document.getElementById("gold").textContent = player.gold;

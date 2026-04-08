@@ -50,6 +50,9 @@
     <button onclick="switchTab(3)" id="tab3" class="tab-btn flex-1 py-4 text-xl font-bold rounded-3xl flex items-center justify-center gap-3">
       📖 图鉴
     </button>
+    <button onclick="switchTab(4)" id="tab4" class="tab-btn flex-1 py-4 text-xl font-bold rounded-3xl flex items-center justify-center gap-3">
+      ⚔️ 战斗
+    </button>
   </div>
 
   <!-- Panel 0: 抽卡 -->
@@ -104,14 +107,21 @@
 
     <div id="inventory" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
 
-    <!-- 分解栏 -->
+<!-- 分解栏 -->
     <div id="decomposeBar" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-zinc-900 border border-red-500 rounded-3xl px-8 py-5 flex items-center gap-8 shadow-2xl z-50">
       <div class="flex items-center gap-6">
         <span id="selectedCount" class="text-xl font-bold">已选 0 个</span>
         <span id="decomposeValue" class="text-xl font-bold text-emerald-400">预计获得 0 钻石</span>
       </div>
+      
+      <select id="decomposeType" class="bg-zinc-800 px-4 py-3 rounded-3xl text-base">
+        <option value="all">全部分解</option>
+        <option value="r">仅R级及以下</option>
+        <option value="sr">仅SR级及以下</option>
+      </select>
+
       <div class="flex gap-4">
-        <button onclick="selectAll()" class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-3xl text-sm">全选（最多300个）</button>
+        <button onclick="selectAll()" class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-3xl text-sm">全选（最多500个）</button>
         <button onclick="decomposeSelected()" class="px-8 py-3 bg-red-600 hover:bg-red-500 rounded-3xl font-bold">确认分解</button>
         <button onclick="toggleDecomposeMode()" class="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-3xl">取消</button>
       </div>
@@ -144,6 +154,16 @@
       </div>
     </div>
     <div id="albumGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
+  </div>
+
+  <!-- Panel 4: 战斗 -->
+  <div id="panel4" class="panel hidden max-w-7xl mx-auto px-4">
+    <div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <div class="text-8xl mb-8">⚔️</div>
+      <h2 class="text-5xl font-bold text-amber-400 mb-4">战斗系统</h2>
+      <p class="text-2xl text-gray-400">开发中...</p>
+      <p class="text-sm text-gray-500 mt-8">敬请期待完整回合制战斗、技能系统与多人组队功能</p>
+    </div>
   </div>
 
   <!-- 赌博 Modal -->

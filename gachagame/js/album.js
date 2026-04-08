@@ -1,4 +1,4 @@
-// js/album.js - 图鉴系统
+// js/album.js - 图鉴系统（永久解锁版，即使分解也保持点亮）
 let currentAlbumTab = 0; // 0=角色 1=武器
 
 function setAlbumTab(n) {
@@ -12,9 +12,8 @@ function renderAlbum() {
   grid.innerHTML = "";
 
   if (currentAlbumTab === 0) {
-    // 角色图鉴
     window.characterPool.forEach(char => {
-      const owned = player.owned.some(o => o.charId === char.id);
+      const owned = player.unlockedChars.includes(char.id); // 永久解锁
       const count = player.owned.filter(o => o.charId === char.id).length;
       const div = document.createElement("div");
       div.className = `relative bg-zinc-900 rounded-3xl p-4 cursor-pointer border-4 ${owned ? window.getRarityColor(char.rarity) : 'border-gray-700 opacity-60'}`;
@@ -28,15 +27,16 @@ function renderAlbum() {
       `;
       if (owned) div.onclick = () => {
         const item = player.owned.find(o => o.charId === char.id);
-        const index = player.owned.indexOf(item);
-        window.showCharacterDetail(index);
+        if (item) {
+          const index = player.owned.indexOf(item);
+          window.showCharacterDetail(index);
+        }
       };
       grid.appendChild(div);
     });
   } else {
-    // 武器图鉴
     window.weaponPool.forEach(weapon => {
-      const owned = player.weapons.some(w => w.weaponId === weapon.id);
+      const owned = player.unlockedWeapons.includes(weapon.id); // 永久解锁
       const count = player.weapons.filter(w => w.weaponId === weapon.id).length;
       const div = document.createElement("div");
       div.className = `relative bg-zinc-900 rounded-3xl p-4 cursor-pointer border-4 ${owned ? window.getRarityColor(weapon.rarity) : 'border-gray-700 opacity-60'}`;
@@ -50,8 +50,10 @@ function renderAlbum() {
       `;
       if (owned) div.onclick = () => {
         const item = player.weapons.find(w => w.weaponId === weapon.id);
-        const index = player.weapons.indexOf(item);
-        window.showWeaponDetail(index);
+        if (item) {
+          const index = player.weapons.indexOf(item);
+          window.showWeaponDetail(index);
+        }
       };
       grid.appendChild(div);
     });

@@ -10,16 +10,17 @@
 </head>
 <body class="bg-zinc-950 text-white min-h-screen pb-20">
 
-<!-- 顶部资源栏 -->
-  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between border-b border-zinc-800">
-    <div class="flex items-center gap-4">
-    <!-- 初始化按钮 -->
+<!-- 顶部资源栏（已新增左上角初始化按钮） -->
+<div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between border-b border-zinc-800">
+  <div class="flex items-center gap-4">
+    <!-- 新增：初始化按钮 -->
     <button onclick="resetGame()" 
             class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-2xl flex items-center gap-2 transition btn-hover">
       <i class="fas fa-sync-alt"></i>
       初始化网页
     </button>
-      
+
+    <!-- 资源栏 -->
     <div class="flex items-center gap-8">
       <div class="flex items-center gap-2">
         <span class="text-3xl">⭐</span>
@@ -37,10 +38,12 @@
         <span class="text-xl font-medium">强化石</span>
       </div>
     </div>
-    <button onclick="openConsolePrompt()" class="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-2 text-sm">
-      <i class="fas fa-terminal"></i> 控制台
-    </button>
   </div>
+
+  <button onclick="openConsolePrompt()" class="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-2 text-sm">
+    <i class="fas fa-terminal"></i> 控制台
+  </button>
+</div>
 
 <!-- 导航栏 -->
   <div class="max-w-7xl mx-auto px-4 pt-6">

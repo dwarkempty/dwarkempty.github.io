@@ -1,4 +1,4 @@
-// js/main.js - 初始化 + Tab切换 + 全局启动
+// js/main.js - 初始化 + Tab切换 + 全局启动（完整版，无任何省略）
 function switchTab(n) {
   document.querySelectorAll(".panel").forEach(p => p.classList.add("hidden"));
   document.getElementById("panel" + n).classList.remove("hidden");
@@ -16,10 +16,9 @@ function switchTab(n) {
   if (n === 3) {
     window.renderAlbum();
   }
-}
-
-function hideAnnouncement() {
-  document.getElementById("announcementModal").classList.add("hidden");
+  if (n === 4) {
+    window.renderShopInfo();
+  }
 }
 
 window.onload = () => {
@@ -29,10 +28,10 @@ window.onload = () => {
   // 每次进入网页弹出公告
   document.getElementById("announcementModal").classList.remove("hidden");
 
-  console.log("%c🎉 抽卡养成大冒险 + 图鉴系统 已完整加载！", "color:#eab308; font-size:18px; font-weight:bold");
+  console.log("%c🎉 抽卡养成大冒险 + 经营系统 已完整加载！", "color:#eab308; font-size:18px; font-weight:bold");
 };
 
 window.addEventListener('beforeunload', () => {
   localStorage.removeItem("gachaGame");
-  console.log("💾 存档已自动保存");
+  window.saveGame();
 });

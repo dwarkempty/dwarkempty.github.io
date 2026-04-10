@@ -1,7 +1,7 @@
-// js/exploration.js - 探索系统、赌博、21点、扫雷
-let diamondCooldownEnd = 0;
+// js/exploration.js - 探索系统、赌博、21点、扫雷（资源已全部改为耀星/强化石）
+let diamondCooldownEnd = 0;   // 改名但保持变量名清晰
 let goldCooldownEnd = 0;
-let potionCooldownEnd = 0;
+let potionCooldownEnd = 0;    // 改名但保持变量名清晰
 let currentMinesweeperScore = 0;
 let minesweeperBoard = [];
 let mineRows = 0, mineCols = 0, mineCount = 0;
@@ -10,7 +10,7 @@ let minesweeperReward = 0;
 
 // 赌博全局
 let currentGamblingTab = 0;
-let currentBetCurrency = 0; // 0=钻石 1=金币 2=魔药
+let currentBetCurrency = 0; // 0=耀星 1=金币 2=强化石
 let currentBetAmount = 1000;
 
 // 21点全局
@@ -20,16 +20,16 @@ let dealerHand = [];
 let blackjackBet = 0;
 let blackjackBetCurrency = 0;
 
-function getDiamonds() {
+function getYaoXing() {  // 原 getDiamonds
   if (Date.now() < diamondCooldownEnd) return;
   const amount = Math.floor(Math.random() * 201) + 300;
-  player.diamonds += amount;
-  document.getElementById("diamonds").textContent = player.diamonds;
+  player.yaoXing += amount;
+  document.getElementById("yaoXing").textContent = player.yaoXing;
   window.saveGame();
-  const btn = document.getElementById("diamondBtn");
+  const btn = document.getElementById("yaoXingBtn");
   btn.classList.add("opacity-50", "cursor-not-allowed");
   diamondCooldownEnd = Date.now() + 10000;
-  const cd = document.getElementById("diamondCooldown");
+  const cd = document.getElementById("yaoXingCooldown");
   let timeLeft = 10;
   const timer = setInterval(() => {
     timeLeft--;
@@ -64,16 +64,16 @@ function getGold() {
   }, 1000);
 }
 
-function getMagicPotion() {
+function getReinforceStone() {  // 原 getMagicPotion
   if (Date.now() < potionCooldownEnd) return;
   const amount = Math.floor(Math.random() * 6) + 5;
-  player.magicPotion += amount;
-  document.getElementById("magicPotion").textContent = player.magicPotion;
+  player.reinforceStone += amount;
+  document.getElementById("reinforceStone").textContent = player.reinforceStone;
   window.saveGame();
-  const btn = document.getElementById("potionBtn");
+  const btn = document.getElementById("reinforceStoneBtn");
   btn.classList.add("opacity-50", "cursor-not-allowed");
   potionCooldownEnd = Date.now() + 10000;
-  const cd = document.getElementById("potionCooldown");
+  const cd = document.getElementById("reinforceStoneCooldown");
   let timeLeft = 10;
   const timer = setInterval(() => {
     timeLeft--;
@@ -106,7 +106,7 @@ function switchGamblingTab(n) {
 function selectCurrency(n) {
   currentBetCurrency = n;
   document.querySelectorAll('.currency-btn').forEach((el, i) => el.classList.toggle('active', i === n));
-  const unit = n === 0 ? "钻石" : n === 1 ? "金币" : "魔药";
+  const unit = n === 0 ? "耀星" : n === 1 ? "金币" : "强化石";
   document.getElementById("betUnit").textContent = unit;
 }
 
@@ -116,13 +116,13 @@ function spinSlots() {
   let minBet = currentBetCurrency === 0 ? 100 : currentBetCurrency === 1 ? 1000 : 5;
   if (bet < minBet || bet > maxBet) return alert(`下注金额必须在 ${minBet}~${maxBet} 之间！`);
 
-  let costField = currentBetCurrency === 0 ? "diamonds" : currentBetCurrency === 1 ? "gold" : "magicPotion";
+  let costField = currentBetCurrency === 0 ? "yaoXing" : currentBetCurrency === 1 ? "gold" : "reinforceStone";
   if (player[costField] < bet) return alert("余额不足！");
 
   player[costField] -= bet;
-  if (currentBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+  if (currentBetCurrency === 0) document.getElementById("yaoXing").textContent = player.yaoXing;
   else if (currentBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
-  else document.getElementById("magicPotion").textContent = player.magicPotion;
+  else document.getElementById("reinforceStone").textContent = player.reinforceStone;
 
   const symbols = ["💎", "🃏", "🔥", "🌟", "⚡", "🧊", "7️⃣", "☠️"];
   const reel1 = symbols[Math.floor(Math.random() * symbols.length)];
@@ -143,12 +143,12 @@ function spinSlots() {
   let win = 0;
   if (multiplier > 0) {
     win = bet * multiplier;
-    let winField = currentBetCurrency === 0 ? "diamonds" : currentBetCurrency === 1 ? "gold" : "magicPotion";
+    let winField = currentBetCurrency === 0 ? "yaoXing" : currentBetCurrency === 1 ? "gold" : "reinforceStone";
     player[winField] += win;
-    if (currentBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+    if (currentBetCurrency === 0) document.getElementById("yaoXing").textContent = player.yaoXing;
     else if (currentBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
-    else document.getElementById("magicPotion").textContent = player.magicPotion;
-    document.getElementById("gamblingResult").innerHTML = `<span class="text-green-400">🎉 中奖 ×${multiplier}！获得 ${win} ${currentBetCurrency === 0 ? "钻石" : currentBetCurrency === 1 ? "金币" : "魔药"}</span>`;
+    else document.getElementById("reinforceStone").textContent = player.reinforceStone;
+    document.getElementById("gamblingResult").innerHTML = `<span class="text-green-400">🎉 中奖 ×${multiplier}！获得 ${win} ${currentBetCurrency === 0 ? "耀星" : currentBetCurrency === 1 ? "金币" : "强化石"}</span>`;
   } else if (multiplier === 0) {
     document.getElementById("gamblingResult").innerHTML = `<span class="text-red-400">💀 全清！损失全部下注</span>`;
   } else {
@@ -432,11 +432,11 @@ function stopMinesweeper() {
 function renderExplorationButtons() {
   const grid = document.getElementById("explorationGrid");
   grid.innerHTML = `
-    <button onclick="getDiamonds()" id="diamondBtn" class="bg-emerald-600 hover:bg-emerald-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
+    <button onclick="getYaoXing()" id="yaoXingBtn" class="bg-emerald-600 hover:bg-emerald-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
       <i class="fas fa-gem text-6xl"></i>
-      <div class="text-3xl font-bold">获取钻石</div>
-      <div class="text-emerald-200">300~500钻石</div>
-      <div id="diamondCooldown" class="text-xs text-emerald-300"></div>
+      <div class="text-3xl font-bold">获取耀星</div>
+      <div class="text-emerald-200">300~500耀星</div>
+      <div id="yaoXingCooldown" class="text-xs text-emerald-300"></div>
     </button>
     <button onclick="getGold()" id="goldBtn" class="bg-yellow-600 hover:bg-yellow-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
       <i class="fas fa-coins text-6xl"></i>
@@ -444,11 +444,11 @@ function renderExplorationButtons() {
       <div class="text-yellow-200">500~1000金币</div>
       <div id="goldCooldown" class="text-xs text-yellow-300"></div>
     </button>
-    <button onclick="getMagicPotion()" id="potionBtn" class="bg-teal-600 hover:bg-teal-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
-      <i class="fas fa-flask text-6xl"></i>
-      <div class="text-3xl font-bold">魔药炼制</div>
-      <div class="text-teal-200">5~10魔药</div>
-      <div id="potionCooldown" class="text-xs text-teal-300"></div>
+    <button onclick="getReinforceStone()" id="reinforceStoneBtn" class="bg-teal-600 hover:bg-teal-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
+      <i class="fas fa-gem text-6xl"></i>
+      <div class="text-3xl font-bold">获取强化石</div>
+      <div class="text-teal-200">5~10强化石</div>
+      <div id="reinforceStoneCooldown" class="text-xs text-teal-300"></div>
     </button>
     <button onclick="openGambling()" class="bg-purple-600 hover:bg-purple-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
       <i class="fas fa-dice text-6xl"></i>
@@ -464,9 +464,9 @@ function renderExplorationButtons() {
 }
 
 // ====================== 暴露 ======================
-window.getDiamonds = getDiamonds;
+window.getYaoXing = getYaoXing;
 window.getGold = getGold;
-window.getMagicPotion = getMagicPotion;
+window.getReinforceStone = getReinforceStone;
 window.openGambling = openGambling;
 window.hideGambling = hideGambling;
 window.switchGamblingTab = switchGamblingTab;

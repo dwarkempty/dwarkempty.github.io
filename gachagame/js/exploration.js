@@ -394,17 +394,20 @@ function handleMineFlag(r, c) {
 
 function checkWin() {
   let safeCellsLeft = 0;
+  let allMinesFlagged = true;
   for (let r = 0; r < mineRows; r++) {
     for (let c = 0; c < mineCols; c++) {
-      if (!minesweeperBoard[r][c].mine && !minesweeperBoard[r][c].revealed) safeCellsLeft++;
+      const cell = minesweeperBoard[r][c];
+      if (!cell.mine && !cell.revealed) safeCellsLeft++;
+      if (cell.mine && !cell.flagged) allMinesFlagged = false;
     }
   }
-  if (safeCellsLeft === 0) {
+  if (safeCellsLeft === 0 || allMinesFlagged) {  // 新增：标记完所有雷也胜利
     minesweeperGameOver = true;
-    player.diamonds += minesweeperReward;
-    document.getElementById("diamonds").textContent = player.diamonds;
+    player.yaoXing += minesweeperReward;
+    document.getElementById("yaoXing").textContent = player.yaoXing;
     window.saveGame();
-    alert(`🎉 扫雷胜利！获得 ${minesweeperReward} 钻石`);
+    alert(`🎉 扫雷胜利！获得 ${minesweeperReward} 耀星`);
     window.hideMinesweeper();
   }
 }

@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台
+// js/ui.js - UI 动画、Modal、记录查询、控制台（已全部更新为新资源名称 + 控制台完整代码）
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -100,9 +100,9 @@ function importSave(e) {
   reader.onload = function(ev) {
     try {
       player = JSON.parse(ev.target.result);
-      document.getElementById("diamonds").textContent = player.diamonds || 1000;
+      document.getElementById("yaoXing").textContent = player.yaoXing || 1000;
       document.getElementById("gold").textContent = player.gold || 0;
-      document.getElementById("magicPotion").textContent = player.magicPotion || 0;
+      document.getElementById("reinforceStone").textContent = player.reinforceStone || 0;
       window.saveGame();
       alert("✅ 存档导入成功！");
       window.hideRecordModal();
@@ -117,7 +117,16 @@ function openConsolePrompt() {
   const code = prompt("请输入作者命令开启控制台：");
   if (code === "114514") {
     document.getElementById("consoleModal").classList.remove("hidden");
-    document.getElementById("consoleLog").innerHTML = "控制台已开启<br>可用命令示例：<br>give 5 50 3 （角色id 5，等级50，星级3）<br>give 105 30 2 （武器id 105，等级30，星级2）";
+    document.getElementById("consoleLog").innerHTML = `
+      控制台已开启<br>
+      <span class="text-yellow-400">可用命令示例：</span><br>
+      give 998 500 → 获得500耀星⭐<br>
+      give 997 10000 → 获得10000金币<br>
+      give 999 50 → 获得50强化石<br>
+      give 5 50 3 → 获得角色ID 5（等级50，星级3）<br>
+      give 105 30 2 → 获得武器ID 105（等级30，星级2）<br>
+      <span class="text-emerald-400">物品ID系统仍然完全有效！角色1-15，武器100-114</span>
+    `;
   } else {
     alert("命令错误！");
   }
@@ -127,7 +136,7 @@ function hideConsole() {
   document.getElementById("consoleModal").classList.add("hidden");
 }
 
-// 控制台give命令 + 自动刷新仓库
+// ==================== 控制台核心命令（已完整更新） ====================
 function executeConsoleCommand() {
   const input = document.getElementById("consoleInput").value.trim();
   const log = document.getElementById("consoleLog");
@@ -139,19 +148,22 @@ function executeConsoleCommand() {
     let amount = parseInt(parts[2]) || 1;
 
     if (id === 998) {
-      player.diamonds += amount;
-      document.getElementById("diamonds").textContent = player.diamonds;
-      log.innerHTML += `✅ 已获得 ${amount} 钻石<br>`;
+      // 耀星
+      player.yaoXing += amount;
+      document.getElementById("yaoXing").textContent = player.yaoXing;
+      log.innerHTML += `✅ 已获得 ${amount} 耀星⭐<br>`;
     } else if (id === 997) {
+      // 金币
       player.gold += amount;
       document.getElementById("gold").textContent = player.gold;
       log.innerHTML += `✅ 已获得 ${amount} 金币<br>`;
     } else if (id === 999) {
-      player.magicPotion += amount;
-      document.getElementById("magicPotion").textContent = player.magicPotion;
-      log.innerHTML += `✅ 已获得 ${amount} 个魔药<br>`;
+      // 强化石
+      player.reinforceStone += amount;
+      document.getElementById("reinforceStone").textContent = player.reinforceStone;
+      log.innerHTML += `✅ 已获得 ${amount} 个强化石<br>`;
     } else if (id >= 1 && id <= 15) {
-      // give角色
+      // give角色（物品ID系统仍然完全有效）
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
       player.owned.push({ 
@@ -162,7 +174,8 @@ function executeConsoleCommand() {
         equippedWeapon: null 
       });
       log.innerHTML += `✅ 已获得角色 ${window.getCharacterData(id).name} Lv.${level} ★${stars}<br>`;
-    } else if (id >= 100 && id <= 114) {   // 安全范围限制为100-114
+    } else if (id >= 100 && id <= 114) {
+      // give武器（物品ID系统仍然完全有效）
       const weaponRealId = id - 99;
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
@@ -174,7 +187,7 @@ function executeConsoleCommand() {
       });
       log.innerHTML += `✅ 已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
     } else {
-      log.innerHTML += `❌ 未知物品ID（角色1-15，武器100-114）<br>`;
+      log.innerHTML += `❌ 未知物品ID（角色1-15，武器100-114，998=耀星，997=金币，999=强化石）<br>`;
     }
     window.saveGame();
     window.renderInventory();   // 自动刷新仓库

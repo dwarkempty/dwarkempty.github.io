@@ -1,8 +1,8 @@
-// js/player.js - 玩家数据 + 存档 + 属性计算
+// js/player.js - 玩家数据 + 存档 + 属性计算（资源已全局统一）
 let player = {
-  yaoXing: 1000,                    // 耀星⭐
+  yaoXing: 1000,                    // 原 diamonds → 耀星⭐
   gold: 0,
-  reinforceStone: 0,                // 强化石
+  reinforceStone: 0,                // 原 magicPotion → 强化石
   owned: [],                        // 当前拥有的角色
   weapons: [],                      // 当前拥有的武器
   unlockedChars: [],                // 永久解锁的角色ID（图鉴用）
@@ -46,21 +46,15 @@ function loadGame() {
     player = { ...player, ...data };
   }
   
-  // 保底默认值
   if (!player.charSsrPity) player.charSsrPity = 0;
   if (!player.charUrPity) player.charUrPity = 0;
   if (!player.weaponSsrPity) player.weaponSsrPity = 0;
   if (!player.weaponUrPity) player.weaponUrPity = 0;
-  
-  // 永久解锁数组默认值
   if (!player.unlockedChars) player.unlockedChars = [];
   if (!player.unlockedWeapons) player.unlockedWeapons = [];
-  
-  // 经营系统默认值
   if (!player.shopLevel) player.shopLevel = 1;
   if (!player.operatingPoints) player.operatingPoints = 0;
 
-  // 更新顶部资源显示
   document.getElementById("yaoXing").textContent = player.yaoXing;
   document.getElementById("gold").textContent = player.gold;
   document.getElementById("reinforceStone").textContent = player.reinforceStone;
@@ -68,15 +62,12 @@ function loadGame() {
   saveGame();
 }
 
-// 性能优化：使用 Map 快速获取数据
 function getCharacterData(charId) {
   return window.characterMap.get(charId);
 }
-
 function getWeaponData(weaponId) {
   return window.weaponMap.get(weaponId);
 }
-
 function calculateStats(item, charData, equippedWeapon = null) {
   const levelMult = Math.pow(1.06, item.level);
   const starMult = 1 + item.stars * 0.25;
@@ -96,15 +87,8 @@ function calculateStats(item, charData, equippedWeapon = null) {
     critRate += wpData.baseCritRate * wStarMult;
     critDamage += wpData.baseCritDamage * wStarMult;
   }
-  return { 
-    hp, 
-    atk, 
-    def, 
-    critRate: Math.min(critRate, 1), 
-    critDamage 
-  };
+  return { hp, atk, def, critRate: Math.min(critRate, 1), critDamage };
 }
-
 function calculateWeaponStats(item, weaponData) {
   const levelMult = Math.pow(1.06, item.level);
   const starMult = 1 + item.stars * 0.25;
@@ -116,14 +100,12 @@ function calculateWeaponStats(item, weaponData) {
     critDamage: weaponData.baseCritDamage * starMult
   };
 }
-
 function getRarityColor(r) {
   if (r === "UR") return "card-ur";
   if (r === "SSR") return "card-ssr";
   if (r === "SR") return "card-sr";
   return "card-r";
 }
-
 function getRarityBorderClass(r) {
   if (r === "R") return "border-blue-500";
   if (r === "SR") return "border-purple-500";
@@ -132,7 +114,7 @@ function getRarityBorderClass(r) {
   return "border-orange-500";
 }
 
-// 暴露给其他模块
+// 暴露
 window.player = player;
 window.saveGame = saveGame;
 window.loadGame = loadGame;

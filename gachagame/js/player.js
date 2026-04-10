@@ -24,8 +24,8 @@ let player = {
   // ==================== 经营系统字段 ====================
   shopLevel: 1,
   operatingPoints: 0,
-  materials: {},
-  unlockedRecipes: [1, 2]
+  materials: {},           // 材料库存 {materialId: count}
+  unlockedRecipes: [1, 2]  // 已解锁配方ID
 };
 
 let decomposeMode = false;
@@ -48,23 +48,17 @@ function loadGame() {
     player = { ...player, ...data };
   }
   
-  // 保底默认值
   if (!player.charSsrPity) player.charSsrPity = 0;
   if (!player.charUrPity) player.charUrPity = 0;
   if (!player.weaponSsrPity) player.weaponSsrPity = 0;
   if (!player.weaponUrPity) player.weaponUrPity = 0;
-  
-  // 永久解锁数组默认值
   if (!player.unlockedChars) player.unlockedChars = [];
   if (!player.unlockedWeapons) player.unlockedWeapons = [];
-  
-  // 经营系统默认值
   if (!player.shopLevel) player.shopLevel = 1;
   if (!player.operatingPoints) player.operatingPoints = 0;
   if (!player.materials) player.materials = {};
   if (!player.unlockedRecipes) player.unlockedRecipes = [1, 2];
 
-  // 更新顶部资源显示
   document.getElementById("yaoXing").textContent = player.yaoXing;
   document.getElementById("gold").textContent = player.gold;
   document.getElementById("reinforceStone").textContent = player.reinforceStone;
@@ -99,13 +93,7 @@ function calculateStats(item, charData, equippedWeapon = null) {
     critRate += wpData.baseCritRate * wStarMult;
     critDamage += wpData.baseCritDamage * wStarMult;
   }
-  return { 
-    hp, 
-    atk, 
-    def, 
-    critRate: Math.min(critRate, 1), 
-    critDamage 
-  };
+  return { hp, atk, def, critRate: Math.min(critRate, 1), critDamage };
 }
 
 function calculateWeaponStats(item, weaponData) {
@@ -135,7 +123,7 @@ function getRarityBorderClass(r) {
   return "border-orange-500";
 }
 
-// 暴露给其他模块
+// 暴露
 window.player = player;
 window.saveGame = saveGame;
 window.loadGame = loadGame;

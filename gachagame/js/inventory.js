@@ -416,8 +416,8 @@ function decomposeSelected() {
   });
 
   toRemove.forEach(i => list.splice(i, 1));
-  player.diamonds += total;
-  document.getElementById("diamonds").textContent = player.diamonds;
+  player.yaoXing += total;
+  document.getElementById("yaoXing").textContent = player.yaoXing;
   window.saveGame();
   alert(`✅ 已分解 ${toRemove.length} 个，获得 ${total} 耀星！`);
   selected = [];

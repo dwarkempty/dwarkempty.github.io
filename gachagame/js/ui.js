@@ -189,86 +189,169 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// ==================== 经营系统完整逻辑 ====================
+// ==================== 经营系统新逻辑（已按6点要求重写） ====================
 let currentCustomer = null;
+let currentCrafting = [];        // 当前手动选择的材料 [{id, qty}]
+let currentCraftedPotion = null; // 配置成功后的临时药水
 
 function startOperating() {
   currentCustomer = {
-    demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)],
-    rewardMultiplier: Math.random() > 0.7 ? 1.5 : 1
+    demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)]
   };
+  currentCrafting = [];
+  currentCraftedPotion = null;
+
   const modalHTML = `
     <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
-      <div class="bg-zinc-900 rounded-3xl p-8 max-w-lg w-full mx-4">
-        <h3 class="text-3xl font-bold mb-4">👤 顾客出现</h3>
-        <p class="text-xl mb-8">"${currentCustomer.demand}"</p>
-        <div class="text-sm text-gray-400 mb-3">选择配方制作药水</div>
-        <div class="grid grid-cols-1 gap-3 max-h-96 overflow-auto" id="recipeList"></div>
+      <div class="bg-zinc-900 rounded-3xl p-8 max-w-2xl w-full mx-4">
+        <h3 class="text-3xl font-bold mb-2">👤 顾客出现</h3>
+        <p class="text-xl mb-6">"${currentCustomer.demand}"</p>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <!-- 左侧：材料选择 -->
+          <div>
+            <div class="text-sm text-gray-400 mb-3">选择材料</div>
+            <div class="grid grid-cols-2 gap-2 max-h-80 overflow-auto" id="materialSelect"></div>
+          </div>
+          
+          <!-- 右侧：当前配置 + 配置按钮 -->
+          <div>
+            <div class="text-sm text-gray-400 mb-2">当前配置</div>
+            <div id="currentCraft" class="bg-zinc-800 rounded-2xl p-4 min-h-[120px] flex flex-wrap gap-2 mb-4"></div>
+            <button onclick="window.craftPotion()" class="w-full py-4 text-xl font-bold bg-teal-600 hover:bg-teal-700 rounded-2xl mb-3">配置药水</button>
+            <button onclick="window.giveToCustomer()" class="w-full py-4 text-xl font-bold bg-emerald-600 hover:bg-emerald-700 rounded-2xl">给予顾客</button>
+          </div>
+        </div>
+        
         <button onclick="window.hideOperatingModal()" class="mt-6 w-full py-4 text-xl font-bold bg-zinc-700 rounded-2xl">取消</button>
       </div>
     </div>`;
+  
   const div = document.createElement("div");
   div.id = "operatingModal";
   div.innerHTML = modalHTML;
   document.body.appendChild(div);
-  window.renderRecipeList();
+  
+  renderMaterialSelect();
 }
 
-function renderRecipeList() {
-  const container = document.getElementById("recipeList");
+function renderMaterialSelect() {
+  const container = document.getElementById("materialSelect");
   container.innerHTML = "";
-  window.recipesPool.forEach(recipe => {
-    if (player.unlockedRecipes.includes(recipe.id) && player.shopLevel >= recipe.minLevel) {
-      let canMake = true;
-      recipe.materials.forEach(m => {
-        if ((player.materials[m.id] || 0) < m.qty) canMake = false;
-      });
-      const btn = document.createElement("button");
-      btn.className = `w-full text-left p-4 rounded-2xl border ${canMake ? 'border-emerald-500 hover:bg-emerald-950' : 'border-gray-600 opacity-50'}`;
-      btn.innerHTML = `
-        <div class="font-bold">${recipe.name}</div>
-        <div class="text-xs text-gray-400">${recipe.materials.map(m => `${window.materialsPool.find(mat=>mat.id===m.id).name}×${m.qty}`).join(" + ")}</div>
-        <div class="text-emerald-400 text-right">预计获得 ${Math.floor(recipe.gold * currentCustomer.rewardMultiplier)} 金币</div>
-      `;
-      if (canMake) btn.onclick = () => window.sellPotion(recipe.id);
-      container.appendChild(btn);
+  window.materialsPool.forEach(mat => {
+    const count = player.materials[mat.id] || 0;
+    const btn = document.createElement("button");
+    btn.className = `p-3 rounded-2xl text-left ${count > 0 ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 opacity-50 cursor-not-allowed'}`;
+    btn.innerHTML = `
+      <div class="font-medium">${mat.name}</div>
+      <div class="text-xs text-gray-400">${mat.desc}</div>
+      <div class="text-emerald-400 text-xl font-bold">${count}</div>
+    `;
+    if (count > 0) {
+      btn.onclick = () => {
+        const existing = currentCrafting.find(item => item.id === mat.id);
+        if (existing) existing.qty++;
+        else currentCrafting.push({id: mat.id, qty: 1});
+        renderCurrentCraft();
+      };
     }
+    container.appendChild(btn);
   });
 }
 
-function sellPotion(recipeId) {
-  const recipe = window.recipesPool.find(r => r.id === recipeId);
-  recipe.materials.forEach(m => {
-    player.materials[m.id] = (player.materials[m.id] || 0) - m.qty;
-  });
-  const reward = Math.floor(recipe.gold * currentCustomer.rewardMultiplier);
-  player.gold += reward;
-  player.operatingPoints += 100;
+function renderCurrentCraft() {
+  const container = document.getElementById("currentCraft");
+  container.innerHTML = currentCrafting.map(item => {
+    const mat = window.materialsPool.find(m => m.id === item.id);
+    return `<div class="bg-zinc-900 px-4 py-1 rounded-xl text-sm">${mat.name} ×${item.qty}</div>`;
+  }).join('') || '<p class="text-gray-500 text-center py-8">点击左侧材料添加</p>';
+}
 
-  const nextLevelCost = player.shopLevel * 800;
-  if (player.operatingPoints >= nextLevelCost) {
-    player.operatingPoints -= nextLevelCost;
-    player.shopLevel++;
-    if (player.shopLevel === 2 && !player.unlockedRecipes.includes(3)) player.unlockedRecipes.push(3);
-    if (player.shopLevel === 3 && !player.unlockedRecipes.includes(4)) player.unlockedRecipes.push(4);
-    alert(`🎉 商店升级到 Lv.${player.shopLevel}！`);
+function craftPotion() {
+  if (currentCrafting.length === 0) return alert("请先选择材料！");
+  
+  let matchedRecipe = null;
+  for (let recipe of window.recipesPool) {
+    if (recipe.materials.length !== currentCrafting.length) continue;
+    let match = true;
+    for (let req of recipe.materials) {
+      const selected = currentCrafting.find(s => s.id === req.id);
+      if (!selected || selected.qty !== req.qty) match = false;
+    }
+    if (match) {
+      matchedRecipe = recipe;
+      break;
+    }
   }
+  
+  if (matchedRecipe) {
+    // 扣除材料
+    currentCrafting.forEach(item => {
+      player.materials[item.id] -= item.qty;
+    });
+    currentCraftedPotion = matchedRecipe;
+    alert(`✅ 配置成功！获得 ${matchedRecipe.name}`);
+    currentCrafting = [];
+    renderCurrentCraft();
+    window.renderMaterialsWarehouse();
+  } else {
+    alert("❌ 未知的药水！");
+    currentCrafting = [];
+    renderCurrentCraft();
+  }
+}
 
-  window.saveGame();
+function giveToCustomer() {
+  if (!currentCraftedPotion) return alert("请先配置药水！");
+  
+  const recipe = currentCraftedPotion;
+  let isCorrect = false;
+  const demandLower = currentCustomer.demand.toLowerCase();
+  
+  for (let key in window.demandToRecipe) {
+    if (demandLower.includes(key) && window.demandToRecipe[key] === recipe.id) {
+      isCorrect = true;
+      break;
+    }
+  }
+  
+  if (isCorrect) {
+    const reward = recipe.gold;
+    player.gold += reward;
+    player.operatingPoints += 5;
+    
+    // 升级检查
+    const nextCost = player.shopLevel * 100;
+    if (player.operatingPoints >= nextCost) {
+      player.operatingPoints -= nextCost;
+      player.shopLevel++;
+      alert(`🎉 商店升级到 Lv.${player.shopLevel}！`);
+    }
+    
+    document.getElementById("gold").textContent = player.gold;   // 立即刷新金币显示
+    window.saveGame();
+    window.renderShopInfo();
+    alert(`✅ 顾客满意！获得 ${reward} 金币`);
+  } else {
+    player.operatingPoints = Math.max(0, player.operatingPoints - 2);
+    alert("❌ 这不是我要的药！");
+    document.getElementById("operatingPointsDisplay").innerHTML = `${player.operatingPoints} / ${player.shopLevel * 100}`;
+  }
+  
+  currentCraftedPotion = null;
   window.hideOperatingModal();
   window.renderShopInfo();
-  alert(`✅ 成功出售 ${recipe.name}，获得 ${reward} 金币！`);
 }
 
 function hideOperatingModal() {
   const modal = document.getElementById("operatingModal");
   if (modal) modal.remove();
+  currentCrafting = [];
+  currentCraftedPotion = null;
 }
 
-// ==================== 新增：材料仓库渲染 ====================
 function renderMaterialsWarehouse() {
   const container = document.getElementById("materialsWarehouse");
-  if (!container) return;
   container.innerHTML = "";
   window.materialsPool.forEach(mat => {
     const count = player.materials[mat.id] || 0;
@@ -285,26 +368,15 @@ function renderMaterialsWarehouse() {
     `;
     container.appendChild(div);
   });
-  if (Object.keys(player.materials).length === 0) {
-    container.innerHTML = `<p class="text-gray-500 text-center py-8">暂无材料，快去种植或冒险获取吧！</p>`;
-  }
 }
 
-// 商店信息渲染（已包含材料仓库调用）
 function renderShopInfo() {
   document.getElementById("shopLevelDisplay").textContent = `Lv.${player.shopLevel}`;
-  const nextCost = player.shopLevel * 800;
+  const nextCost = player.shopLevel * 100;
   const progress = Math.min(100, Math.floor((player.operatingPoints / nextCost) * 100));
   document.getElementById("operatingBar").style.width = `${progress}%`;
   document.getElementById("operatingPointsDisplay").innerHTML = `${player.operatingPoints} / ${nextCost}`;
-
-  const recipesDiv = document.getElementById("unlockedRecipes");
-  recipesDiv.innerHTML = player.unlockedRecipes.map(id => {
-    const r = window.recipesPool.find(rec => rec.id === id);
-    return `<span class="inline-block bg-orange-500 text-white text-xs px-4 py-1 rounded-full mr-2">${r.name}</span>`;
-  }).join('');
-
-  window.renderMaterialsWarehouse();   // 新增：刷新材料仓库
+  window.renderMaterialsWarehouse();
 }
 
 function openPlanting() { alert("🌱 种植系统开发中..."); }
@@ -324,11 +396,8 @@ window.openConsolePrompt = openConsolePrompt;
 window.hideConsole = hideConsole;
 window.executeConsoleCommand = executeConsoleCommand;
 window.startOperating = startOperating;
-window.renderRecipeList = renderRecipeList;
-window.sellPotion = sellPotion;
+window.craftPotion = craftPotion;
+window.giveToCustomer = giveToCustomer;
 window.hideOperatingModal = hideOperatingModal;
-window.renderShopInfo = renderShopInfo;
 window.renderMaterialsWarehouse = renderMaterialsWarehouse;
-window.openPlanting = openPlanting;
-window.openMerchant = openMerchant;
-window.openDungeon = openDungeon;
+window.renderShopInfo = renderShopInfo;

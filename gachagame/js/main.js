@@ -1,4 +1,4 @@
-// js/main.js - 初始化 + Tab切换 + 全局启动（完整版，无任何省略）
+// js/main.js - 初始化 + Tab切换 + 全局启动
 function switchTab(n) {
   document.querySelectorAll(".panel").forEach(p => p.classList.add("hidden"));
   document.getElementById("panel" + n).classList.remove("hidden");
@@ -21,6 +21,10 @@ function switchTab(n) {
   }
 }
 
+function hideAnnouncement() {
+  document.getElementById("announcementModal").classList.add("hidden");
+}
+
 window.onload = () => {
   window.loadGame();
   window.switchTab(0);
@@ -35,3 +39,7 @@ window.addEventListener('beforeunload', () => {
   localStorage.removeItem("gachaGame");
   window.saveGame();
 });
+
+// 暴露所有全局函数
+window.switchTab = switchTab;
+window.hideAnnouncement = hideAnnouncement;

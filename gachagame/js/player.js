@@ -21,11 +21,10 @@ let player = {
   charUrPity: 0,
   weaponSsrPity: 0,
   weaponUrPity: 0,
-  // ==================== 经营系统字段 ====================
   shopLevel: 1,
   operatingPoints: 0,
-  materials: {},           // 材料库存 {materialId: count}
-  unlockedRecipes: [1, 2]  // 已解锁配方ID
+  materials: {},
+  unlockedRecipes: [1,2,3,4]   // 1级默认解锁4种
 };
 
 let decomposeMode = false;
@@ -57,7 +56,14 @@ function loadGame() {
   if (!player.shopLevel) player.shopLevel = 1;
   if (!player.operatingPoints) player.operatingPoints = 0;
   if (!player.materials) player.materials = {};
-  if (!player.unlockedRecipes) player.unlockedRecipes = [1, 2];
+  if (!player.unlockedRecipes) player.unlockedRecipes = [1,2,3,4];
+
+  // 1. 初始获得各种经营材料20个（新玩家或首次加载时生效）
+  window.materialsPool.forEach(mat => {
+    if (player.materials[mat.id] === undefined) {
+      player.materials[mat.id] = 20;
+    }
+  });
 
   document.getElementById("yaoXing").textContent = player.yaoXing;
   document.getElementById("gold").textContent = player.gold;
@@ -123,7 +129,6 @@ function getRarityBorderClass(r) {
   return "border-orange-500";
 }
 
-// 暴露
 window.player = player;
 window.saveGame = saveGame;
 window.loadGame = loadGame;

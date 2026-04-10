@@ -1,4 +1,4 @@
-// js/constants.js - 角色/武器池 + 常量（性能优化：预建 Map 缓存）
+// js/constants.js - 角色/武器池 + 常量 + 经营系统数据（完整版，无任何省略）
 const characterPool = [
   {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg"},
   {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg"},
@@ -39,39 +39,46 @@ const rarityWeights = { R: 60, SR: 25, SSR: 12, UR: 3 };
 const decomposeValue = { R: 10, SR: 50, SSR: 200, UR: 1000 };
 const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 
-// 性能优化：预建 Map 缓存
 const characterMap = new Map(characterPool.map(c => [c.id, c]));
 const weaponMap = new Map(weaponPool.map(w => [w.id, w]));
 
-// ==================== 新增：经营系统数据 ====================
+// ==================== 经营系统数据（已按要求修改） ====================
 const materialsPool = [
   {id:1, name:"红史莱姆粘液", desc:"红色史莱姆的液体，可用于基础治疗", rarity:"R"},
   {id:2, name:"小枯骨", desc:"骷髅怪的部件，可加强药效", rarity:"R"},
   {id:3, name:"蓝史莱姆粘液", desc:"蓝色史莱姆的液体，可加强自身魔力", rarity:"R"},
   {id:4, name:"哥布林指甲", desc:"哥布林身上的珍贵部件", rarity:"SR"},
   {id:5, name:"水", desc:"液体基底", rarity:"R"},
-  {id:6, name:"酒", desc:"液体基底", rarity:"SR"},
-  // 后续可继续扩展
+  {id:6, name:"酒", desc:"液体基底", rarity:"SR"}
 ];
 
 const recipesPool = [
-  {id:1, name:"基础治疗药水", materials:[{id:1,qty:1},{id:5,qty:1}], gold:50, minLevel:1},
-  {id:2, name:"基础魔力药水", materials:[{id:3,qty:1},{id:5,qty:1}], gold:60, minLevel:1},
-  {id:3, name:"基础抗性药水", materials:[{id:4,qty:1},{id:5,qty:1}], gold:70, minLevel:2},
-  {id:4, name:"基础全能药剂", materials:[{id:1,qty:1},{id:3,qty:1},{id:2,qty:1},{id:6,qty:1}], gold:150, minLevel:3},
-  // 后续升级商店可解锁更多
+  {id:1, name:"基础治疗药水", materials:[{id:1,qty:1},{id:5,qty:1}], gold:100, minLevel:1},
+  {id:2, name:"基础魔力药水", materials:[{id:3,qty:1},{id:5,qty:1}], gold:100, minLevel:1},
+  {id:3, name:"基础抗性药水", materials:[{id:4,qty:1},{id:5,qty:1}], gold:120, minLevel:1},
+  {id:4, name:"基础全能药剂", materials:[{id:1,qty:1},{id:3,qty:1},{id:2,qty:1},{id:6,qty:1}], gold:500, minLevel:1}
 ];
 
 const customerTemplates = [
   "我需要一瓶基础治疗药水",
   "我需要一瓶能补充自身魔力的药水",
   "我希望我能变得更加坚硬！",
-  "我现在全身受伤，魔力散失，急需一瓶药水！",
-  "给我来点能快速恢复体力的东西",
-  "我需要增强防御力的药剂",
+  "我现在全身受伤，魔力散失，急需一瓶药水！"
 ];
 
-// 暴露
+// 需求匹配映射（用于严格检查）
+const demandToRecipe = {
+  "治疗": 1,
+  "基础治疗": 1,
+  "魔力": 2,
+  "补充魔力": 2,
+  "坚硬": 3,
+  "抗性": 3,
+  "受伤": 4,
+  "魔力散失": 4,
+  "全能": 4
+};
+
 window.characterPool = characterPool;
 window.weaponPool = weaponPool;
 window.rarityWeights = rarityWeights;
@@ -82,3 +89,4 @@ window.weaponMap = weaponMap;
 window.materialsPool = materialsPool;
 window.recipesPool = recipesPool;
 window.customerTemplates = customerTemplates;
+window.demandToRecipe = demandToRecipe;

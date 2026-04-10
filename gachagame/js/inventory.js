@@ -324,15 +324,15 @@ function starUp() {
   if (duplicateIndex === -1) return alert("没有可用的相同材料！");
 
   const potionCost = 10 + item.stars * 10;
-  if (player.magicPotion < potionCost) return alert(`魔药不足！需要 ${potionCost} 个魔药`);
+  if (player.reinforceStone < potionCost) return alert(`强化石不足！需要 ${potionCost} 个强化石`);
 
-  if (!confirm(`确定消耗 ${potionCost} 个魔药 + 1个相同材料升星吗？`)) return;
+  if (!confirm(`确定消耗 ${potionCost} 个强化石 + 1个相同材料升星吗？`)) return;
 
-  player.magicPotion -= potionCost;
+  player.reinforceStone -= potionCost;
   list.splice(duplicateIndex, 1);
   item.stars++;
 
-  document.getElementById("magicPotion").textContent = player.magicPotion;
+  document.getElementById("reinforceStone").textContent = player.reinforceStone;
   window.saveGame();
 
   const burst = document.createElement("div");
@@ -380,7 +380,7 @@ function updateDecomposeBar() {
     value += window.decomposeValue[data.rarity];
   });
   document.getElementById("selectedCount").textContent = `已选 ${count} 个`;
-  document.getElementById("decomposeValue").textContent = `预计获得 ${value} 钻石`;
+  document.getElementById("decomposeValue").textContent = `预计获得 ${value} 耀星`;
 }
 
 function selectAll() {
@@ -419,7 +419,7 @@ function decomposeSelected() {
   player.diamonds += total;
   document.getElementById("diamonds").textContent = player.diamonds;
   window.saveGame();
-  alert(`✅ 已分解 ${toRemove.length} 个，获得 ${total} 钻石！`);
+  alert(`✅ 已分解 ${toRemove.length} 个，获得 ${total} 耀星！`);
   selected = [];
   decomposeMode = false;
   document.getElementById("decomposeBar").classList.add("hidden");

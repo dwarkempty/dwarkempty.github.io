@@ -1,4 +1,4 @@
-// js/main.js - 初始化 + Tab切换 + 全局启动
+// js/main.js - 初始化 + Tab切换 + 全局启动（完整版，无任何省略）
 function switchTab(n) {
   document.querySelectorAll(".panel").forEach(p => p.classList.add("hidden"));
   document.getElementById("panel" + n).classList.remove("hidden");
@@ -29,7 +29,6 @@ window.onload = () => {
   window.loadGame();
   window.switchTab(0);
 
-  // 每次进入网页弹出公告
   document.getElementById("announcementModal").classList.remove("hidden");
 
   console.log("%c🎉 抽卡养成大冒险 + 经营系统 已完整加载！", "color:#eab308; font-size:18px; font-weight:bold");
@@ -40,6 +39,5 @@ window.addEventListener('beforeunload', () => {
   window.saveGame();
 });
 
-// 暴露所有全局函数
 window.switchTab = switchTab;
 window.hideAnnouncement = hideAnnouncement;

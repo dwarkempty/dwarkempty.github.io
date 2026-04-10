@@ -1,16 +1,29 @@
 // js/player.js - 玩家数据 + 存档 + 属性计算
 let player = {
-  diamonds: 1000,
+  yaoXing: 1000,                    // 耀星⭐
   gold: 0,
-  magicPotion: 0,
-  owned: [],           // 当前拥有的角色
-  weapons: [],         // 当前拥有的武器
-  unlockedChars: [],   // 永久解锁的角色ID（图鉴用）
-  unlockedWeapons: [], // 永久解锁的武器ID（图鉴用）
-  totalCharDraws: 0, rCount: 0, srCount: 0, ssrCount: 0, urCount: 0,
-  totalWeaponDraws: 0, wR: 0, wSR: 0, wSSR: 0, wUR: 0,
-  charSsrPity: 0, charUrPity: 0,
-  weaponSsrPity: 0, weaponUrPity: 0
+  reinforceStone: 0,                // 强化石
+  owned: [],                        // 当前拥有的角色
+  weapons: [],                      // 当前拥有的武器
+  unlockedChars: [],                // 永久解锁的角色ID（图鉴用）
+  unlockedWeapons: [],              // 永久解锁的武器ID（图鉴用）
+  totalCharDraws: 0, 
+  rCount: 0, 
+  srCount: 0, 
+  ssrCount: 0, 
+  urCount: 0,
+  totalWeaponDraws: 0, 
+  wR: 0, 
+  wSR: 0, 
+  wSSR: 0, 
+  wUR: 0,
+  charSsrPity: 0, 
+  charUrPity: 0,
+  weaponSsrPity: 0, 
+  weaponUrPity: 0,
+  // ==================== 经营系统新增字段 ====================
+  shopLevel: 1,
+  operatingPoints: 0
 };
 
 let decomposeMode = false;
@@ -32,18 +45,26 @@ function loadGame() {
     let data = JSON.parse(saved);
     player = { ...player, ...data };
   }
+  
   // 保底默认值
   if (!player.charSsrPity) player.charSsrPity = 0;
   if (!player.charUrPity) player.charUrPity = 0;
   if (!player.weaponSsrPity) player.weaponSsrPity = 0;
   if (!player.weaponUrPity) player.weaponUrPity = 0;
+  
   // 永久解锁数组默认值
   if (!player.unlockedChars) player.unlockedChars = [];
   if (!player.unlockedWeapons) player.unlockedWeapons = [];
+  
+  // 经营系统默认值
+  if (!player.shopLevel) player.shopLevel = 1;
+  if (!player.operatingPoints) player.operatingPoints = 0;
 
-  document.getElementById("diamonds").textContent = player.diamonds;
+  // 更新顶部资源显示
+  document.getElementById("yaoXing").textContent = player.yaoXing;
   document.getElementById("gold").textContent = player.gold;
-  document.getElementById("magicPotion").textContent = player.magicPotion;
+  document.getElementById("reinforceStone").textContent = player.reinforceStone;
+  
   saveGame();
 }
 
@@ -51,6 +72,7 @@ function loadGame() {
 function getCharacterData(charId) {
   return window.characterMap.get(charId);
 }
+
 function getWeaponData(weaponId) {
   return window.weaponMap.get(weaponId);
 }
@@ -74,7 +96,13 @@ function calculateStats(item, charData, equippedWeapon = null) {
     critRate += wpData.baseCritRate * wStarMult;
     critDamage += wpData.baseCritDamage * wStarMult;
   }
-  return { hp, atk, def, critRate: Math.min(critRate, 1), critDamage };
+  return { 
+    hp, 
+    atk, 
+    def, 
+    critRate: Math.min(critRate, 1), 
+    critDamage 
+  };
 }
 
 function calculateWeaponStats(item, weaponData) {

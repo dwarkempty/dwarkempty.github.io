@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑（完整版，无任何省略）
+// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -170,7 +170,7 @@ function executeConsoleCommand() {
       const stars = parseInt(parts[3]) || 0;
       player.weapons.push({ id: Date.now(), weaponId: weaponRealId, level: Math.min(level, 100), stars: Math.min(stars, 5) });
       log.innerHTML += `✅ 已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
-    } else if (id >= 201 && id <= 206) {   // 新增：经营材料
+    } else if (id >= 201 && id <= 206) {
       const mat = window.materialsPool.find(m => m.id === id - 200);
       if (mat) {
         player.materials[id - 200] = (player.materials[id - 200] || 0) + amount;
@@ -181,7 +181,7 @@ function executeConsoleCommand() {
     }
     window.saveGame();
     window.renderInventory();
-    if (document.getElementById("panel4").classList.contains("hidden") === false) window.renderShopInfo();
+    if (document.getElementById("panel4") && !document.getElementById("panel4").classList.contains("hidden")) window.renderShopInfo();
   } else {
     log.innerHTML += `未知命令<br>`;
   }
@@ -189,13 +189,15 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// ==================== 经营系统新逻辑 ====================
+// ==================== 经营系统完整逻辑 ====================
 let currentCustomer = null;
-let currentCrafting = [];        // 当前选择的材料
-let currentCraftedPotion = null; // 已配置好的药水（包括未知药水）
+let currentCrafting = [];
+let currentCraftedPotion = null;
 
 function startOperating() {
-  currentCustomer = { demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)] };
+  currentCustomer = {
+    demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)]
+  };
   currentCrafting = [];
   currentCraftedPotion = null;
 
@@ -206,20 +208,17 @@ function startOperating() {
         <p class="text-xl mb-6">"${currentCustomer.demand}"</p>
         
         <div class="grid grid-cols-2 gap-6">
-          <!-- 左侧：材料选择 -->
           <div>
             <div class="text-sm text-gray-400 mb-3">选择材料</div>
             <div class="grid grid-cols-2 gap-2 max-h-80 overflow-auto" id="materialSelect"></div>
           </div>
           
-          <!-- 右侧：当前配置 + 当前要提交的药水 -->
           <div>
             <div class="text-sm text-gray-400 mb-2">当前配置</div>
             <div id="currentCraft" class="bg-zinc-800 rounded-2xl p-4 min-h-[100px] flex flex-wrap gap-2 mb-4"></div>
             
             <button onclick="window.craftPotion()" class="w-full py-3 text-lg font-bold bg-teal-600 hover:bg-teal-700 rounded-2xl mb-3">配置药水</button>
             
-            <!-- 新增：当前要提交的药水显示区 -->
             <div id="submitPotionArea" class="hidden bg-emerald-900 rounded-2xl p-4 mb-4">
               <div class="text-sm text-emerald-300 mb-2">当前要提交的药水</div>
               <div id="submitPotionCard" class="flex justify-between items-center"></div>
@@ -241,8 +240,37 @@ function startOperating() {
   renderMaterialSelect();
 }
 
-function renderMaterialSelect() { /* 与之前相同，保持完整 */ }
-function renderCurrentCraft() { /* 与之前相同，保持完整 */ }
+function renderMaterialSelect() {
+  const container = document.getElementById("materialSelect");
+  container.innerHTML = "";
+  window.materialsPool.forEach(mat => {
+    const count = player.materials[mat.id] || 0;
+    const btn = document.createElement("button");
+    btn.className = `p-3 rounded-2xl text-left ${count > 0 ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 opacity-50 cursor-not-allowed'}`;
+    btn.innerHTML = `
+      <div class="font-medium">${mat.name}</div>
+      <div class="text-xs text-gray-400">${mat.desc}</div>
+      <div class="text-emerald-400 text-xl font-bold">${count}</div>
+    `;
+    if (count > 0) {
+      btn.onclick = () => {
+        const existing = currentCrafting.find(item => item.id === mat.id);
+        if (existing) existing.qty++;
+        else currentCrafting.push({id: mat.id, qty: 1});
+        renderCurrentCraft();
+      };
+    }
+    container.appendChild(btn);
+  });
+}
+
+function renderCurrentCraft() {
+  const container = document.getElementById("currentCraft");
+  container.innerHTML = currentCrafting.map(item => {
+    const mat = window.materialsPool.find(m => m.id === item.id);
+    return `<div class="bg-zinc-900 px-4 py-1 rounded-xl text-sm">${mat.name} ×${item.qty}</div>`;
+  }).join('') || '<p class="text-gray-500 text-center py-8">点击左侧材料添加</p>';
+}
 
 function craftPotion() {
   if (currentCrafting.length === 0) return alert("请先选择材料！");
@@ -261,17 +289,16 @@ function craftPotion() {
     }
   }
   
-  // 扣除材料
   currentCrafting.forEach(item => {
     player.materials[item.id] = (player.materials[item.id] || 0) - item.qty;
   });
   
-  currentCraftedPotion = matchedRecipe || { id: 0, name: "未知的药水", gold: 0 }; // 未知药水也允许
+  currentCraftedPotion = matchedRecipe || { id: 0, name: "未知的药水", gold: 0 };
   currentCrafting = [];
   
   renderCurrentCraft();
   window.renderMaterialsWarehouse();
-  showSubmitPotion();   // 显示当前要提交的药水
+  showSubmitPotion();
 }
 
 function showSubmitPotion() {
@@ -316,7 +343,6 @@ function giveToCustomer() {
     alert(recipe.id === 0 ? "❌ 未知的药水！" : "❌ 这不是我要的药！");
   }
   
-  // 升级检查
   const nextCost = player.shopLevel * 100;
   if (player.operatingPoints >= nextCost) {
     player.operatingPoints -= nextCost;
@@ -336,7 +362,29 @@ function hideOperatingModal() {
   currentCraftedPotion = null;
 }
 
-// 药水图鉴渲染
+function renderMaterialsWarehouse() {
+  const container = document.getElementById("materialsWarehouse");
+  container.innerHTML = "";
+  window.materialsPool.forEach(mat => {
+    const count = player.materials[mat.id] || 0;
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-zinc-800 rounded-2xl p-3 mb-2";
+    div.innerHTML = `
+      <div>
+        <div class="font-medium">${mat.name}</div>
+        <div class="text-xs text-gray-400">${mat.desc}</div>
+      </div>
+      <div class="text-right">
+        <span class="text-2xl font-bold text-emerald-400">${count}</span>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  if (Object.keys(player.materials).length === 0) {
+    container.innerHTML = `<p class="text-gray-500 text-center py-8">暂无材料，快去种植或冒险获取吧！</p>`;
+  }
+}
+
 function renderRecipeBook() {
   const container = document.getElementById("recipeBook");
   container.innerHTML = "";
@@ -356,7 +404,6 @@ function renderRecipeBook() {
   });
 }
 
-// 商店信息渲染（新增调用药水图鉴）
 function renderShopInfo() {
   document.getElementById("shopLevelDisplay").textContent = `Lv.${player.shopLevel}`;
   const nextCost = player.shopLevel * 100;
@@ -364,25 +411,23 @@ function renderShopInfo() {
   document.getElementById("operatingBar").style.width = `${progress}%`;
   document.getElementById("operatingPointsDisplay").innerHTML = `${player.operatingPoints} / ${nextCost}`;
   window.renderMaterialsWarehouse();
-  window.renderRecipeBook();   // 新增：刷新药水图鉴
+  window.renderRecipeBook();
 }
 
 function openPlanting() { alert("🌱 种植系统开发中..."); }
 function openMerchant() { alert("🛒 商人系统开发中..."); }
 function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
 
-// ==================== 新增：初始化网页功能 ====================
+// ==================== 初始化网页 ====================
 function resetGame() {
   if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
     localStorage.removeItem("gachaGame");
     alert("✅ 网页已初始化！即将刷新页面...");
-    setTimeout(() => {
-      location.reload();
-    }, 800);
+    setTimeout(() => location.reload(), 600);
   }
 }
 
-// 暴露
+// 暴露所有函数
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;

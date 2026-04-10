@@ -1,4 +1,4 @@
-// js/draw.js - 抽卡核心逻辑（已彻底修复“抽卡后仓库不显示”bug）
+// js/draw.js - 抽卡核心逻辑（已全部改为耀星）
 function drawOne(poolType) {
   const isChar = poolType === "char";
   if (isChar) {
@@ -40,7 +40,6 @@ function drawOne(poolType) {
     }
   }
 
-// 重置保底
   if (item.rarity === "SSR" || item.rarity === "UR") {
     if (isChar) player.charSsrPity = 0;
     else player.weaponSsrPity = 0;
@@ -50,7 +49,6 @@ function drawOne(poolType) {
     else player.weaponUrPity = 0;
   }
 
-  // 永久记录解锁
   if (isChar) {
     if (!player.unlockedChars.includes(item.id)) player.unlockedChars.push(item.id);
   } else {
@@ -91,7 +89,8 @@ function drawCard(times) {
   window.saveGame();
   window.showDrawAnimation(results, currentDrawPool);
   window.renderInventory();
-  console.log(`🎉 抽卡完成！新增 ${results.length} 个物品`);
+
+  console.log(`🎉 抽卡完成！新增 ${results.length} 个物品，已强制刷新仓库`);
 }
 
 window.drawCard = drawCard;

@@ -383,6 +383,17 @@ function openPlanting() { alert("🌱 种植系统开发中..."); }
 function openMerchant() { alert("🛒 商人系统开发中..."); }
 function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
 
+// ==================== 新增：初始化网页功能 ====================
+function resetGame() {
+  if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
+    localStorage.removeItem("gachaGame");
+    alert("✅ 网页已初始化！即将刷新页面...");
+    setTimeout(() => {
+      location.reload();
+    }, 800);
+  }
+}
+
 // 暴露
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
@@ -401,3 +412,4 @@ window.giveToCustomer = giveToCustomer;
 window.hideOperatingModal = hideOperatingModal;
 window.renderMaterialsWarehouse = renderMaterialsWarehouse;
 window.renderShopInfo = renderShopInfo;
+window.resetGame = resetGame;

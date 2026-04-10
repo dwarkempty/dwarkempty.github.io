@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑
+// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑（完整版，无任何省略）
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -125,7 +125,8 @@ function openConsolePrompt() {
       give 999 50 → 获得50强化石<br>
       give 5 50 3 → 获得角色ID 5（等级50，星级3）<br>
       give 105 30 2 → 获得武器ID 105（等级30，星级2）<br>
-      <span class="text-emerald-400">物品ID系统仍然完全有效！角色1-15，武器100-114</span>
+      give 201 10 → 获得10个红史莱姆粘液<br>
+      <span class="text-emerald-400">经营材料ID：201~206</span>
     `;
   } else {
     alert("命令错误！");
@@ -161,30 +162,26 @@ function executeConsoleCommand() {
     } else if (id >= 1 && id <= 15) {
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
-      player.owned.push({ 
-        id: Date.now(), 
-        charId: id, 
-        level: Math.min(level, 100), 
-        stars: Math.min(stars, 5), 
-        equippedWeapon: null 
-      });
+      player.owned.push({ id: Date.now(), charId: id, level: Math.min(level, 100), stars: Math.min(stars, 5), equippedWeapon: null });
       log.innerHTML += `✅ 已获得角色 ${window.getCharacterData(id).name} Lv.${level} ★${stars}<br>`;
     } else if (id >= 100 && id <= 114) {
       const weaponRealId = id - 99;
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
-      player.weapons.push({ 
-        id: Date.now(), 
-        weaponId: weaponRealId, 
-        level: Math.min(level, 100), 
-        stars: Math.min(stars, 5) 
-      });
+      player.weapons.push({ id: Date.now(), weaponId: weaponRealId, level: Math.min(level, 100), stars: Math.min(stars, 5) });
       log.innerHTML += `✅ 已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
+    } else if (id >= 201 && id <= 206) {   // 新增：经营材料
+      const mat = window.materialsPool.find(m => m.id === id - 200);
+      if (mat) {
+        player.materials[id - 200] = (player.materials[id - 200] || 0) + amount;
+        log.innerHTML += `✅ 已获得 ${amount} 个 ${mat.name}<br>`;
+      }
     } else {
-      log.innerHTML += `❌ 未知物品ID（角色1-15，武器100-114，998=耀星，997=金币，999=强化石）<br>`;
+      log.innerHTML += `❌ 未知物品ID<br>`;
     }
     window.saveGame();
     window.renderInventory();
+    if (document.getElementById("panel4").classList.contains("hidden") === false) window.renderShopInfo();
   } else {
     log.innerHTML += `未知命令<br>`;
   }
@@ -223,12 +220,8 @@ function renderRecipeList() {
   window.recipesPool.forEach(recipe => {
     if (player.unlockedRecipes.includes(recipe.id) && player.shopLevel >= recipe.minLevel) {
       let canMake = true;
-      let missing = [];
       recipe.materials.forEach(m => {
-        if ((player.materials[m.id] || 0) < m.qty) {
-          canMake = false;
-          missing.push(`${window.materialsPool.find(mat=>mat.id===m.id).name}×${m.qty}`);
-        }
+        if ((player.materials[m.id] || 0) < m.qty) canMake = false;
       });
       const btn = document.createElement("button");
       btn.className = `w-full text-left p-4 rounded-2xl border ${canMake ? 'border-emerald-500 hover:bg-emerald-950' : 'border-gray-600 opacity-50'}`;
@@ -272,6 +265,32 @@ function hideOperatingModal() {
   if (modal) modal.remove();
 }
 
+// ==================== 新增：材料仓库渲染 ====================
+function renderMaterialsWarehouse() {
+  const container = document.getElementById("materialsWarehouse");
+  if (!container) return;
+  container.innerHTML = "";
+  window.materialsPool.forEach(mat => {
+    const count = player.materials[mat.id] || 0;
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-zinc-800 rounded-2xl p-3 mb-2";
+    div.innerHTML = `
+      <div>
+        <div class="font-medium">${mat.name}</div>
+        <div class="text-xs text-gray-400">${mat.desc}</div>
+      </div>
+      <div class="text-right">
+        <span class="text-2xl font-bold text-emerald-400">${count}</span>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  if (Object.keys(player.materials).length === 0) {
+    container.innerHTML = `<p class="text-gray-500 text-center py-8">暂无材料，快去种植或冒险获取吧！</p>`;
+  }
+}
+
+// 商店信息渲染（已包含材料仓库调用）
 function renderShopInfo() {
   document.getElementById("shopLevelDisplay").textContent = `Lv.${player.shopLevel}`;
   const nextCost = player.shopLevel * 800;
@@ -284,13 +303,15 @@ function renderShopInfo() {
     const r = window.recipesPool.find(rec => rec.id === id);
     return `<span class="inline-block bg-orange-500 text-white text-xs px-4 py-1 rounded-full mr-2">${r.name}</span>`;
   }).join('');
+
+  window.renderMaterialsWarehouse();   // 新增：刷新材料仓库
 }
 
 function openPlanting() { alert("🌱 种植系统开发中..."); }
 function openMerchant() { alert("🛒 商人系统开发中..."); }
 function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
 
-// 暴露所有函数
+// 暴露
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;
@@ -307,6 +328,7 @@ window.renderRecipeList = renderRecipeList;
 window.sellPotion = sellPotion;
 window.hideOperatingModal = hideOperatingModal;
 window.renderShopInfo = renderShopInfo;
+window.renderMaterialsWarehouse = renderMaterialsWarehouse;
 window.openPlanting = openPlanting;
 window.openMerchant = openMerchant;
 window.openDungeon = openDungeon;

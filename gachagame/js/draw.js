@@ -62,10 +62,10 @@ function drawOne(poolType) {
 
 function drawCard(times) {
   const cost = times === 1 ? 100 : 900;
-  if (player.diamonds < cost) return alert("钻石不够啦！去探索吧～");
+  if (player.yaoXing < cost) return alert("耀星不够啦！去经营或探索吧～");
 
-  player.diamonds -= cost;
-  document.getElementById("diamonds").textContent = player.diamonds;
+  player.yaoXing -= cost;
+  document.getElementById("yaoXing").textContent = player.yaoXing;
 
   let results = [];
   for (let i = 0; i < times; i++) {
@@ -90,12 +90,9 @@ function drawCard(times) {
 
   window.saveGame();
   window.showDrawAnimation(results, currentDrawPool);
-
   window.renderInventory();
-
-  console.log(`🎉 抽卡完成！新增 ${results.length} 个物品，已强制刷新仓库`);
+  console.log(`🎉 抽卡完成！新增 ${results.length} 个物品`);
 }
 
-// 暴露
 window.drawCard = drawCard;
 window.drawOne = drawOne;

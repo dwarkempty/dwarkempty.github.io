@@ -43,7 +43,35 @@ const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 const characterMap = new Map(characterPool.map(c => [c.id, c]));
 const weaponMap = new Map(weaponPool.map(w => [w.id, w]));
 
-// 暴露给其他模块
+// ==================== 新增：经营系统数据 ====================
+const materialsPool = [
+  {id:1, name:"红史莱姆粘液", desc:"红色史莱姆的液体，可用于基础治疗", rarity:"R"},
+  {id:2, name:"小枯骨", desc:"骷髅怪的部件，可加强药效", rarity:"R"},
+  {id:3, name:"蓝史莱姆粘液", desc:"蓝色史莱姆的液体，可加强自身魔力", rarity:"R"},
+  {id:4, name:"哥布林指甲", desc:"哥布林身上的珍贵部件", rarity:"SR"},
+  {id:5, name:"水", desc:"液体基底", rarity:"R"},
+  {id:6, name:"酒", desc:"液体基底", rarity:"SR"},
+  // 后续可继续扩展
+];
+
+const recipesPool = [
+  {id:1, name:"基础治疗药水", materials:[{id:1,qty:1},{id:5,qty:1}], gold:50, minLevel:1},
+  {id:2, name:"基础魔力药水", materials:[{id:3,qty:1},{id:5,qty:1}], gold:60, minLevel:1},
+  {id:3, name:"基础抗性药水", materials:[{id:4,qty:1},{id:5,qty:1}], gold:70, minLevel:2},
+  {id:4, name:"基础全能药剂", materials:[{id:1,qty:1},{id:3,qty:1},{id:2,qty:1},{id:6,qty:1}], gold:150, minLevel:3},
+  // 后续升级商店可解锁更多
+];
+
+const customerTemplates = [
+  "我需要一瓶基础治疗药水",
+  "我需要一瓶能补充自身魔力的药水",
+  "我希望我能变得更加坚硬！",
+  "我现在全身受伤，魔力散失，急需一瓶药水！",
+  "给我来点能快速恢复体力的东西",
+  "我需要增强防御力的药剂",
+];
+
+// 暴露
 window.characterPool = characterPool;
 window.weaponPool = weaponPool;
 window.rarityWeights = rarityWeights;
@@ -51,3 +79,6 @@ window.decomposeValue = decomposeValue;
 window.rarityOrder = rarityOrder;
 window.characterMap = characterMap;
 window.weaponMap = weaponMap;
+window.materialsPool = materialsPool;
+window.recipesPool = recipesPool;
+window.customerTemplates = customerTemplates;

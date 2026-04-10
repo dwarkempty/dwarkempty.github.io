@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台（已全部更新为新资源名称 + 控制台完整代码）
+// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -136,7 +136,6 @@ function hideConsole() {
   document.getElementById("consoleModal").classList.add("hidden");
 }
 
-// ==================== 控制台核心命令（已完整更新） ====================
 function executeConsoleCommand() {
   const input = document.getElementById("consoleInput").value.trim();
   const log = document.getElementById("consoleLog");
@@ -148,22 +147,18 @@ function executeConsoleCommand() {
     let amount = parseInt(parts[2]) || 1;
 
     if (id === 998) {
-      // 耀星
       player.yaoXing += amount;
       document.getElementById("yaoXing").textContent = player.yaoXing;
       log.innerHTML += `✅ 已获得 ${amount} 耀星⭐<br>`;
     } else if (id === 997) {
-      // 金币
       player.gold += amount;
       document.getElementById("gold").textContent = player.gold;
       log.innerHTML += `✅ 已获得 ${amount} 金币<br>`;
     } else if (id === 999) {
-      // 强化石
       player.reinforceStone += amount;
       document.getElementById("reinforceStone").textContent = player.reinforceStone;
       log.innerHTML += `✅ 已获得 ${amount} 个强化石<br>`;
     } else if (id >= 1 && id <= 15) {
-      // give角色（物品ID系统仍然完全有效）
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
       player.owned.push({ 
@@ -175,7 +170,6 @@ function executeConsoleCommand() {
       });
       log.innerHTML += `✅ 已获得角色 ${window.getCharacterData(id).name} Lv.${level} ★${stars}<br>`;
     } else if (id >= 100 && id <= 114) {
-      // give武器（物品ID系统仍然完全有效）
       const weaponRealId = id - 99;
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
@@ -190,7 +184,7 @@ function executeConsoleCommand() {
       log.innerHTML += `❌ 未知物品ID（角色1-15，武器100-114，998=耀星，997=金币，999=强化石）<br>`;
     }
     window.saveGame();
-    window.renderInventory();   // 自动刷新仓库
+    window.renderInventory();
   } else {
     log.innerHTML += `未知命令<br>`;
   }
@@ -198,7 +192,105 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// 暴露
+// ==================== 经营系统完整逻辑 ====================
+let currentCustomer = null;
+
+function startOperating() {
+  currentCustomer = {
+    demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)],
+    rewardMultiplier: Math.random() > 0.7 ? 1.5 : 1
+  };
+  const modalHTML = `
+    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+      <div class="bg-zinc-900 rounded-3xl p-8 max-w-lg w-full mx-4">
+        <h3 class="text-3xl font-bold mb-4">👤 顾客出现</h3>
+        <p class="text-xl mb-8">"${currentCustomer.demand}"</p>
+        <div class="text-sm text-gray-400 mb-3">选择配方制作药水</div>
+        <div class="grid grid-cols-1 gap-3 max-h-96 overflow-auto" id="recipeList"></div>
+        <button onclick="window.hideOperatingModal()" class="mt-6 w-full py-4 text-xl font-bold bg-zinc-700 rounded-2xl">取消</button>
+      </div>
+    </div>`;
+  const div = document.createElement("div");
+  div.id = "operatingModal";
+  div.innerHTML = modalHTML;
+  document.body.appendChild(div);
+  window.renderRecipeList();
+}
+
+function renderRecipeList() {
+  const container = document.getElementById("recipeList");
+  container.innerHTML = "";
+  window.recipesPool.forEach(recipe => {
+    if (player.unlockedRecipes.includes(recipe.id) && player.shopLevel >= recipe.minLevel) {
+      let canMake = true;
+      let missing = [];
+      recipe.materials.forEach(m => {
+        if ((player.materials[m.id] || 0) < m.qty) {
+          canMake = false;
+          missing.push(`${window.materialsPool.find(mat=>mat.id===m.id).name}×${m.qty}`);
+        }
+      });
+      const btn = document.createElement("button");
+      btn.className = `w-full text-left p-4 rounded-2xl border ${canMake ? 'border-emerald-500 hover:bg-emerald-950' : 'border-gray-600 opacity-50'}`;
+      btn.innerHTML = `
+        <div class="font-bold">${recipe.name}</div>
+        <div class="text-xs text-gray-400">${recipe.materials.map(m => `${window.materialsPool.find(mat=>mat.id===m.id).name}×${m.qty}`).join(" + ")}</div>
+        <div class="text-emerald-400 text-right">预计获得 ${Math.floor(recipe.gold * currentCustomer.rewardMultiplier)} 金币</div>
+      `;
+      if (canMake) btn.onclick = () => window.sellPotion(recipe.id);
+      container.appendChild(btn);
+    }
+  });
+}
+
+function sellPotion(recipeId) {
+  const recipe = window.recipesPool.find(r => r.id === recipeId);
+  recipe.materials.forEach(m => {
+    player.materials[m.id] = (player.materials[m.id] || 0) - m.qty;
+  });
+  const reward = Math.floor(recipe.gold * currentCustomer.rewardMultiplier);
+  player.gold += reward;
+  player.operatingPoints += 100;
+
+  const nextLevelCost = player.shopLevel * 800;
+  if (player.operatingPoints >= nextLevelCost) {
+    player.operatingPoints -= nextLevelCost;
+    player.shopLevel++;
+    if (player.shopLevel === 2 && !player.unlockedRecipes.includes(3)) player.unlockedRecipes.push(3);
+    if (player.shopLevel === 3 && !player.unlockedRecipes.includes(4)) player.unlockedRecipes.push(4);
+    alert(`🎉 商店升级到 Lv.${player.shopLevel}！`);
+  }
+
+  window.saveGame();
+  window.hideOperatingModal();
+  window.renderShopInfo();
+  alert(`✅ 成功出售 ${recipe.name}，获得 ${reward} 金币！`);
+}
+
+function hideOperatingModal() {
+  const modal = document.getElementById("operatingModal");
+  if (modal) modal.remove();
+}
+
+function renderShopInfo() {
+  document.getElementById("shopLevelDisplay").textContent = `Lv.${player.shopLevel}`;
+  const nextCost = player.shopLevel * 800;
+  const progress = Math.min(100, Math.floor((player.operatingPoints / nextCost) * 100));
+  document.getElementById("operatingBar").style.width = `${progress}%`;
+  document.getElementById("operatingPointsDisplay").innerHTML = `${player.operatingPoints} / ${nextCost}`;
+
+  const recipesDiv = document.getElementById("unlockedRecipes");
+  recipesDiv.innerHTML = player.unlockedRecipes.map(id => {
+    const r = window.recipesPool.find(rec => rec.id === id);
+    return `<span class="inline-block bg-orange-500 text-white text-xs px-4 py-1 rounded-full mr-2">${r.name}</span>`;
+  }).join('');
+}
+
+function openPlanting() { alert("🌱 种植系统开发中..."); }
+function openMerchant() { alert("🛒 商人系统开发中..."); }
+function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
+
+// 暴露所有函数
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;
@@ -210,3 +302,11 @@ window.importSave = importSave;
 window.openConsolePrompt = openConsolePrompt;
 window.hideConsole = hideConsole;
 window.executeConsoleCommand = executeConsoleCommand;
+window.startOperating = startOperating;
+window.renderRecipeList = renderRecipeList;
+window.sellPotion = sellPotion;
+window.hideOperatingModal = hideOperatingModal;
+window.renderShopInfo = renderShopInfo;
+window.openPlanting = openPlanting;
+window.openMerchant = openMerchant;
+window.openDungeon = openDungeon;

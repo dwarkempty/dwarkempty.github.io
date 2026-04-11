@@ -629,7 +629,7 @@ function hideMerchantModal() {
   if (modal) modal.remove();
 }
 
-// ==================== 地牢冒险系统 - 最终完整版（已修复全部问题） ====================
+// ==================== 地牢冒险系统 - 最终修复版（已解决地图不重新出现的问题） ====================
 let currentDungeonFloor = 1;
 let currentDungeonMap = [];
 let currentRoomIndex = 0;
@@ -638,7 +638,9 @@ let selectedClass = null;
 
 // ==================== 入口 + 职业选择 ====================
 function openDungeon() {
-  if (dungeonRunActive) return renderDungeonMap();
+  if (dungeonRunActive && currentDungeonMap.length > 0) {
+    return renderDungeonMap();   // 已进行中，直接显示当前地图
+  }
 
   selectedClass = null;
   const selectHTML = `
@@ -676,6 +678,15 @@ window.chooseClass = function(cls) {
   currentRoomIndex = 0;
   currentDungeonMap = generateDungeonFloor(1);
 
+  createDungeonModal();
+  renderDungeonMap();
+};
+
+window.cancelDungeonStart = function() {
+  document.getElementById("classSelectModal").remove();
+};
+
+function createDungeonModal() {
   const modalHTML = `
     <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
       <div class="bg-zinc-900 rounded-3xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto">
@@ -709,13 +720,7 @@ window.chooseClass = function(cls) {
   mapDiv.id = "dungeonModal";
   mapDiv.innerHTML = modalHTML;
   document.body.appendChild(mapDiv);
-
-  renderDungeonMap();
-};
-
-window.cancelDungeonStart = function() {
-  document.getElementById("classSelectModal").remove();
-};
+}
 
 // ==================== 地图生成 ====================
 function generateDungeonFloor(floor) {
@@ -775,7 +780,7 @@ function enterCurrentRoom() {
       room.cleared = true;
       currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
       if (currentRoomIndex >= 5) nextFloor();
-      else showDungeonModalAgain();
+      else openDungeon();   // 关键修复：商店退出后直接重新打开地牢界面
     }, 800);
   }
 }
@@ -785,45 +790,7 @@ function hideDungeonModal() {
   if (modal) modal.remove();
 }
 
-function showDungeonModalAgain() {
-  // 关键修复：胜利后立即重新显示地牢地图
-  renderDungeonMap();
-  if (!document.getElementById("dungeonModal")) openDungeon();
-}
-
-function nextFloor() {
-  if (currentDungeonFloor >= 5) {
-    alert("🎉 恭喜通关地牢！");
-    endDungeonRun(true);
-    return;
-  }
-  currentDungeonFloor++;
-  currentRoomIndex = 0;
-  currentDungeonMap = generateDungeonFloor(currentDungeonFloor);
-  showDungeonModalAgain();
-  alert(`🚀 进入第 ${currentDungeonFloor} 层！`);
-}
-
-function exitDungeon() {
-  if (confirm("确定退出地牢？已完成房间的奖励仍会保留！")) {
-    endDungeonRun(false);
-  }
-}
-
-function endDungeonRun(victory) {
-  dungeonRunActive = false;
-  hideDungeonModal();
-  if (victory) {
-    player.yaoXing += 300;
-    player.gold += 800;
-    player.reinforceStone += 15;
-    alert("🏆 地牢冒险胜利！获得 300⭐ + 800金币 + 15强化石");
-  }
-  window.saveGame();
-  window.renderShopInfo();
-}
-
-// ==================== 战斗系统（完整卡牌效果 + Buff栏） ====================
+// ==================== 战斗系统 ====================
 function initBattleState(room) {
   const isBoss = room.type === "boss";
   const enemyPool = isBoss ? window.dungeonEnemies.boss : (room.type === "elite" ? window.dungeonEnemies.elite : window.dungeonEnemies.normal);
@@ -1127,6 +1094,7 @@ window.usePotionInBattle = function() {
   }
 };
 
+// ==================== 战斗胜利后关键修复 ====================
 window.endCurrentBattle = function(victory) {
   const modal = document.getElementById("battleModal");
   if (modal) modal.remove();
@@ -1140,12 +1108,12 @@ window.endCurrentBattle = function(victory) {
     window.saveGame();
     window.renderShopInfo();
 
-    // 关键修复：胜利后立即重新显示地牢地图
+    // 关键修复：胜利后直接重新打开地牢界面（地图会重新出现）
     currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
     if (currentRoomIndex >= 5) {
       nextFloor();
     } else {
-      showDungeonModalAgain();
+      openDungeon();   // 直接调用 openDungeon 重新创建地图界面
     }
   } else {
     alert("💀 战斗失败...");
@@ -1154,12 +1122,30 @@ window.endCurrentBattle = function(victory) {
   }
 };
 
-function resetGame() {
-  if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
-    localStorage.removeItem("gachaGame");
-    alert("✅ 网页已初始化！即将刷新页面...");
-    setTimeout(() => location.reload(), 600);
+function nextFloor() {
+  if (currentDungeonFloor >= 5) {
+    alert("🎉 恭喜通关地牢！");
+    endDungeonRun(true);
+    return;
   }
+  currentDungeonFloor++;
+  currentRoomIndex = 0;
+  currentDungeonMap = generateDungeonFloor(currentDungeonFloor);
+  openDungeon();   // 直接重建界面
+  alert(`🚀 进入第 ${currentDungeonFloor} 层！`);
+}
+
+function endDungeonRun(victory) {
+  dungeonRunActive = false;
+  hideDungeonModal();
+  if (victory) {
+    player.yaoXing += 300;
+    player.gold += 800;
+    player.reinforceStone += 15;
+    alert("🏆 地牢冒险胜利！获得 300⭐ + 800金币 + 15强化石");
+  }
+  window.saveGame();
+  window.renderShopInfo();
 }
 
 // ==================== 完整暴露函数====================

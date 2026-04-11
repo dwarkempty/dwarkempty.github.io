@@ -195,9 +195,7 @@ let currentCrafting = [];
 let currentCraftedPotion = null;
 
 function startOperating() {
-  currentCustomer = {
-    demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)]
-  };
+  currentCustomer = { demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)] };
   currentCrafting = [];
   currentCraftedPotion = null;
 
@@ -293,7 +291,7 @@ function craftPotion() {
     player.materials[item.id] = (player.materials[item.id] || 0) - item.qty;
   });
   
-  currentCraftedPotion = matchedRecipe || { id: 0, name: "未知的药水", gold: 0 };
+  currentCraftedPotion = matchedRecipe || { id: 0, name: "未知的药水", gold: 0, operating: 0 };
   currentCrafting = [];
   
   renderCurrentCraft();
@@ -326,16 +324,18 @@ function giveToCustomer() {
   const demandLower = currentCustomer.demand.toLowerCase();
   
   for (let key in window.demandToRecipe) {
-    if (demandLower.includes(key) && window.demandToRecipe[key] === recipe.id) {
-      isCorrect = true;
-      break;
+    if (demandLower.includes(key)) {
+      if (window.demandToRecipe[key].includes(recipe.id)) {
+        isCorrect = true;
+        break;
+      }
     }
   }
   
   if (isCorrect && recipe.id !== 0) {
     const reward = recipe.gold;
     player.gold += reward;
-    player.operatingPoints += 5;
+    player.operatingPoints += recipe.operating || 5;
     document.getElementById("gold").textContent = player.gold;
     alert(`✅ 顾客满意！获得 ${reward} 金币`);
   } else {
@@ -343,9 +343,9 @@ function giveToCustomer() {
     alert(recipe.id === 0 ? "❌ 未知的药水！" : "❌ 这不是我要的药！");
   }
   
-  const nextCost = player.shopLevel * 100;
-  if (player.operatingPoints >= nextCost) {
-    player.operatingPoints -= nextCost;
+  const nextLevelCost = player.shopLevel === 1 ? 100 : 200;
+  if (player.operatingPoints >= nextLevelCost) {
+    player.operatingPoints -= nextLevelCost;
     player.shopLevel++;
     alert(`🎉 商店升级到 Lv.${player.shopLevel}！`);
   }
@@ -390,15 +390,15 @@ function renderRecipeBook() {
   container.innerHTML = "";
   window.recipesPool.forEach(recipe => {
     const div = document.createElement("div");
-    div.className = "bg-zinc-800 rounded-2xl p-4";
+    div.className = `bg-zinc-800 rounded-2xl p-4 ${player.shopLevel < recipe.level ? 'opacity-50' : ''}`;
     div.innerHTML = `
-      <div class="font-bold text-lg">${recipe.name}</div>
+      <div class="font-bold text-lg">${recipe.name} <span class="text-xs bg-orange-500 text-white px-2 py-0.5 rounded">Lv.${recipe.level}</span></div>
       <div class="text-xs text-gray-400 mt-1">所需材料</div>
       <div class="text-sm">${recipe.materials.map(m => {
         const mat = window.materialsPool.find(x => x.id === m.id);
         return `${mat.name}×${m.qty}`;
       }).join(" + ")}</div>
-      <div class="text-emerald-400 text-right mt-3">售价 ${recipe.gold} 金币</div>
+      <div class="text-emerald-400 text-right mt-3">${recipe.gold} 金币 + ${recipe.operating} 经营值</div>
     `;
     container.appendChild(div);
   });
@@ -406,7 +406,7 @@ function renderRecipeBook() {
 
 function renderShopInfo() {
   document.getElementById("shopLevelDisplay").textContent = `Lv.${player.shopLevel}`;
-  const nextCost = player.shopLevel * 100;
+  const nextCost = player.shopLevel === 1 ? 100 : 200;
   const progress = Math.min(100, Math.floor((player.operatingPoints / nextCost) * 100));
   document.getElementById("operatingBar").style.width = `${progress}%`;
   document.getElementById("operatingPointsDisplay").innerHTML = `${player.operatingPoints} / ${nextCost}`;
@@ -418,7 +418,6 @@ function openPlanting() { alert("🌱 种植系统开发中..."); }
 function openMerchant() { alert("🛒 商人系统开发中..."); }
 function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
 
-// ==================== 初始化网页 ====================
 function resetGame() {
   if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
     localStorage.removeItem("gachaGame");
@@ -427,7 +426,7 @@ function resetGame() {
   }
 }
 
-// 暴露所有函数
+// 暴露
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;

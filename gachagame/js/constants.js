@@ -208,6 +208,23 @@ const mageCards = [
   { id: 2018, name: "终极元素", type: "Power", cost: 3, effects: { perTurn: { randomElement: true } }, rarity: "Rare", class: "mage", desc: "每回合随机触发Fire/Burn/Ice效果" }
 ];
 
+// ==================== 地牢冒险 - 敌人数据库 + 战斗常量 ====================
+const dungeonEnemies = {
+  normal: [
+    { id: 1, name: "史莱姆", hp: 45, intent: "attack", damage: 8, rarity: "R" },
+    { id: 2, name: "哥布林", hp: 38, intent: "attack", damage: 10, rarity: "R" },
+    { id: 3, name: "骷髅战士", hp: 52, intent: "attack", damage: 12, rarity: "SR" }
+  ],
+  elite: [
+    { id: 4, name: "石巨人", hp: 85, intent: "attack", damage: 18, rarity: "SR" },
+    { id: 5, name: "影魔", hp: 70, intent: "debuff", debuff: "Weak:2", rarity: "SSR" }
+  ],
+  boss: [
+    { id: 6, name: "炎魔领主", hp: 160, intent: "attack", damage: 25, rarity: "UR" }
+  ]
+};
+
+window.dungeonEnemies = dungeonEnemies;
 window.merchantPermanent = merchantPermanent;
 window.materialPrices = materialPrices;
 window.characterPool = characterPool;

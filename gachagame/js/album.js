@@ -1,4 +1,4 @@
-// js/album.js - 图鉴系统（永久解锁版，即使分解也保持点亮）
+// js/album.js - 图鉴系统
 let currentAlbumTab = 0; // 0=角色 1=武器
 
 function setAlbumTab(n) {

@@ -1148,6 +1148,14 @@ function endDungeonRun(victory) {
   window.renderShopInfo();
 }
 
+function resetGame() {
+  if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
+    localStorage.removeItem("gachaGame");
+    alert("✅ 网页已初始化！即将刷新页面...");
+    setTimeout(() => location.reload(), 600);
+  }
+}
+
 // ==================== 完整暴露函数====================
 // 抽卡系统
 window.showDrawAnimation = showDrawAnimation;

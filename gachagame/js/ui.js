@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑
+// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑（完整版，无任何省略）
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -124,11 +124,11 @@ function openConsolePrompt() {
       give 997 10000 → 获得10000金币<br>
       give 999 50 → 获得50强化石<br>
       give 201 10 → 获得10个红史莱姆粘液<br>
-      set shoplevel 3 → 设置商店等级为3（最高3）<br>
+      set shoplevel 3 → 设置商店等级为3（最高5）<br>
       give allmaterials 20 → 获得全部材料各20个<br>
       give allcharacters 50 3 → 获得全部角色（等级50，星级3）<br>
       give allweapons 30 2 → 获得全部武器（等级30，星级2）<br>
-      <span class="text-emerald-400">经营材料ID：201~212</span>
+      <span class="text-emerald-400">经营材料ID：201~220</span>
     `;
   } else {
     alert("命令错误！");
@@ -150,7 +150,7 @@ function executeConsoleCommand() {
   if (cmd === "set" && parts[1] === "shoplevel") {
     let level = parseInt(parts[2]);
     if (isNaN(level) || level < 1) level = 1;
-    if (level > 3) level = 3;
+    if (level > 5) level = 5;
     player.shopLevel = level;
     log.innerHTML += `✅ 商店等级已设置为 Lv.${level}<br>`;
     window.saveGame();
@@ -224,7 +224,7 @@ function executeConsoleCommand() {
       const stars = parseInt(parts[3]) || 0;
       player.weapons.push({ id: Date.now(), weaponId: weaponRealId, level: Math.min(level, 100), stars: Math.min(stars, 5) });
       log.innerHTML += `✅ 已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
-    } else if (id >= 201 && id <= 212) {
+    } else if (id >= 201 && id <= 220) {
       const mat = window.materialsPool.find(m => m.id === id - 200);
       if (mat) {
         player.materials[id - 200] = (player.materials[id - 200] || 0) + amount;
@@ -244,13 +244,20 @@ function executeConsoleCommand() {
 }
 
 // ==================== 经营系统完整逻辑 ====================
-let currentCustomer = null;   // 当前顾客对象（包含demand和satisfy数组）
+let currentCustomer = null;
 let currentCrafting = [];
 let currentCraftedPotion = null;
 
 function startOperating() {
-  const available = window.customerDemands.filter(c => c.level <= player.shopLevel);
-  currentCustomer = available[Math.floor(Math.random() * available.length)];
+  // 权重随机选择顾客
+  let pool = [];
+  if (player.shopLevel === 1) pool = window.customerDemands.filter(c => c.level === 1);
+  else if (player.shopLevel === 2) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2);
+  else if (player.shopLevel === 3) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2 || c.level === 3);
+  else if (player.shopLevel === 4) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2 || c.level === 3 || c.level === 4);
+  else if (player.shopLevel === 5) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2 || c.level === 3 || c.level === 4 || c.level === 5);
+
+  currentCustomer = pool[Math.floor(Math.random() * pool.length)];
   currentCrafting = [];
   currentCraftedPotion = null;
 
@@ -378,7 +385,6 @@ function giveToCustomer() {
   const recipe = currentCraftedPotion;
   let isCorrect = false;
   
-  // 精确匹配：检查当前顾客的 satisfy 数组是否包含提交的药水ID
   if (currentCustomer && currentCustomer.satisfy) {
     isCorrect = currentCustomer.satisfy.includes(recipe.id);
   }
@@ -394,11 +400,20 @@ function giveToCustomer() {
     alert(recipe.id === 0 ? "❌ 未知的药水！" : "❌ 这不是我要的药！");
   }
   
-  const nextLevelCost = player.shopLevel === 1 ? 100 : 200;
+  const nextLevelCost = player.shopLevel === 1 ? 50 : player.shopLevel === 2 ? 100 : player.shopLevel === 3 ? 180 : 250;
+  const upgradeGold = player.shopLevel === 1 ? 500 : player.shopLevel === 2 ? 1000 : player.shopLevel === 3 ? 1500 : 2000;
+  
   if (player.operatingPoints >= nextLevelCost) {
-    player.operatingPoints -= nextLevelCost;
-    player.shopLevel++;
-    alert(`🎉 商店升级到 Lv.${player.shopLevel}！`);
+    if (player.gold >= upgradeGold) {
+      if (confirm(`商店可升级到 Lv.${player.shopLevel + 1}，需要花费 ${upgradeGold} 金币，是否升级？`)) {
+        player.gold -= upgradeGold;
+        player.operatingPoints -= nextLevelCost;
+        player.shopLevel++;
+        alert(`🎉 商店升级到 Lv.${player.shopLevel}！`);
+      }
+    } else {
+      alert(`经营值已满，但金币不足${upgradeGold}，无法升级`);
+    }
   }
   
   window.saveGame();
@@ -457,7 +472,7 @@ function renderRecipeBook() {
 
 function renderShopInfo() {
   document.getElementById("shopLevelDisplay").textContent = `Lv.${player.shopLevel}`;
-  const nextCost = player.shopLevel === 1 ? 100 : 200;
+  const nextCost = player.shopLevel === 1 ? 50 : player.shopLevel === 2 ? 100 : player.shopLevel === 3 ? 180 : 250;
   const progress = Math.min(100, Math.floor((player.operatingPoints / nextCost) * 100));
   document.getElementById("operatingBar").style.width = `${progress}%`;
   document.getElementById("operatingPointsDisplay").innerHTML = `${player.operatingPoints} / ${nextCost}`;

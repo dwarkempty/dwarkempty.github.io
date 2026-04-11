@@ -481,7 +481,154 @@ function renderShopInfo() {
 }
 
 function openPlanting() { alert("🌱 种植系统开发中..."); }
-function openMerchant() { alert("🛒 商人系统开发中..."); }
+
+// ==================== 商人系统完整实现 ====================
+function openMerchant() {
+  const now = Date.now();
+  if (now - (player.lastMerchantRefresh || 0) > 30 * 60 * 1000 || !player.merchantInventory || player.merchantInventory.length === 0) {
+    refreshMerchantStock();
+  }
+
+  const modalHTML = `
+    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+      <div class="bg-zinc-900 rounded-3xl p-8 max-w-5xl w-full mx-4 max-h-[90vh] overflow-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-3xl font-bold">🛒 商人商店</h3>
+          <button onclick="window.hideMerchantModal()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
+        </div>
+        
+        <!-- 常驻商品 -->
+        <div class="mb-8">
+          <div class="text-emerald-400 text-xl font-bold mb-4">常驻商品（无限供应）</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="permanentGoods"></div>
+        </div>
+        
+        <!-- 限时商品 -->
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <div class="text-orange-400 text-xl font-bold">限时特供材料（${player.merchantInventory.length} 种）</div>
+            <div class="text-xs text-gray-400">下次刷新：${Math.ceil((player.lastMerchantRefresh + 30*60*1000 - now)/60000)} 分钟后</div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="randomGoods"></div>
+        </div>
+        
+        <button onclick="window.hideMerchantModal()" class="mt-8 w-full py-4 text-xl font-bold bg-zinc-700 rounded-2xl">关闭商店</button>
+      </div>
+    </div>`;
+
+  const div = document.createElement("div");
+  div.id = "merchantModal";
+  div.innerHTML = modalHTML;
+  document.body.appendChild(div);
+
+  renderMerchantModal();
+}
+
+function refreshMerchantStock() {
+  const specialMaterials = window.materialsPool.filter(m => m.id !== 11 && m.id !== 12);
+  const shuffled = [...specialMaterials].sort(() => 0.5 - Math.random());
+  const selected = shuffled.slice(0, 9);
+
+  player.merchantInventory = selected.map(mat => ({
+    ...mat,
+    price: window.materialPrices[mat.id] || 50,
+    stock: getRandomStock(mat.rarity)
+  }));
+
+  player.lastMerchantRefresh = Date.now();
+  window.saveGame();
+}
+
+function getRandomStock(rarity) {
+  if (rarity === "R") return Math.floor(Math.random() * 21) + 30;   // 30~50
+  if (rarity === "SR") return Math.floor(Math.random() * 16) + 20;  // 20~35
+  if (rarity === "SSR") return Math.floor(Math.random() * 11) + 10; // 10~20
+  return Math.floor(Math.random() * 6) + 10;                        // UR 10~15
+}
+
+function renderMerchantModal() {
+  // 常驻商品
+  const permanentContainer = document.getElementById("permanentGoods");
+  permanentContainer.innerHTML = window.merchantPermanent.map((item, i) => `
+    <div class="bg-zinc-800 rounded-3xl p-5 text-center">
+      <div class="text-5xl mb-2">${item.icon}</div>
+      <div class="font-bold text-lg">${item.name}</div>
+      <div class="text-emerald-400 text-2xl font-bold mt-1">${item.costGold} 金币</div>
+      <div class="text-xs text-gray-400 mt-4">可购买数量</div>
+      <div class="flex gap-2 justify-center mt-2">
+        <button onclick="window.buyPermanent(${i},1)" class="flex-1 py-2 bg-teal-600 hover:bg-teal-700 rounded-2xl text-sm font-bold">1</button>
+        <button onclick="window.buyPermanent(${i},10)" class="flex-1 py-2 bg-teal-600 hover:bg-teal-700 rounded-2xl text-sm font-bold">10</button>
+        <button onclick="window.buyPermanent(${i},100)" class="flex-1 py-2 bg-teal-600 hover:bg-teal-700 rounded-2xl text-sm font-bold">100</button>
+      </div>
+    </div>
+  `).join('');
+
+  // 随机商品
+  const randomContainer = document.getElementById("randomGoods");
+  randomContainer.innerHTML = player.merchantInventory.map((item, i) => `
+    <div class="bg-zinc-800 rounded-3xl p-5">
+      <div class="flex justify-between">
+        <div>
+          <div class="font-bold">${item.name}</div>
+          <div class="text-xs text-gray-400">${item.desc}</div>
+          <div class="text-orange-400 text-xl font-bold">${item.price} 金币</div>
+        </div>
+        <div class="text-right">
+          <div class="text-emerald-400 text-2xl font-bold">${item.stock}</div>
+          <div class="text-xs text-gray-400">库存</div>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-6">
+        <button onclick="window.buyRandom(${i},1)" class="flex-1 py-3 bg-amber-600 hover:bg-amber-700 rounded-2xl text-sm font-bold">买 1</button>
+        <button onclick="window.buyRandom(${i},10)" class="flex-1 py-3 bg-amber-600 hover:bg-amber-700 rounded-2xl text-sm font-bold">买 10</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buyPermanent(index, bulk) {
+  const item = window.merchantPermanent[index];
+  const totalCost = item.costGold * bulk;
+  if (player.gold < totalCost) return alert("金币不足！");
+  
+  player.gold -= totalCost;
+  
+  if (item.id === 'yaoXing') player.yaoXing += item.qty * bulk;
+  else if (item.id === 'reinforceStone') player.reinforceStone += item.qty * bulk;
+  else player.materials[item.id] = (player.materials[item.id] || 0) + item.qty * bulk;
+
+  document.getElementById("gold").textContent = player.gold;
+  document.getElementById("yaoXing").textContent = player.yaoXing;
+  document.getElementById("reinforceStone").textContent = player.reinforceStone;
+  
+  window.saveGame();
+  window.renderMaterialsWarehouse();   // 刷新材料仓库
+  alert(`✅ 已购买 ${bulk} 份 ${item.name}`);
+}
+
+function buyRandom(index, bulk) {
+  const item = player.merchantInventory[index];
+  if (item.stock < bulk) return alert("库存不足！");
+  
+  const totalCost = item.price * bulk;
+  if (player.gold < totalCost) return alert("金币不足！");
+  
+  player.gold -= totalCost;
+  player.materials[item.id] = (player.materials[item.id] || 0) + bulk;
+  item.stock -= bulk;
+
+  document.getElementById("gold").textContent = player.gold;
+  window.saveGame();
+  window.renderMaterialsWarehouse();
+  renderMerchantModal();   // 刷新当前 modal
+  alert(`✅ 已购买 ${bulk} 份 ${item.name}`);
+}
+
+function hideMerchantModal() {
+  const modal = document.getElementById("merchantModal");
+  if (modal) modal.remove();
+}
+
 function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
 
 function resetGame() {
@@ -513,3 +660,7 @@ window.renderMaterialsWarehouse = renderMaterialsWarehouse;
 window.renderRecipeBook = renderRecipeBook;
 window.renderShopInfo = renderShopInfo;
 window.resetGame = resetGame;
+window.openMerchant = openMerchant;
+window.hideMerchantModal = hideMerchantModal;
+window.buyPermanent = buyPermanent;
+window.buyRandom = buyRandom;

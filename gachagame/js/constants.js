@@ -142,6 +142,23 @@ const customerDemands = [
   {id:39, level:5, demand:"我现在什么都需要，最全面的顶级药水！", satisfy:[20,19,17]}
 ];
 
+// ==================== 商人系统数据====================
+const merchantPermanent = [
+  { id: 'yaoXing', name: "450 ⭐ 耀星", costGold: 1000, qty: 450, icon: "⭐", maxBulk: 100 },
+  { id: 'reinforceStone', name: "1 💎 强化石", costGold: 100, qty: 1, icon: "💎", maxBulk: 100 },
+  { id: 11, name: "1 💧 水", costGold: 10, qty: 1, icon: "💧", maxBulk: 100 },
+  { id: 12, name: "1 🍷 酒", costGold: 20, qty: 1, icon: "🍷", maxBulk: 100 }
+];
+
+const materialPrices = {
+  1: 28, 2: 28, 3: 28, 4: 32,     // R级材料
+  5: 45, 6: 48, 7: 42, 8: 50, 9: 55, 13: 60, 14: 62, 15: 58, // SR级
+  10: 95, 16: 110, 17: 120, 18: 115, // SSR级
+  19: 280, 20: 320                 // UR级
+};
+
+window.merchantPermanent = merchantPermanent;
+window.materialPrices = materialPrices;
 window.characterPool = characterPool;
 window.weaponPool = weaponPool;
 window.rarityWeights = rarityWeights;

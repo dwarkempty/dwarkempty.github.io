@@ -629,7 +629,184 @@ function hideMerchantModal() {
   if (modal) modal.remove();
 }
 
-function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
+// ==================== 地牢冒险系统 - 入口 + 地图生成（完整版） ====================
+let currentDungeonFloor = 1;           // 当前层数（1~5）
+let currentDungeonMap = [];            // 当前层地图房间数组
+let currentRoomIndex = 0;          // 当前所在房间索引
+let dungeonRunActive = false;      // 是否正在进行一局地牢
+
+function openDungeon() {
+  if (dungeonRunActive) {
+    return renderDungeonMap(); // 已进行中，直接显示当前地图
+  }
+
+  // 新开一局地牢（重置）
+  dungeonRunActive = true;
+  currentDungeonFloor = 1;
+  currentRoomIndex = 0;
+  currentDungeonMap = generateDungeonFloor(1);
+
+  const modalHTML = `
+    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+      <div class="bg-zinc-900 rounded-3xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-3xl font-bold flex items-center gap-3">
+            🗡️ 地牢冒险 <span class="text-xl text-orange-400">Lv.${currentDungeonFloor}</span>
+          </h3>
+          <button onclick="window.exitDungeon()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
+        </div>
+        
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center bg-zinc-800 rounded-2xl px-6 py-2 text-lg font-bold">
+            当前位置：第 <span id="floorDisplay" class="text-orange-400 mx-1">${currentDungeonFloor}</span> 层
+          </div>
+        </div>
+        
+        <!-- 地图网格 -->
+        <div id="dungeonMapGrid" class="grid grid-cols-5 gap-3 p-4 bg-black/30 rounded-3xl">
+          <!-- 动态生成 -->
+        </div>
+        
+        <div class="flex justify-center gap-6 mt-8">
+          <button onclick="window.enterCurrentRoom()" class="flex-1 max-w-xs py-5 text-2xl font-bold bg-red-600 hover:bg-red-700 rounded-3xl btn-hover">
+            🚪 进入当前房间
+          </button>
+          <button onclick="window.exitDungeon()" class="flex-1 max-w-xs py-5 text-2xl font-bold bg-zinc-700 hover:bg-zinc-600 rounded-3xl btn-hover">
+            退出地牢（保留奖励）
+          </button>
+        </div>
+        
+        <div class="text-xs text-gray-400 text-center mt-6">
+          每层5个房间 · 击败所有房间可进入下一层 · Boss在第5层
+        </div>
+      </div>
+    </div>`;
+
+  const div = document.createElement("div");
+  div.id = "dungeonModal";
+  div.innerHTML = modalHTML;
+  document.body.appendChild(div);
+
+  renderDungeonMap();
+}
+
+// 生成单层地图（5个房间：普通战斗 x3、精英 x1、商店/事件 x1）
+function generateDungeonFloor(floor) {
+  const rooms = [];
+  const types = [
+    { type: "fight", name: "普通战斗", icon: "⚔️", difficulty: 1 },
+    { type: "fight", name: "普通战斗", icon: "⚔️", difficulty: 1 },
+    { type: "fight", name: "普通战斗", icon: "⚔️", difficulty: 1 },
+    { type: "elite", name: "精英", icon: "🔥", difficulty: 2 },
+    { type: "shop", name: "商人", icon: "🛒", difficulty: 0 }
+  ];
+
+  // 随机打乱
+  const shuffled = [...types].sort(() => Math.random() - 0.5);
+  
+  for (let i = 0; i < 5; i++) {
+    const room = { ...shuffled[i], index: i, cleared: false };
+    // Boss只在第5层
+    if (floor === 5 && i === 4) {
+      room.type = "boss";
+      room.name = "最终Boss";
+      room.icon = "👑";
+      room.difficulty = 3;
+    }
+    rooms.push(room);
+  }
+  return rooms;
+}
+
+function renderDungeonMap() {
+  const container = document.getElementById("dungeonMapGrid");
+  if (!container) return;
+  
+  container.innerHTML = currentDungeonMap.map((room, i) => {
+    const isCurrent = i === currentRoomIndex;
+    const clearedClass = room.cleared ? "bg-emerald-900/50 border-emerald-400" : "bg-zinc-800 border-zinc-600";
+    const activeClass = isCurrent ? "ring-4 ring-orange-400 scale-110" : "";
+    
+    return `
+      <div onclick="window.selectRoom(${i})" 
+           class="aspect-square flex flex-col items-center justify-center rounded-3xl border-4 ${clearedClass} ${activeClass} cursor-pointer hover:scale-105 transition-all">
+        <div class="text-5xl mb-2">${room.icon}</div>
+        <div class="font-bold text-sm">${room.name}</div>
+        ${room.cleared ? `<div class="text-emerald-400 text-xs mt-1">✓ 已完成</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function selectRoom(index) {
+  if (currentDungeonMap[index].cleared) return alert("该房间已完成！");
+  currentRoomIndex = index;
+  renderDungeonMap();
+}
+
+function enterCurrentRoom() {
+  const room = currentDungeonMap[currentRoomIndex];
+  hideDungeonModal(); // 暂时关闭地图，进入战斗/商店
+
+  if (room.type === "fight" || room.type === "elite" || room.type === "boss") {
+    // 后续调用战斗系统（下一阶段实现）
+    window.startDungeonBattle(room);
+  } else if (room.type === "shop") {
+    window.openMerchant(); // 直接调用现有商人系统
+    // 商人结束后自动返回地图
+    setTimeout(() => {
+      room.cleared = true;
+      currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
+      if (currentRoomIndex === 5) nextFloor();
+      else showDungeonModalAgain();
+    }, 800);
+  }
+}
+
+function hideDungeonModal() {
+  const modal = document.getElementById("dungeonModal");
+  if (modal) modal.remove();
+}
+
+function showDungeonModalAgain() {
+  const modalHTML = document.getElementById("dungeonModal") ? "" : `
+    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+      <!-- 同上openDungeon的modalHTML -->
+    </div>`;
+  // 简化：直接重新调用openDungeon逻辑
+  openDungeon();
+}
+
+function nextFloor() {
+  if (currentDungeonFloor >= 5) {
+    alert("🎉 恭喜通关地牢！获得大量奖励！");
+    endDungeonRun(true);
+    return;
+  }
+  currentDungeonFloor++;
+  currentRoomIndex = 0;
+  currentDungeonMap = generateDungeonFloor(currentDungeonFloor);
+  showDungeonModalAgain();
+  alert(`🚀 进入第 ${currentDungeonFloor} 层！`);
+}
+
+function exitDungeon() {
+  if (confirm("确定退出地牢？已完成房间的奖励仍会保留！")) {
+    endDungeonRun(false);
+  }
+}
+
+function endDungeonRun(victory) {
+  dungeonRunActive = false;
+  hideDungeonModal();
+  if (victory) {
+    player.yaoXing += 300;
+    player.gold += 800;
+    player.reinforceStone += 15;
+    alert("🏆 地牢冒险胜利！获得 300⭐ + 800金币 + 15强化石");
+  }
+  window.saveGame();
+  window.renderShopInfo();
+}
 
 function resetGame() {
   if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
@@ -664,3 +841,13 @@ window.openMerchant = openMerchant;
 window.hideMerchantModal = hideMerchantModal;
 window.buyPermanent = buyPermanent;
 window.buyRandom = buyRandom;
+window.openDungeon = openDungeon;
+window.generateDungeonFloor = generateDungeonFloor;
+window.renderDungeonMap = renderDungeonMap;
+window.selectRoom = selectRoom;
+window.enterCurrentRoom = enterCurrentRoom;
+window.hideDungeonModal = hideDungeonModal;
+window.showDungeonModalAgain = showDungeonModalAgain;
+window.nextFloor = nextFloor;
+window.exitDungeon = exitDungeon;
+window.endDungeonRun = endDungeonRun;

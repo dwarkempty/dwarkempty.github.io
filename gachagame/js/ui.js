@@ -629,7 +629,7 @@ function hideMerchantModal() {
   if (modal) modal.remove();
 }
 
-// ==================== 地牢冒险系统 - 最终修复版（已解决地图不重新出现的问题） ====================
+// ==================== 地牢冒险系统 - 最终彻底修复版 ====================
 let currentDungeonFloor = 1;
 let currentDungeonMap = [];
 let currentRoomIndex = 0;
@@ -639,7 +639,7 @@ let selectedClass = null;
 // ==================== 入口 + 职业选择 ====================
 function openDungeon() {
   if (dungeonRunActive && currentDungeonMap.length > 0) {
-    return renderDungeonMap();   // 已进行中，直接显示当前地图
+    return reopenDungeonMap();   // 已进行中，直接重建地图
   }
 
   selectedClass = null;
@@ -672,21 +672,19 @@ function openDungeon() {
 window.chooseClass = function(cls) {
   selectedClass = cls;
   document.getElementById("classSelectModal").remove();
-  
   dungeonRunActive = true;
   currentDungeonFloor = 1;
   currentRoomIndex = 0;
   currentDungeonMap = generateDungeonFloor(1);
-
-  createDungeonModal();
-  renderDungeonMap();
+  reopenDungeonMap();
 };
 
 window.cancelDungeonStart = function() {
   document.getElementById("classSelectModal").remove();
 };
 
-function createDungeonModal() {
+function reopenDungeonMap() {
+  hideDungeonModal(); // 先清理旧的
   const modalHTML = `
     <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
       <div class="bg-zinc-900 rounded-3xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto">
@@ -720,9 +718,10 @@ function createDungeonModal() {
   mapDiv.id = "dungeonModal";
   mapDiv.innerHTML = modalHTML;
   document.body.appendChild(mapDiv);
+
+  renderDungeonMap();
 }
 
-// ==================== 地图生成 ====================
 function generateDungeonFloor(floor) {
   const rooms = [];
   const types = [
@@ -780,7 +779,7 @@ function enterCurrentRoom() {
       room.cleared = true;
       currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
       if (currentRoomIndex >= 5) nextFloor();
-      else openDungeon();   // 关键修复：商店退出后直接重新打开地牢界面
+      else reopenDungeonMap();   // 商店退出后重新显示地图
     }, 800);
   }
 }
@@ -788,6 +787,10 @@ function enterCurrentRoom() {
 function hideDungeonModal() {
   const modal = document.getElementById("dungeonModal");
   if (modal) modal.remove();
+}
+
+function reopenDungeonMap() {
+  reopenDungeonMap();   // 直接调用自身重建
 }
 
 // ==================== 战斗系统 ====================
@@ -1094,7 +1097,6 @@ window.usePotionInBattle = function() {
   }
 };
 
-// ==================== 战斗胜利后关键修复 ====================
 window.endCurrentBattle = function(victory) {
   const modal = document.getElementById("battleModal");
   if (modal) modal.remove();
@@ -1108,12 +1110,11 @@ window.endCurrentBattle = function(victory) {
     window.saveGame();
     window.renderShopInfo();
 
-    // 关键修复：胜利后直接重新打开地牢界面（地图会重新出现）
     currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
     if (currentRoomIndex >= 5) {
       nextFloor();
     } else {
-      openDungeon();   // 直接调用 openDungeon 重新创建地图界面
+      reopenDungeonMap();   // 战斗胜利后立即重建地牢地图
     }
   } else {
     alert("💀 战斗失败...");
@@ -1131,7 +1132,7 @@ function nextFloor() {
   currentDungeonFloor++;
   currentRoomIndex = 0;
   currentDungeonMap = generateDungeonFloor(currentDungeonFloor);
-  openDungeon();   // 直接重建界面
+  reopenDungeonMap();
   alert(`🚀 进入第 ${currentDungeonFloor} 层！`);
 }
 

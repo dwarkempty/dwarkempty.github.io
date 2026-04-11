@@ -629,7 +629,7 @@ function hideMerchantModal() {
   if (modal) modal.remove();
 }
 
-// ==================== 地牢冒险系统 - 最终彻底修复版 ====================
+// ==================== 地牢冒险系统 - 最终彻底修复版（地图不再消失） ====================
 let currentDungeonFloor = 1;
 let currentDungeonMap = [];
 let currentRoomIndex = 0;
@@ -639,7 +639,7 @@ let selectedClass = null;
 // ==================== 入口 + 职业选择 ====================
 function openDungeon() {
   if (dungeonRunActive && currentDungeonMap.length > 0) {
-    return reopenDungeonMap();   // 已进行中，直接重建地图
+    return reopenDungeonMap();
   }
 
   selectedClass = null;
@@ -683,8 +683,10 @@ window.cancelDungeonStart = function() {
   document.getElementById("classSelectModal").remove();
 };
 
+// ==================== 重新打开地牢地图 ====================
 function reopenDungeonMap() {
-  hideDungeonModal(); // 先清理旧的
+  hideDungeonModal(); // 先清理旧modal
+
   const modalHTML = `
     <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
       <div class="bg-zinc-900 rounded-3xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto">
@@ -779,7 +781,7 @@ function enterCurrentRoom() {
       room.cleared = true;
       currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
       if (currentRoomIndex >= 5) nextFloor();
-      else reopenDungeonMap();   // 商店退出后重新显示地图
+      else reopenDungeonMap();
     }, 800);
   }
 }
@@ -787,10 +789,6 @@ function enterCurrentRoom() {
 function hideDungeonModal() {
   const modal = document.getElementById("dungeonModal");
   if (modal) modal.remove();
-}
-
-function reopenDungeonMap() {
-  reopenDungeonMap();   // 直接调用自身重建
 }
 
 // ==================== 战斗系统 ====================
@@ -1097,6 +1095,7 @@ window.usePotionInBattle = function() {
   }
 };
 
+// ==================== 战斗胜利后直接重建地图 ====================
 window.endCurrentBattle = function(victory) {
   const modal = document.getElementById("battleModal");
   if (modal) modal.remove();
@@ -1114,7 +1113,7 @@ window.endCurrentBattle = function(victory) {
     if (currentRoomIndex >= 5) {
       nextFloor();
     } else {
-      reopenDungeonMap();   // 战斗胜利后立即重建地牢地图
+      reopenDungeonMap();   // 直接重建地牢地图
     }
   } else {
     alert("💀 战斗失败...");

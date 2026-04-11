@@ -206,13 +206,13 @@ function startBlackjack() {
   let minBet = blackjackBetCurrency === 0 ? 100 : blackjackBetCurrency === 1 ? 1000 : 5;
   if (blackjackBet < minBet || blackjackBet > maxBet) return alert(`下注金额必须在 ${minBet}~${maxBet} 之间！`);
 
-  let costField = blackjackBetCurrency === 0 ? "diamonds" : blackjackBetCurrency === 1 ? "gold" : "magicPotion";
+  let costField = blackjackBetCurrency === 0 ? "yaoXing" : blackjackBetCurrency === 1 ? "gold" : "reinforceStone";
   if (player[costField] < blackjackBet) return alert("余额不足！");
 
   player[costField] -= blackjackBet;
-  if (blackjackBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+  if (blackjackBetCurrency === 0) document.getElementById("yaoXing").textContent = player.yaoXing;
   else if (blackjackBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
-  else document.getElementById("magicPotion").textContent = player.magicPotion;
+  else document.getElementById("reinforceStone").textContent = player.reinforceStone;
 
   blackjackDeck = createDeck();
   playerHand = [blackjackDeck.pop(), blackjackDeck.pop()];
@@ -223,7 +223,9 @@ function startBlackjack() {
   document.getElementById("playerScore").textContent = `得分：${handScore(playerHand)}`;
   document.getElementById("dealerScore").textContent = `得分：${cardValue(dealerHand[0])} (隐藏一张)`;
 
-  document.getElementById("blackjackBetInfo").innerHTML = `下注：${blackjackBet} ${blackjackBetCurrency === 0 ? "钻石" : blackjackBetCurrency === 1 ? "金币" : "魔药"}`;
+  const unit = blackjackBetCurrency === 0 ? "耀星" : blackjackBetCurrency === 1 ? "金币" : "强化石";
+  document.getElementById("blackjackBetInfo").innerHTML = `下注：${blackjackBet} ${unit}`;
+
   document.getElementById("blackjackResult").innerHTML = "";
 
   document.getElementById("hitBtn").disabled = false;
@@ -270,14 +272,15 @@ function endBlackjack(win) {
       payoutMultiplier = 2.5;
     }
     let winAmount = Math.floor(blackjackBet * payoutMultiplier);
-    let winField = blackjackBetCurrency === 0 ? "diamonds" : blackjackBetCurrency === 1 ? "gold" : "magicPotion";
+    let winField = blackjackBetCurrency === 0 ? "yaoXing" : blackjackBetCurrency === 1 ? "gold" : "reinforceStone";
     player[winField] += winAmount;
 
-    if (blackjackBetCurrency === 0) document.getElementById("diamonds").textContent = player.diamonds;
+    if (blackjackBetCurrency === 0) document.getElementById("yaoXing").textContent = player.yaoXing;
     else if (blackjackBetCurrency === 1) document.getElementById("gold").textContent = player.gold;
-    else document.getElementById("magicPotion").textContent = player.magicPotion;
+    else document.getElementById("reinforceStone").textContent = player.reinforceStone;
 
-    document.getElementById("blackjackResult").innerHTML = `<span class="text-green-400">🎉 你赢了！获得 ${winAmount} ${blackjackBetCurrency === 0 ? "钻石" : blackjackBetCurrency === 1 ? "金币" : "魔药"}（2倍/2.5倍）</span>`;
+    const unit = blackjackBetCurrency === 0 ? "耀星" : blackjackBetCurrency === 1 ? "金币" : "强化石";
+    document.getElementById("blackjackResult").innerHTML = `<span class="text-green-400">🎉 你赢了！获得 ${winAmount} ${unit}（2倍/2.5倍）</span>`;
   } else {
     document.getElementById("blackjackResult").innerHTML = `<span class="text-red-400">😢 你输了</span>`;
   }
@@ -421,10 +424,10 @@ function stopMinesweeper() {
     }
   }
   if (safeCellsLeft === 0) {
-    player.diamonds += minesweeperReward;
-    document.getElementById("diamonds").textContent = player.diamonds;
+    player.yaoXing += minesweeperReward;
+    document.getElementById("yaoXing").textContent = player.yaoXing;
     window.saveGame();
-    alert(`🎉 扫雷胜利！获得 ${minesweeperReward} 钻石`);
+    alert(`🎉 扫雷胜利！获得 ${minesweeperReward} 耀星`);
   } else {
     alert("中途退出，奖励清零");
   }

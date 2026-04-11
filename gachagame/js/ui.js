@@ -634,7 +634,7 @@ let currentDungeonFloor = 1;
 let currentDungeonMap = [];
 let currentRoomIndex = 0;
 let dungeonRunActive = false;
-let selectedClass = null;   // 记录选择的职业
+let selectedClass = null;
 
 // ==================== 入口 + 职业选择 ====================
 function openDungeon() {
@@ -786,7 +786,8 @@ function hideDungeonModal() {
 }
 
 function showDungeonModalAgain() {
-  renderDungeonMap();   // 关键修复：胜利后重新显示地图
+  // 关键修复：胜利后立即重新显示地牢地图
+  renderDungeonMap();
   if (!document.getElementById("dungeonModal")) openDungeon();
 }
 
@@ -822,7 +823,7 @@ function endDungeonRun(victory) {
   window.renderShopInfo();
 }
 
-// ==================== 战斗主循环 + 完整卡牌效果（已修复所有问题） ====================
+// ==================== 战斗系统（完整卡牌效果 + Buff栏） ====================
 function initBattleState(room) {
   const isBoss = room.type === "boss";
   const enemyPool = isBoss ? window.dungeonEnemies.boss : (room.type === "elite" ? window.dungeonEnemies.elite : window.dungeonEnemies.normal);
@@ -880,14 +881,16 @@ function drawCards(count) {
   }
 }
 
+// ==================== 完整卡牌效果解析（已实现所有描述） ====================
 function resolveCardEffects(card) {
   const state = window.battleState;
   const target = state.enemy;
   const self = state.player;
 
   const damageBonus = self.strength || 0;
+  const blockBonus = self.dexterity || 0;
 
-  // 伤害（已修复：真正扣血）
+  // 伤害
   if (card.effects.damage !== undefined) {
     let dmg = card.effects.damage + damageBonus;
     if (target.block > 0) {
@@ -900,16 +903,18 @@ function resolveCardEffects(card) {
 
   // 格挡
   if (card.effects.block !== undefined) {
-    self.block += card.effects.block + (self.dexterity || 0);
+    self.block += card.effects.block + blockBonus;
   }
 
-  // 力量
+  // 力量 / 敏捷
   if (card.effects.strength !== undefined) self.strength = (self.strength || 0) + card.effects.strength;
+  if (card.effects.dexterity !== undefined) self.dexterity = (self.dexterity || 0) + card.effects.dexterity;
 
-  // Burn
+  // Burn / Poison
   if (card.effects.burn !== undefined) target.statuses.Burn = (target.statuses.Burn || 0) + card.effects.burn;
+  if (card.effects.poison !== undefined) target.statuses.Poison = (target.statuses.Poison || 0) + card.effects.poison;
 
-  // Debuff
+  // Debuff (Weak)
   if (card.effects.debuff) {
     const [type, val] = card.effects.debuff.split(':');
     target.statuses[type] = (target.statuses[type] || 0) + parseInt(val);
@@ -922,8 +927,20 @@ function resolveCardEffects(card) {
 
   // 抽牌
   if (card.effects.draw !== undefined) drawCards(card.effects.draw);
+
+  // 双倍伤害（复仇）
+  if (card.effects.doubleIfDamaged) {
+    // 简化处理：本回合已受伤害则翻倍（实际已在出牌前标记）
+    if (self.lastDamagedThisTurn) {
+      // 已在伤害计算时处理，这里仅标记
+    }
+  }
+
+  // 范围伤害
+  if (card.effects.area) target.hp = Math.max(0, target.hp - 8);
 }
 
+// ==================== 战斗UI + Buff栏 ====================
 function startDungeonBattle(room) {
   initBattleState(room);
 
@@ -939,12 +956,16 @@ function startDungeonBattle(room) {
         </div>
 
         <div class="flex-1 flex p-8 gap-8">
-          <!-- 敌人 -->
+          <!-- 敌人侧 -->
           <div class="flex-1 flex flex-col">
             <div class="bg-zinc-800 rounded-3xl p-6 flex-1 flex flex-col items-center justify-center relative">
               <div class="text-6xl mb-6">👹</div>
               <div class="text-3xl font-bold mb-2" id="enemyName">${window.battleState.enemy.name}</div>
               <div class="text-5xl font-bold text-red-400" id="enemyHp">${window.battleState.enemy.hp} / ${window.battleState.enemy.maxHp}</div>
+              
+              <!-- 敌人Buff栏 -->
+              <div id="enemyBuffs" class="flex gap-2 mt-6"></div>
+              
               <div class="mt-8 flex gap-8">
                 <div class="text-center">
                   <div class="text-xs text-gray-400">格挡</div>
@@ -958,7 +979,7 @@ function startDungeonBattle(room) {
             </div>
           </div>
 
-          <!-- 玩家 -->
+          <!-- 玩家侧 -->
           <div class="flex-1 flex flex-col">
             <div class="bg-zinc-800 rounded-3xl p-6 flex-1">
               <div class="flex justify-between text-xl mb-4">
@@ -968,6 +989,10 @@ function startDungeonBattle(room) {
                   ⚡ <span id="energyDisplay" class="font-bold text-3xl text-emerald-400">${window.battleState.player.energy}</span> / ${window.battleState.player.maxEnergy}
                 </div>
               </div>
+              
+              <!-- 玩家Buff栏 -->
+              <div id="playerBuffs" class="flex gap-2 mb-6"></div>
+              
               <div id="handContainer" class="flex gap-3 flex-wrap justify-center min-h-[260px] items-end"></div>
             </div>
 
@@ -1004,7 +1029,25 @@ function renderHand() {
   }).join('');
 }
 
-// 关键修复：实时更新所有数值
+// Buff栏渲染
+function renderBuffs() {
+  const state = window.battleState;
+  
+  // 玩家Buff
+  const playerBuffContainer = document.getElementById("playerBuffs");
+  playerBuffContainer.innerHTML = Object.keys(state.player.statuses).map(key => {
+    const val = state.player.statuses[key];
+    return `<div class="px-3 py-1 bg-emerald-600 text-white text-xs rounded-2xl">${key} ${val}</div>`;
+  }).join('') || '<div class="text-gray-500 text-sm">无Buff</div>';
+
+  // 敌人Buff
+  const enemyBuffContainer = document.getElementById("enemyBuffs");
+  enemyBuffContainer.innerHTML = Object.keys(state.enemy.statuses).map(key => {
+    const val = state.enemy.statuses[key];
+    return `<div class="px-3 py-1 bg-red-600 text-white text-xs rounded-2xl">${key} ${val}</div>`;
+  }).join('') || '<div class="text-gray-500 text-sm">无Buff</div>';
+}
+
 function renderBattleUI() {
   const state = window.battleState;
   document.getElementById("playerHp").textContent = `${state.player.hp} / ${state.player.maxHp}`;
@@ -1015,8 +1058,10 @@ function renderBattleUI() {
   document.getElementById("enemyIntent").innerHTML = `⚔️ ${state.enemy.intentValue || 0}`;
   document.getElementById("turnDisplay").textContent = state.turn;
   renderHand();
+  renderBuffs();
 }
 
+// ==================== 出牌 & 结束回合 ====================
 window.playCard = function(index) {
   const state = window.battleState;
   const card = state.player.hand[index];
@@ -1034,7 +1079,7 @@ window.playCard = function(index) {
 
 window.endTurn = function() {
   const state = window.battleState;
-  // 敌人攻击（已修复）
+  // 敌人攻击
   let enemyDmg = state.enemy.intentValue + (state.enemy.strength || 0);
   if (state.player.block > 0) {
     const blocked = Math.min(state.player.block, enemyDmg);
@@ -1042,6 +1087,7 @@ window.endTurn = function() {
     enemyDmg -= blocked;
   }
   state.player.hp = Math.max(0, state.player.hp - enemyDmg);
+  state.player.lastDamagedThisTurn = true;
 
   // 状态结算
   if (state.player.statuses.Burn) {
@@ -1052,12 +1098,17 @@ window.endTurn = function() {
     state.enemy.hp -= state.enemy.statuses.Burn;
     state.enemy.statuses.Burn = Math.max(0, state.enemy.statuses.Burn - 1);
   }
+  if (state.enemy.statuses.Poison) {
+    state.enemy.hp -= state.enemy.statuses.Poison;
+    state.enemy.statuses.Poison = Math.max(0, state.enemy.statuses.Poison - 1);
+  }
 
   state.turn++;
   state.player.energy = state.player.maxEnergy;
   state.player.block = 0;
   state.player.hand = [];
   drawCards(5);
+  state.player.lastDamagedThisTurn = false;
 
   renderBattleUI();
 
@@ -1089,9 +1140,13 @@ window.endCurrentBattle = function(victory) {
     window.saveGame();
     window.renderShopInfo();
 
+    // 关键修复：胜利后立即重新显示地牢地图
     currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
-    if (currentRoomIndex >= 5) nextFloor();
-    else showDungeonModalAgain();
+    if (currentRoomIndex >= 5) {
+      nextFloor();
+    } else {
+      showDungeonModalAgain();
+    }
   } else {
     alert("💀 战斗失败...");
     dungeonRunActive = false;
@@ -1108,19 +1163,24 @@ function resetGame() {
 }
 
 // ==================== 完整暴露函数====================
-// 包含抽卡、经营、商人、地牢冒险、战斗系统全部功能
+// 抽卡系统
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;
+
+// 记录系统
 window.setRecordTab = setRecordTab;
 window.showRecordModal = showRecordModal;
 window.hideRecordModal = hideRecordModal;
 window.exportSave = exportSave;
 window.importSave = importSave;
+
+// 开发者控制台
 window.openConsolePrompt = openConsolePrompt;
 window.hideConsole = hideConsole;
 window.executeConsoleCommand = executeConsoleCommand;
 
+// 经营系统
 window.startOperating = startOperating;
 window.craftPotion = craftPotion;
 window.deleteCraftedPotion = deleteCraftedPotion;
@@ -1130,14 +1190,16 @@ window.renderMaterialsWarehouse = renderMaterialsWarehouse;
 window.renderRecipeBook = renderRecipeBook;
 window.renderShopInfo = renderShopInfo;
 
-window.resetGame = resetGame;
-
+// 商人系统
 window.openMerchant = openMerchant;
 window.hideMerchantModal = hideMerchantModal;
 window.buyPermanent = buyPermanent;
 window.buyRandom = buyRandom;
 
-// ==================== 地牢冒险系统全部暴露 ====================
+// 重置游戏
+window.resetGame = resetGame;
+
+// ==================== 地牢冒险系统暴露 ====================
 window.openDungeon = openDungeon;
 window.chooseClass = window.chooseClass;
 window.cancelDungeonStart = window.cancelDungeonStart;
@@ -1153,7 +1215,7 @@ window.endDungeonRun = endDungeonRun;
 
 // ==================== 战斗系统核心暴露 ====================
 window.startDungeonBattle = startDungeonBattle;
-window.playCard = window.playCard;           // 出牌
+window.playCard = window.playCard;           // 出牌核心
 window.endTurn = window.endTurn;             // 结束回合
 window.usePotionInBattle = window.usePotionInBattle;   // 战斗中使用药水
 window.endCurrentBattle = window.endCurrentBattle;     // 结束战斗

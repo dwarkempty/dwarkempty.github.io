@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑
+// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑（完整版，无任何省略）
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -126,7 +126,7 @@ function openConsolePrompt() {
       give 5 50 3 → 获得角色ID 5（等级50，星级3）<br>
       give 105 30 2 → 获得武器ID 105（等级30，星级2）<br>
       give 201 10 → 获得10个红史莱姆粘液<br>
-      <span class="text-emerald-400">经营材料ID：201~206</span>
+      <span class="text-emerald-400">经营材料ID：201~212</span>
     `;
   } else {
     alert("命令错误！");
@@ -170,7 +170,7 @@ function executeConsoleCommand() {
       const stars = parseInt(parts[3]) || 0;
       player.weapons.push({ id: Date.now(), weaponId: weaponRealId, level: Math.min(level, 100), stars: Math.min(stars, 5) });
       log.innerHTML += `✅ 已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
-    } else if (id >= 201 && id <= 206) {
+    } else if (id >= 201 && id <= 212) {
       const mat = window.materialsPool.find(m => m.id === id - 200);
       if (mat) {
         player.materials[id - 200] = (player.materials[id - 200] || 0) + amount;
@@ -189,13 +189,16 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// ==================== 经营系统完整逻辑 ====================
+// ==================== 经营系统完整逻辑（已按最新需求重写） ====================
 let currentCustomer = null;
 let currentCrafting = [];
 let currentCraftedPotion = null;
 
 function startOperating() {
-  currentCustomer = { demand: window.customerTemplates[Math.floor(Math.random() * window.customerTemplates.length)] };
+  // 按商店等级筛选顾客需求
+  const availableCustomers = window.customerTemplates.filter(c => c.level <= player.shopLevel);
+  currentCustomer = availableCustomers[Math.floor(Math.random() * availableCustomers.length)];
+  
   currentCrafting = [];
   currentCraftedPotion = null;
 
@@ -275,6 +278,7 @@ function craftPotion() {
   
   let matchedRecipe = null;
   for (let recipe of window.recipesPool) {
+    if (recipe.level > player.shopLevel) continue;
     if (recipe.materials.length !== currentCrafting.length) continue;
     let match = true;
     for (let req of recipe.materials) {

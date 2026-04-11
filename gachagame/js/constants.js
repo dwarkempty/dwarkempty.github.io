@@ -1,4 +1,4 @@
-// js/constants.js - 角色/武器池 + 常量 + 经营系统数据
+// js/constants.js - 角色/武器池 + 常量 + 经营系统数据（完整版，无任何省略）
 const characterPool = [
   {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg"},
   {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg"},
@@ -42,7 +42,7 @@ const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 const characterMap = new Map(characterPool.map(c => [c.id, c]));
 const weaponMap = new Map(weaponPool.map(w => [w.id, w]));
 
-// ==================== 经营系统数据（已按最新需求更新） ====================
+// ==================== 经营系统数据 ====================
 const materialsPool = [
   {id:1, name:"红史莱姆粘液", desc:"红色史莱姆的液体，可用于基础治疗", rarity:"R"},
   {id:2, name:"蓝史莱姆粘液", desc:"蓝色史莱姆的液体，可加强自身魔力", rarity:"R"},
@@ -73,59 +73,42 @@ const recipesPool = [
   {id:12, level:3, name:"基础全能药剂", materials:[{id:1,qty:1},{id:2,qty:1},{id:4,qty:1},{id:12,qty:1}], gold:500, operating:10}
 ];
 
-// 顾客需求（已按等级区分）
-const customerTemplates = [
-  // 1级商店顾客
-  {level:1, demand:"我跟红色史莱姆打架受伤了，来一瓶基础治疗药水！"},
-  {level:1, demand:"我需要一瓶能补充自身魔力的药水"},
-  {level:1, demand:"跑了半天腿都软了，有恢复体力跟精力的药吗？"},
-  {level:1, demand:"下一个地牢怪物攻击好高，我要提升抗性"},
-  {level:1, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。"},
-  {level:1, demand:"我要一瓶基础魔力药水，蓝史莱姆粘液那种！"},
-  {level:1, demand:"我现在只想快速回血，其他都不重要！"},
-  
-  // 2级商店新增顾客
-  {level:2, demand:"我想要能够增强我实力的药水，越猛越好！"},
-  {level:2, demand:"地牢里太黑了，有没有能让我看清路的药水？"},
-  {level:2, demand:"精神老是恍惚，下个幽灵区要疯了，有安定精神的药水不？"},
-  {level:2, demand:"给我狼牙和酒的组合，我要爆发一下！"},
-  {level:2, demand:"石巨人碎屑加水，能不能让我更耐打？"},
-  {level:2, demand:"蝙蝠翅膜加水的药水，我要夜视能力！"},
-  {level:2, demand:"幽灵残片加水的药水，能不能让我不怕精神攻击？"},
-  
-  // 3级商店新增顾客
-  {level:3, demand:"给我来点红史莱姆粘液加小枯骨的组合，效果要强一点的！"},
-  {level:3, demand:"我想让武器带点毒，下次打哥布林轻松点"},
-  {level:3, demand:"我魔力跟体力都没了，来瓶能一起补的！"},
-  {level:3, demand:"我现在全身受伤，魔力也快散了，急需一瓶救命的药！"},
-  {level:3, demand:"我需要一瓶能同时恢复生命、魔力和提升抗性的药！"},
-  {level:3, demand:"老板，给我来一瓶万能的！什么都补、什么都强的那种！"}
-];
+// ==================== 精确顾客需求列表（已按你提供的每一条建立） ====================
+const customerDemands = [
+  // 1级商店
+  {id:1, level:1, demand:"喂，老板！我跟红色史莱姆打架受伤了，来一瓶基础治疗药水！", satisfy:[1,9,12]},
+  {id:2, level:1, demand:"我需要一瓶能补充自身魔力的药水，下一场战斗要靠它了。", satisfy:[2,10,12]},
+  {id:3, level:1, demand:"跑了半天腿都软了，有恢复体力跟精力的药吗？", satisfy:[3,10,12]},
+  {id:4, level:1, demand:"下一个地牢怪物攻击好高，我要提升抗性，先来瓶基础抗性药水！", satisfy:[4,6,12]},
+  {id:5, level:1, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。", satisfy:[6,4,12]},
+  {id:6, level:1, demand:"我要一瓶基础魔力药水，蓝史莱姆粘液那种！", satisfy:[2,10,12]},
+  {id:7, level:1, demand:"我现在只想快速回血，其他都不重要！", satisfy:[1,9,12]},
 
-// 需求关键词 → 可满足的药水ID（支持多解）
-const demandToRecipe = {
-  "治疗": [1,9,12],
-  "红史莱姆": [1,9,12],
-  "魔力": [2,10,12],
-  "蓝史莱姆": [2,10,12],
-  "体力": [3,10,12],
-  "绿史莱姆": [3,10,12],
-  "抗性": [4,6,12],
-  "哥布林": [4,6,12],
-  "坚硬": [6,4,12],
-  "爆发": [5,11],
-  "狼牙": [5,11],
-  "夜视": [8],
-  "蝙蝠": [8],
-  "精神": [7,12],
-  "幽灵": [7,12],
-  "强效": [9,12],
-  "毒": [11],
-  "蜘蛛": [11],
-  "全能": [12],
-  "万能": [12],
-  "救命": [12,9,10]
-};
+  // 2级商店
+  {id:8, level:2, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。", satisfy:[6,4,12]},
+  {id:9, level:2, demand:"我想要能够增强我实力的药水，越猛越好！", satisfy:[5,6,7,11,12]},
+  {id:10, level:2, demand:"地牢里太黑了，有没有能让我看清路的药水？", satisfy:[8,12]},
+  {id:11, level:2, demand:"精神老是恍惚，下个幽灵区要疯了，有安定精神的药水不？", satisfy:[7,12]},
+  {id:12, level:2, demand:"给我狼牙和酒的组合，我要爆发一下！", satisfy:[5,11]},
+  {id:13, level:2, demand:"石巨人碎屑加水，能不能让我更耐打？", satisfy:[6,4]},
+  {id:14, level:2, demand:"蝙蝠翅膜加水的药水，我要夜视能力！", satisfy:[8]},
+  {id:15, level:2, demand:"幽灵残片加水的药水，能不能让我不怕精神攻击？", satisfy:[7,12]},
+
+  // 3级商店
+  {id:16, level:3, demand:"给我来点红史莱姆粘液加小枯骨的组合，效果要强一点的！", satisfy:[9,12]},
+  {id:17, level:3, demand:"我想让武器带点毒，下次打哥布林轻松点，有那种药吗？", satisfy:[11,12]},
+  {id:18, level:3, demand:"我魔力跟体力都没了，来瓶能一起补的！", satisfy:[10,12]},
+  {id:19, level:3, demand:"快！我要最强的治疗药水，红史莱姆粘液加小枯骨那种！", satisfy:[9,12]},
+  {id:20, level:3, demand:"蜘蛛毒腺加狼牙再加酒，我要毒刃效果的！", satisfy:[11]},
+  {id:21, level:3, demand:"绿史莱姆粘液加蓝史莱姆粘液，再加点酒，效果要猛！", satisfy:[10]},
+
+  // 全能型
+  {id:22, level:3, demand:"我全身是伤，魔力也快散了，急需一瓶救命的药！", satisfy:[1,9,10,12]},
+  {id:23, level:3, demand:"我现在全身受伤，魔力散失，急需一瓶全能的药！", satisfy:[12,9,10]},
+  {id:24, level:3, demand:"我需要一瓶能同时恢复生命、魔力和提升抗性的药！", satisfy:[12,9]},
+  {id:25, level:3, demand:"我感觉自己太弱了，有没有能让我全面变强的药水？", satisfy:[12,5,6,7]},
+  {id:26, level:3, demand:"老板，给我来一瓶万能的！什么都补、什么都强的那种！", satisfy:[12]}
+];
 
 window.characterPool = characterPool;
 window.weaponPool = weaponPool;
@@ -136,5 +119,4 @@ window.characterMap = characterMap;
 window.weaponMap = weaponMap;
 window.materialsPool = materialsPool;
 window.recipesPool = recipesPool;
-window.customerTemplates = customerTemplates;
-window.demandToRecipe = demandToRecipe;
+window.customerDemands = customerDemands;

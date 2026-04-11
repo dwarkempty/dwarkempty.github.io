@@ -629,18 +629,17 @@ function hideMerchantModal() {
   if (modal) modal.remove();
 }
 
-// ==================== 地牢冒险系统 - 入口 + 地图生成（完整版） ====================
-let currentDungeonFloor = 1;           // 当前层数（1~5）
-let currentDungeonMap = [];            // 当前层地图房间数组
-let currentRoomIndex = 0;          // 当前所在房间索引
-let dungeonRunActive = false;      // 是否正在进行一局地牢
+// ==================== 地牢冒险系统 - 入口 + 地牢地图生成 + 战斗主循环 + 卡牌效果解析（完整版） ====================
+let currentDungeonFloor = 1;
+let currentDungeonMap = [];
+let currentRoomIndex = 0;
+let dungeonRunActive = false;
 
+// ==================== 地图生成与入口 ====================
 function openDungeon() {
   if (dungeonRunActive) {
-    return renderDungeonMap(); // 已进行中，直接显示当前地图
+    return renderDungeonMap();
   }
-
-  // 新开一局地牢（重置）
   dungeonRunActive = true;
   currentDungeonFloor = 1;
   currentRoomIndex = 0;
@@ -662,10 +661,7 @@ function openDungeon() {
           </div>
         </div>
         
-        <!-- 地图网格 -->
-        <div id="dungeonMapGrid" class="grid grid-cols-5 gap-3 p-4 bg-black/30 rounded-3xl">
-          <!-- 动态生成 -->
-        </div>
+        <div id="dungeonMapGrid" class="grid grid-cols-5 gap-3 p-4 bg-black/30 rounded-3xl"></div>
         
         <div class="flex justify-center gap-6 mt-8">
           <button onclick="window.enterCurrentRoom()" class="flex-1 max-w-xs py-5 text-2xl font-bold bg-red-600 hover:bg-red-700 rounded-3xl btn-hover">
@@ -690,7 +686,6 @@ function openDungeon() {
   renderDungeonMap();
 }
 
-// 生成单层地图（5个房间：普通战斗 x3、精英 x1、商店/事件 x1）
 function generateDungeonFloor(floor) {
   const rooms = [];
   const types = [
@@ -700,13 +695,9 @@ function generateDungeonFloor(floor) {
     { type: "elite", name: "精英", icon: "🔥", difficulty: 2 },
     { type: "shop", name: "商人", icon: "🛒", difficulty: 0 }
   ];
-
-  // 随机打乱
   const shuffled = [...types].sort(() => Math.random() - 0.5);
-  
   for (let i = 0; i < 5; i++) {
     const room = { ...shuffled[i], index: i, cleared: false };
-    // Boss只在第5层
     if (floor === 5 && i === 4) {
       room.type = "boss";
       room.name = "最终Boss";
@@ -721,12 +712,10 @@ function generateDungeonFloor(floor) {
 function renderDungeonMap() {
   const container = document.getElementById("dungeonMapGrid");
   if (!container) return;
-  
   container.innerHTML = currentDungeonMap.map((room, i) => {
     const isCurrent = i === currentRoomIndex;
     const clearedClass = room.cleared ? "bg-emerald-900/50 border-emerald-400" : "bg-zinc-800 border-zinc-600";
     const activeClass = isCurrent ? "ring-4 ring-orange-400 scale-110" : "";
-    
     return `
       <div onclick="window.selectRoom(${i})" 
            class="aspect-square flex flex-col items-center justify-center rounded-3xl border-4 ${clearedClass} ${activeClass} cursor-pointer hover:scale-105 transition-all">
@@ -745,18 +734,15 @@ function selectRoom(index) {
 
 function enterCurrentRoom() {
   const room = currentDungeonMap[currentRoomIndex];
-  hideDungeonModal(); // 暂时关闭地图，进入战斗/商店
-
+  hideDungeonModal();
   if (room.type === "fight" || room.type === "elite" || room.type === "boss") {
-    // 后续调用战斗系统（下一阶段实现）
     window.startDungeonBattle(room);
   } else if (room.type === "shop") {
-    window.openMerchant(); // 直接调用现有商人系统
-    // 商人结束后自动返回地图
+    window.openMerchant();
     setTimeout(() => {
       room.cleared = true;
       currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
-      if (currentRoomIndex === 5) nextFloor();
+      if (currentRoomIndex >= 5) nextFloor();
       else showDungeonModalAgain();
     }, 800);
   }
@@ -768,17 +754,12 @@ function hideDungeonModal() {
 }
 
 function showDungeonModalAgain() {
-  const modalHTML = document.getElementById("dungeonModal") ? "" : `
-    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
-      <!-- 同上openDungeon的modalHTML -->
-    </div>`;
-  // 简化：直接重新调用openDungeon逻辑
   openDungeon();
 }
 
 function nextFloor() {
   if (currentDungeonFloor >= 5) {
-    alert("🎉 恭喜通关地牢！获得大量奖励！");
+    alert("🎉 恭喜通关地牢！");
     endDungeonRun(true);
     return;
   }
@@ -808,6 +789,271 @@ function endDungeonRun(victory) {
   window.renderShopInfo();
 }
 
+// ==================== 战斗主循环 + UI + 卡牌效果解析 ====================
+function initBattleState(room) {
+  const isBoss = room.type === "boss";
+  const enemyPool = isBoss ? window.dungeonEnemies.boss : (room.type === "elite" ? window.dungeonEnemies.elite : window.dungeonEnemies.normal);
+  const enemyData = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+
+  const playerChar = player.owned[0] || { charId: 1, level: 1, stars: 0, equippedWeapon: null };
+  const charData = window.getCharacterData(playerChar.charId) || window.characterPool[0];
+  const equippedWeapon = playerChar.equippedWeapon ? player.weapons.find(w => w.id === playerChar.equippedWeapon) : null;
+  const baseStats = window.calculateStats(playerChar, charData, equippedWeapon);
+
+  window.battleState = {
+    player: {
+      hp: baseStats.hp,
+      maxHp: baseStats.hp,
+      block: 0,
+      energy: 3,
+      maxEnergy: 3,
+      strength: 0,
+      dexterity: 0,
+      statuses: {},
+      deck: [...(playerChar.charId <= 4 ? window.warriorCards : window.mageCards)].map(c => ({...c})),
+      hand: [],
+      discard: [],
+      drawPile: []
+    },
+    enemy: {
+      id: enemyData.id,
+      name: enemyData.name,
+      hp: enemyData.hp,
+      maxHp: enemyData.hp,
+      block: 0,
+      strength: 0,
+      intent: enemyData.intent,
+      intentValue: enemyData.damage || 0,
+      statuses: {}
+    },
+    turn: 1,
+    roomType: room.type,
+    rewardsGiven: false
+  };
+
+  window.battleState.player.drawPile = [...window.battleState.player.deck];
+  window.battleState.player.drawPile.sort(() => Math.random() - 0.5);
+  drawCards(5);
+}
+
+function drawCards(count) {
+  const state = window.battleState.player;
+  for (let i = 0; i < count; i++) {
+    if (state.drawPile.length === 0) {
+      state.drawPile = [...state.discard];
+      state.discard = [];
+      state.drawPile.sort(() => Math.random() - 0.5);
+    }
+    if (state.drawPile.length > 0) {
+      state.hand.push(state.drawPile.pop());
+    }
+  }
+}
+
+function resolveCardEffects(card) {
+  const state = window.battleState;
+  const target = state.enemy;
+  const self = state.player;
+
+  let damageBonus = self.strength || 0;
+  let blockBonus = self.dexterity || 0;
+
+  if (card.effects.damage) {
+    let dmg = card.effects.damage + damageBonus;
+    if (target.block > 0) {
+      const blocked = Math.min(target.block, dmg);
+      target.block -= blocked;
+      dmg -= blocked;
+    }
+    target.hp = Math.max(0, target.hp - dmg);
+  }
+
+  if (card.effects.block) {
+    self.block += card.effects.block + blockBonus;
+  }
+
+  if (card.effects.strength) self.strength = (self.strength || 0) + card.effects.strength;
+  if (card.effects.burn) target.statuses.Burn = (target.statuses.Burn || 0) + card.effects.burn;
+  if (card.effects.debuff) {
+    const [type, val] = card.effects.debuff.split(':');
+    target.statuses[type] = (target.statuses[type] || 0) + parseInt(val);
+  }
+  if (card.effects.extraEnergy) self.energy = Math.min(self.maxEnergy + 1, self.energy + card.effects.extraEnergy);
+  if (card.effects.draw) drawCards(card.effects.draw);
+}
+
+function startDungeonBattle(room) {
+  initBattleState(room);
+
+  const modalHTML = `
+    <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-[10000]">
+      <div class="bg-zinc-900 rounded-3xl w-full max-w-7xl mx-4 h-[92vh] flex flex-col overflow-hidden">
+        <div class="bg-black/40 px-8 py-4 flex justify-between items-center">
+          <div class="flex items-center gap-4">
+            <div class="text-2xl">🗡️ 第${currentDungeonFloor}层 ${room.name}</div>
+            <div class="px-4 py-1 bg-red-600 rounded-2xl text-sm font-bold">回合 ${window.battleState.turn}</div>
+          </div>
+          <button onclick="window.endCurrentBattle(false)" class="px-6 py-2 bg-zinc-700 hover:bg-red-600 rounded-2xl">认输退出</button>
+        </div>
+
+        <div class="flex-1 flex p-8 gap-8">
+          <!-- 敌人 -->
+          <div class="flex-1 flex flex-col">
+            <div class="bg-zinc-800 rounded-3xl p-6 flex-1 flex flex-col items-center justify-center relative">
+              <div class="text-6xl mb-6">👹</div>
+              <div class="text-3xl font-bold mb-2">${window.battleState.enemy.name}</div>
+              <div class="text-5xl font-bold text-red-400">${window.battleState.enemy.hp} / ${window.battleState.enemy.maxHp}</div>
+              <div class="mt-8 flex gap-8">
+                <div class="text-center">
+                  <div class="text-xs text-gray-400">格挡</div>
+                  <div class="text-4xl font-bold">${window.battleState.enemy.block}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-gray-400">意图</div>
+                  <div id="enemyIntent" class="text-5xl">⚔️ ${window.battleState.enemy.intentValue}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 玩家 -->
+          <div class="flex-1 flex flex-col">
+            <div class="bg-zinc-800 rounded-3xl p-6 flex-1">
+              <div class="flex justify-between text-xl mb-4">
+                <div>❤️ ${window.battleState.player.hp} / ${window.battleState.player.maxHp}</div>
+                <div>🛡️ ${window.battleState.player.block}</div>
+                <div class="flex items-center gap-2">
+                  ⚡ <span id="energyDisplay" class="font-bold text-3xl text-emerald-400">${window.battleState.player.energy}</span> / ${window.battleState.player.maxEnergy}
+                </div>
+              </div>
+              <div id="handContainer" class="flex gap-3 flex-wrap justify-center min-h-[260px] items-end"></div>
+            </div>
+
+            <div class="mt-4 flex gap-4">
+              <button onclick="window.endTurn()" class="flex-1 py-6 text-2xl font-bold bg-zinc-700 hover:bg-zinc-600 rounded-3xl">结束回合</button>
+              <button onclick="window.usePotionInBattle()" class="flex-1 py-6 text-2xl font-bold bg-teal-600 hover:bg-teal-700 rounded-3xl">🧪 使用药水</button>
+              <button onclick="window.endCurrentBattle(true)" class="flex-1 py-6 text-2xl font-bold bg-emerald-600 hover:bg-emerald-700 rounded-3xl">投降（测试胜利）</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  const div = document.createElement("div");
+  div.id = "battleModal";
+  div.innerHTML = modalHTML;
+  document.body.appendChild(div);
+
+  renderHand();
+  updateBattleUI();
+}
+
+function renderHand() {
+  const container = document.getElementById("handContainer");
+  container.innerHTML = window.battleState.player.hand.map((card, index) => {
+    const canPlay = card.cost <= window.battleState.player.energy;
+    return `
+      <div onclick="window.playCard(${index})" 
+           class="w-28 h-40 bg-zinc-800 border-4 border-orange-400 rounded-3xl p-3 flex flex-col cursor-pointer hover:scale-110 transition-all ${canPlay ? '' : 'opacity-40 pointer-events-none'}">
+        <div class="text-[10px] text-gray-400">${card.cost}⚡</div>
+        <div class="font-bold text-lg leading-tight mt-1">${card.name}</div>
+        <div class="text-xs flex-1 text-gray-300 mt-2">${card.desc}</div>
+        <div class="text-[10px] text-emerald-400 mt-auto">${card.type}</div>
+      </div>`;
+  }).join('');
+}
+
+function updateBattleUI() {
+  const state = window.battleState;
+  const energyEl = document.getElementById("energyDisplay");
+  if (energyEl) energyEl.textContent = state.player.energy;
+  const intentEl = document.getElementById("enemyIntent");
+  if (intentEl) intentEl.innerHTML = `⚔️ ${state.enemy.intentValue || 0}`;
+  renderHand();
+}
+
+window.playCard = function(index) {
+  const state = window.battleState;
+  const card = state.player.hand[index];
+  if (!card || card.cost > state.player.energy) return;
+
+  state.player.energy -= card.cost;
+  state.player.hand.splice(index, 1);
+  state.player.discard.push(card);
+
+  resolveCardEffects(card);
+
+  updateBattleUI();
+
+  if (state.enemy.hp <= 0) {
+    setTimeout(() => endCurrentBattle(true), 600);
+  }
+};
+
+window.endTurn = function() {
+  const state = window.battleState;
+  const enemyDmg = state.enemy.intentValue + (state.enemy.strength || 0);
+  let playerDmg = enemyDmg;
+  if (state.player.block > 0) {
+    const blocked = Math.min(state.player.block, playerDmg);
+    state.player.block -= blocked;
+    playerDmg -= blocked;
+  }
+  state.player.hp = Math.max(0, state.player.hp - playerDmg);
+
+  if (state.player.statuses.Burn) {
+    state.player.hp -= state.player.statuses.Burn;
+    state.player.statuses.Burn = Math.max(0, state.player.statuses.Burn - 1);
+  }
+  if (state.enemy.statuses.Burn) {
+    state.enemy.hp -= state.enemy.statuses.Burn;
+    state.enemy.statuses.Burn = Math.max(0, state.enemy.statuses.Burn - 1);
+  }
+
+  state.turn++;
+  state.player.energy = state.player.maxEnergy;
+  state.player.block = 0;
+  state.player.hand = [];
+  drawCards(5);
+
+  updateBattleUI();
+
+  if (state.player.hp <= 0) endCurrentBattle(false);
+  if (state.enemy.hp <= 0) endCurrentBattle(true);
+};
+
+window.usePotionInBattle = function() {
+  alert("🧪 药水系统开发中...\n\n示例：基础治疗药水回复30%HP");
+  window.battleState.player.hp = Math.min(window.battleState.player.maxHp, window.battleState.player.hp + Math.floor(window.battleState.player.maxHp * 0.3));
+  updateBattleUI();
+};
+
+window.endCurrentBattle = function(victory) {
+  const modal = document.getElementById("battleModal");
+  if (modal) modal.remove();
+
+  if (victory) {
+    currentDungeonMap[currentRoomIndex].cleared = true;
+    player.yaoXing += 80;
+    player.gold += 120;
+    player.reinforceStone += 3;
+    alert(`🎉 战斗胜利！获得 80⭐ + 120金币 + 3强化石`);
+    window.saveGame();
+    window.renderShopInfo();
+
+    currentRoomIndex = Math.min(currentRoomIndex + 1, 4);
+    if (currentRoomIndex >= 5) {
+      nextFloor();
+    } else {
+      showDungeonModalAgain();
+    }
+  } else {
+    alert("💀 战斗失败...");
+    dungeonRunActive = false;
+    hideDungeonModal();
+  }
+};
+
 function resetGame() {
   if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
     localStorage.removeItem("gachaGame");
@@ -816,7 +1062,7 @@ function resetGame() {
   }
 }
 
-// 暴露
+// ==================== 暴露====================
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;
@@ -841,6 +1087,8 @@ window.openMerchant = openMerchant;
 window.hideMerchantModal = hideMerchantModal;
 window.buyPermanent = buyPermanent;
 window.buyRandom = buyRandom;
+
+// ==================== 地牢冒险系统全部暴露（已包含地图 + 战斗） ====================
 window.openDungeon = openDungeon;
 window.generateDungeonFloor = generateDungeonFloor;
 window.renderDungeonMap = renderDungeonMap;
@@ -851,3 +1099,10 @@ window.showDungeonModalAgain = showDungeonModalAgain;
 window.nextFloor = nextFloor;
 window.exitDungeon = exitDungeon;
 window.endDungeonRun = endDungeonRun;
+
+// 新增的战斗核心函数（必须添加，否则手牌点击、出牌、结束回合、药水功能无法使用）
+window.startDungeonBattle = startDungeonBattle;
+window.playCard = window.playCard;          // 出牌核心
+window.endTurn = window.endTurn;            // 结束回合
+window.usePotionInBattle = window.usePotionInBattle;  // 战斗中使用药水
+window.endCurrentBattle = window.endCurrentBattle;    // 结束战斗

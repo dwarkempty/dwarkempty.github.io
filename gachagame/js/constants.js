@@ -1,4 +1,4 @@
-// js/constants.js - 角色/武器池 + 常量 + 经营系统数据（完整版，无任何省略）
+// js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
   {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg"},
   {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg"},
@@ -42,7 +42,7 @@ const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 const characterMap = new Map(characterPool.map(c => [c.id, c]));
 const weaponMap = new Map(weaponPool.map(w => [w.id, w]));
 
-// ==================== 经营系统数据 ====================
+// ==================== 经营系统数据（已按最新需求更新） ====================
 const materialsPool = [
   {id:1, name:"红史莱姆粘液", desc:"红色史莱姆的液体，可用于基础治疗", rarity:"R"},
   {id:2, name:"蓝史莱姆粘液", desc:"蓝色史莱姆的液体，可加强自身魔力", rarity:"R"},
@@ -59,49 +59,50 @@ const materialsPool = [
 ];
 
 const recipesPool = [
-  // 1级商店（默认解锁）
   {id:1, level:1, name:"基础治疗药水", materials:[{id:1,qty:1},{id:11,qty:1}], gold:100, operating:5},
   {id:2, level:1, name:"基础魔力药水", materials:[{id:2,qty:1},{id:11,qty:1}], gold:100, operating:5},
   {id:3, level:1, name:"基础体力药水", materials:[{id:3,qty:1},{id:11,qty:1}], gold:100, operating:5},
   {id:4, level:1, name:"基础抗性药水", materials:[{id:5,qty:1},{id:11,qty:1}], gold:120, operating:5},
-  
-  // 2级商店
   {id:5, level:2, name:"爆发力量药水", materials:[{id:8,qty:1},{id:12,qty:1}], gold:250, operating:7},
   {id:6, level:2, name:"坚韧护甲药水", materials:[{id:9,qty:1},{id:11,qty:1}], gold:220, operating:6},
   {id:7, level:2, name:"精神安定药水", materials:[{id:10,qty:1},{id:11,qty:1}], gold:230, operating:6},
   {id:8, level:2, name:"夜视侦察药水", materials:[{id:7,qty:1},{id:11,qty:1}], gold:180, operating:5},
-  
-  // 3级商店
   {id:9, level:3, name:"强效治疗药水", materials:[{id:1,qty:1},{id:4,qty:1},{id:11,qty:1}], gold:350, operating:8},
   {id:10, level:3, name:"魔力强化药水", materials:[{id:2,qty:1},{id:3,qty:1},{id:12,qty:1}], gold:320, operating:8},
   {id:11, level:3, name:"毒刃药水", materials:[{id:6,qty:1},{id:8,qty:1},{id:12,qty:1}], gold:300, operating:7},
   {id:12, level:3, name:"基础全能药剂", materials:[{id:1,qty:1},{id:2,qty:1},{id:4,qty:1},{id:12,qty:1}], gold:500, operating:10}
 ];
 
+// 顾客需求（已按等级区分）
 const customerTemplates = [
-  "我跟红色史莱姆打架受伤了，来一瓶基础治疗药水！",
-  "我需要一瓶能补充自身魔力的药水",
-  "跑了半天腿都软了，有恢复体力跟精力的药吗？",
-  "下一个地牢怪物攻击好高，我要提升抗性",
-  "我希望我能变得更加坚硬！皮再厚一点就好了。",
-  "我要一瓶基础魔力药水，蓝史莱姆粘液那种！",
-  "我现在只想快速回血，其他都不重要！",
-  "我想要能够增强我实力的药水，越猛越好！",
-  "地牢里太黑了，有没有能让我看清路的药水？",
-  "精神老是恍惚，下个幽灵区要疯了，有安定精神的药水不？",
-  "给我狼牙和酒的组合，我要爆发一下！",
-  "石巨人碎屑加水，能不能让我更耐打？",
-  "蝙蝠翅膜加水的药水，我要夜视能力！",
-  "幽灵残片加水的药水，能不能让我不怕精神攻击？",
-  "给我来点红史莱姆粘液加小枯骨的组合，效果要强一点的！",
-  "我想让武器带点毒，下次打哥布林轻松点",
-  "我魔力跟体力都没了，来瓶能一起补的！",
-  "我现在全身受伤，魔力也快散了，急需一瓶救命的药！",
-  "我需要一瓶能同时恢复生命、魔力和提升抗性的药！",
-  "老板，给我来一瓶万能的！什么都补、什么都强的那种！"
+  // 1级商店顾客
+  {level:1, demand:"我跟红色史莱姆打架受伤了，来一瓶基础治疗药水！"},
+  {level:1, demand:"我需要一瓶能补充自身魔力的药水"},
+  {level:1, demand:"跑了半天腿都软了，有恢复体力跟精力的药吗？"},
+  {level:1, demand:"下一个地牢怪物攻击好高，我要提升抗性"},
+  {level:1, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。"},
+  {level:1, demand:"我要一瓶基础魔力药水，蓝史莱姆粘液那种！"},
+  {level:1, demand:"我现在只想快速回血，其他都不重要！"},
+  
+  // 2级商店新增顾客
+  {level:2, demand:"我想要能够增强我实力的药水，越猛越好！"},
+  {level:2, demand:"地牢里太黑了，有没有能让我看清路的药水？"},
+  {level:2, demand:"精神老是恍惚，下个幽灵区要疯了，有安定精神的药水不？"},
+  {level:2, demand:"给我狼牙和酒的组合，我要爆发一下！"},
+  {level:2, demand:"石巨人碎屑加水，能不能让我更耐打？"},
+  {level:2, demand:"蝙蝠翅膜加水的药水，我要夜视能力！"},
+  {level:2, demand:"幽灵残片加水的药水，能不能让我不怕精神攻击？"},
+  
+  // 3级商店新增顾客
+  {level:3, demand:"给我来点红史莱姆粘液加小枯骨的组合，效果要强一点的！"},
+  {level:3, demand:"我想让武器带点毒，下次打哥布林轻松点"},
+  {level:3, demand:"我魔力跟体力都没了，来瓶能一起补的！"},
+  {level:3, demand:"我现在全身受伤，魔力也快散了，急需一瓶救命的药！"},
+  {level:3, demand:"我需要一瓶能同时恢复生命、魔力和提升抗性的药！"},
+  {level:3, demand:"老板，给我来一瓶万能的！什么都补、什么都强的那种！"}
 ];
 
-// 需求关键词 → 可满足的药水ID数组（支持多解）
+// 需求关键词 → 可满足的药水ID（支持多解）
 const demandToRecipe = {
   "治疗": [1,9,12],
   "红史莱姆": [1,9,12],
@@ -124,7 +125,7 @@ const demandToRecipe = {
   "全能": [12],
   "万能": [12],
   "救命": [12,9,10]
-}
+};
 
 window.characterPool = characterPool;
 window.weaponPool = weaponPool;

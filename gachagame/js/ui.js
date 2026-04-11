@@ -123,9 +123,11 @@ function openConsolePrompt() {
       give 998 500 → 获得500耀星⭐<br>
       give 997 10000 → 获得10000金币<br>
       give 999 50 → 获得50强化石<br>
-      give 5 50 3 → 获得角色ID 5（等级50，星级3）<br>
-      give 105 30 2 → 获得武器ID 105（等级30，星级2）<br>
       give 201 10 → 获得10个红史莱姆粘液<br>
+      set shoplevel 3 → 设置商店等级为3（最高3）<br>
+      give allmaterials 20 → 获得全部材料各20个<br>
+      give allcharacters 50 3 → 获得全部角色（等级50，星级3）<br>
+      give allweapons 30 2 → 获得全部武器（等级30，星级2）<br>
       <span class="text-emerald-400">经营材料ID：201~212</span>
     `;
   } else {
@@ -143,7 +145,59 @@ function executeConsoleCommand() {
   log.innerHTML += `<span class="text-green-400">&gt; ${input}</span><br>`;
 
   const parts = input.split(" ");
-  if (parts[0].toLowerCase() === "give") {
+  const cmd = parts[0].toLowerCase();
+
+  if (cmd === "set" && parts[1] === "shoplevel") {
+    let level = parseInt(parts[2]);
+    if (isNaN(level) || level < 1) level = 1;
+    if (level > 3) level = 3;
+    player.shopLevel = level;
+    log.innerHTML += `✅ 商店等级已设置为 Lv.${level}<br>`;
+    window.saveGame();
+    if (document.getElementById("panel4") && !document.getElementById("panel4").classList.contains("hidden")) window.renderShopInfo();
+  } 
+  else if (cmd === "give" && parts[1] === "allmaterials") {
+    let amount = parseInt(parts[2]) || 20;
+    window.materialsPool.forEach(mat => {
+      player.materials[mat.id] = (player.materials[mat.id] || 0) + amount;
+    });
+    log.innerHTML += `✅ 已获得全部材料各 ${amount} 个<br>`;
+    window.saveGame();
+    window.renderInventory();
+    if (document.getElementById("panel4") && !document.getElementById("panel4").classList.contains("hidden")) window.renderShopInfo();
+  } 
+  else if (cmd === "give" && parts[1] === "allcharacters") {
+    const level = parseInt(parts[2]) || 1;
+    const stars = parseInt(parts[3]) || 0;
+    for (let i = 1; i <= 15; i++) {
+      player.owned.push({
+        id: Date.now() + i,
+        charId: i,
+        level: Math.min(level, 100),
+        stars: Math.min(stars, 5),
+        equippedWeapon: null
+      });
+    }
+    log.innerHTML += `✅ 已获得全部15个角色（等级${level}，星级${stars}）<br>`;
+    window.saveGame();
+    window.renderInventory();
+  } 
+  else if (cmd === "give" && parts[1] === "allweapons") {
+    const level = parseInt(parts[2]) || 1;
+    const stars = parseInt(parts[3]) || 0;
+    for (let i = 1; i <= 15; i++) {
+      player.weapons.push({
+        id: Date.now() + i,
+        weaponId: i,
+        level: Math.min(level, 100),
+        stars: Math.min(stars, 5)
+      });
+    }
+    log.innerHTML += `✅ 已获得全部15个武器（等级${level}，星级${stars}）<br>`;
+    window.saveGame();
+    window.renderInventory();
+  } 
+  else if (cmd === "give") {
     const id = parseInt(parts[1]);
     let amount = parseInt(parts[2]) || 1;
 
@@ -189,16 +243,14 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// ==================== 经营系统完整逻辑（已按最新需求重写） ====================
+// ==================== 经营系统完整逻辑（已按之前所有需求实现） ====================
 let currentCustomer = null;
 let currentCrafting = [];
 let currentCraftedPotion = null;
 
 function startOperating() {
-  // 按商店等级筛选顾客需求
   const availableCustomers = window.customerTemplates.filter(c => c.level <= player.shopLevel);
   currentCustomer = availableCustomers[Math.floor(Math.random() * availableCustomers.length)];
-  
   currentCrafting = [];
   currentCraftedPotion = null;
 

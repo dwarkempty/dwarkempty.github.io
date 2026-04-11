@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑（完整版，无任何省略）
+// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -243,14 +243,14 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// ==================== 经营系统完整逻辑（已按之前所有需求实现） ====================
-let currentCustomer = null;
+// ==================== 经营系统完整逻辑 ====================
+let currentCustomer = null;   // 当前顾客对象（包含demand和satisfy数组）
 let currentCrafting = [];
 let currentCraftedPotion = null;
 
 function startOperating() {
-  const availableCustomers = window.customerTemplates.filter(c => c.level <= player.shopLevel);
-  currentCustomer = availableCustomers[Math.floor(Math.random() * availableCustomers.length)];
+  const available = window.customerDemands.filter(c => c.level <= player.shopLevel);
+  currentCustomer = available[Math.floor(Math.random() * available.length)];
   currentCrafting = [];
   currentCraftedPotion = null;
 
@@ -377,15 +377,10 @@ function giveToCustomer() {
   
   const recipe = currentCraftedPotion;
   let isCorrect = false;
-  const demandLower = currentCustomer.demand.toLowerCase();
   
-  for (let key in window.demandToRecipe) {
-    if (demandLower.includes(key)) {
-      if (window.demandToRecipe[key].includes(recipe.id)) {
-        isCorrect = true;
-        break;
-      }
-    }
+  // 精确匹配：检查当前顾客的 satisfy 数组是否包含提交的药水ID
+  if (currentCustomer && currentCustomer.satisfy) {
+    isCorrect = currentCustomer.satisfy.includes(recipe.id);
   }
   
   if (isCorrect && recipe.id !== 0) {

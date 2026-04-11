@@ -157,6 +157,57 @@ const materialPrices = {
   19: 280, 20: 320                 // UR级
 };
 
+// ==================== 地牢冒险 - 完整卡牌数据库（战士 & 法师） ====================
+// 卡牌结构说明：id唯一、name、type(Attack/Skill/Power)、cost能量、effects(后续战斗解析)、rarity、class(职业)、desc(显示用)
+
+const warriorCards = [
+  // 起始卡组 12张
+  { id: 1001, name: "猛击", type: "Attack", cost: 1, effects: { damage: 8 }, rarity: "Common", class: "warrior", desc: "造成8点伤害 (+角色ATK)" },
+  { id: 1002, name: "防御", type: "Skill", cost: 1, effects: { block: 6 }, rarity: "Common", class: "warrior", desc: "获得6点格挡 (+角色DEF)" },
+  { id: 1003, name: "挥砍", type: "Attack", cost: 2, effects: { damage: 12 }, rarity: "Common", class: "warrior", desc: "造成12点伤害" },
+  { id: 1004, name: "盾击", type: "Attack", cost: 2, effects: { damage: 9, debuff: "Weak:1" }, rarity: "Uncommon", class: "warrior", desc: "造成9点伤害并施加1层Weak" },
+  { id: 1005, name: "狂怒", type: "Attack", cost: 0, effects: { damage: 6, strength: 1 }, rarity: "Rare", class: "warrior", desc: "造成6点伤害，本回合每伤害获得1层Strength" },
+  { id: 1006, name: "钢铁之躯", type: "Skill", cost: 1, effects: { block: 10, dynamicBlock: "hpLoss*2" }, rarity: "Uncommon", class: "warrior", desc: "获得10点格挡，本回合每损失HP额外获得2点格挡" },
+  { id: 1007, name: "战吼", type: "Skill", cost: 1, effects: { strength: 2 }, rarity: "Common", class: "warrior", desc: "获得2层Strength" },
+  { id: 1008, name: "冲锋", type: "Attack", cost: 2, effects: { damage: 10, extraIfDebuff: { type: "Weak", damage: 8 } }, rarity: "Uncommon", class: "warrior", desc: "造成10点伤害，若敌人有Weak额外8点" },
+  { id: 1009, name: "重锤", type: "Attack", cost: 3, effects: { damage: 18 }, rarity: "Common", class: "warrior", desc: "造成18点伤害" },
+  { id: 1010, name: "壁垒", type: "Skill", cost: 2, effects: { block: 14, retainBlock: 0.5 }, rarity: "Uncommon", class: "warrior", desc: "获得14点格挡，下回合保留一半" },
+  { id: 1011, name: "力量涌动", type: "Power", cost: 2, effects: { perTurn: { strength: 1 } }, rarity: "Rare", class: "warrior", desc: "每回合开始获得1层Strength" },
+  { id: 1012, name: "复仇", type: "Attack", cost: 1, effects: { damage: 7, doubleIfDamaged: true }, rarity: "Uncommon", class: "warrior", desc: "造成7点伤害，本回合已受伤害则翻倍" },
+
+  // 额外卡牌池 6张
+  { id: 1013, name: "血祭", type: "Attack", cost: 1, effects: { damage: 10, selfDamage: 3 }, rarity: "Rare", class: "warrior", desc: "造成10点伤害，自己损失3HP" },
+  { id: 1014, name: "完美防御", type: "Skill", cost: 0, effects: { block: 5, nextAttackBlock: 12 }, rarity: "Uncommon", class: "warrior", desc: "获得5点格挡，下次受击额外12点格挡" },
+  { id: 1015, name: "狂战士", type: "Power", cost: 3, effects: { perTurn: { strength: 2, selfDamage: 1 } }, rarity: "Rare", class: "warrior", desc: "每回合+2Strength，但结束时损失1HP" },
+  { id: 1016, name: "裂地斩", type: "Attack", cost: 2, effects: { damage: 15, area: true }, rarity: "Uncommon", class: "warrior", desc: "对所有敌人造成15点伤害" },
+  { id: 1017, name: "不屈意志", type: "Skill", cost: 1, effects: { block: 8, strengthIfLowHp: 3 }, rarity: "Rare", class: "warrior", desc: "获得8点格挡，若HP<30%获得3层Strength" },
+  { id: 1018, name: "终极防御", type: "Power", cost: 3, effects: { perTurn: { block: 5 } }, rarity: "Rare", class: "warrior", desc: "每回合开始获得5点格挡" }
+];
+
+const mageCards = [
+  // 起始卡组 12张
+  { id: 2001, name: "火球术", type: "Attack", cost: 1, effects: { damage: 7, burn: 4 }, rarity: "Common", class: "mage", desc: "造成7点伤害，附加4点Burn" },
+  { id: 2002, name: "冰盾", type: "Skill", cost: 1, effects: { block: 8, debuff: "Weak:1" }, rarity: "Common", class: "mage", desc: "获得8点格挡，敌人下次攻击附加Weak" },
+  { id: 2003, name: "闪电链", type: "Attack", cost: 2, effects: { damage: 9, splash: 5 }, rarity: "Uncommon", class: "mage", desc: "造成9点伤害，随机另一目标5点" },
+  { id: 2004, name: "法力涌动", type: "Skill", cost: 0, effects: { extraEnergy: 1 }, rarity: "Uncommon", class: "mage", desc: "本回合获得1点额外能量" },
+  { id: 2005, name: "元素召唤", type: "Power", cost: 2, effects: { perTurn: { burn: 3 } }, rarity: "Rare", class: "mage", desc: "每回合结束对敌人造成3点Burn" },
+  { id: 2006, name: "霜冻射线", type: "Attack", cost: 1, effects: { damage: 6, debuff: "Weak:2" }, rarity: "Common", class: "mage", desc: "造成6点伤害，施加2层Weak" },
+  { id: 2007, name: "魔力护盾", type: "Skill", cost: 2, effects: { block: 12, drawIfHit: 2 }, rarity: "Uncommon", class: "mage", desc: "获得12点格挡，下次受伤害抽2张牌" },
+  { id: 2008, name: "连锁闪电", type: "Attack", cost: 3, effects: { damage: 14, area: 6 }, rarity: "Rare", class: "mage", desc: "造成14点伤害，所有敌人额外6点" },
+  { id: 2009, name: "奥术飞弹", type: "Attack", cost: 1, effects: { damage: 5, multiHit: true }, rarity: "Common", class: "mage", desc: "造成5点伤害，每多支付1能量多发射1枚" },
+  { id: 2010, name: "时间扭曲", type: "Skill", cost: 1, effects: { nextDrawBonus: 2 }, rarity: "Uncommon", class: "mage", desc: "下回合抽牌+2张" },
+  { id: 2011, name: "元素掌控", type: "Power", cost: 3, effects: { perTurn: { randomStat: 1 } }, rarity: "Rare", class: "mage", desc: "每回合开始随机获得1层Strength或Dexterity" },
+  { id: 2012, name: "爆裂法术", type: "Attack", cost: 2, effects: { damage: 11, areaBurn: 4 }, rarity: "Uncommon", class: "mage", desc: "造成11点伤害，所有敌人额外4点Burn" },
+
+  // 额外卡牌池 6张
+  { id: 2013, name: "大法师之怒", type: "Power", cost: 2, effects: { perTurn: { extraEnergy: 1 } }, rarity: "Rare", class: "mage", desc: "每回合开始获得1点能量（上限+1）" },
+  { id: 2014, name: "毒雾", type: "Skill", cost: 1, effects: { areaPoison: 3 }, rarity: "Uncommon", class: "mage", desc: "所有敌人获得3层Poison" },
+  { id: 2015, name: "镜像分身", type: "Skill", cost: 0, effects: { nextAttackDouble: true }, rarity: "Rare", class: "mage", desc: "本回合下一次攻击造成双倍伤害" },
+  { id: 2016, name: "奥术风暴", type: "Attack", cost: 2, effects: { damage: 8, area: true, draw: 1 }, rarity: "Uncommon", class: "mage", desc: "所有敌人造成8点伤害并抽1张牌" },
+  { id: 2017, name: "永恒法阵", type: "Power", cost: 3, effects: { perTurn: { block: 4, energy: 1 } }, rarity: "Rare", class: "mage", desc: "每回合获得4点格挡和1点能量" },
+  { id: 2018, name: "终极元素", type: "Power", cost: 3, effects: { perTurn: { randomElement: true } }, rarity: "Rare", class: "mage", desc: "每回合随机触发Fire/Burn/Ice效果" }
+];
+
 window.merchantPermanent = merchantPermanent;
 window.materialPrices = materialPrices;
 window.characterPool = characterPool;
@@ -169,3 +220,6 @@ window.weaponMap = weaponMap;
 window.materialsPool = materialsPool;
 window.recipesPool = recipesPool;
 window.customerDemands = customerDemands;
+window.warriorCards = warriorCards;
+window.mageCards = mageCards;
+window.allDungeonCards = [...warriorCards, ...mageCards]; // 全局卡牌池，方便后续抽卡/奖励

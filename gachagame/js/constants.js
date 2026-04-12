@@ -1,4 +1,4 @@
-// js/constants.js - 角色/武器池 + 常量 + 经营系统数据（完整版，无任何省略）
+// js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
   {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg"},
   {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg"},
@@ -42,7 +42,7 @@ const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 const characterMap = new Map(characterPool.map(c => [c.id, c]));
 const weaponMap = new Map(weaponPool.map(w => [w.id, w]));
 
-// ==================== 材料池（水和酒已移到最下面） ====================
+// ==================== 材料池 ====================
 const materialsPool = [
   {id:1, name:"红史莱姆粘液", desc:"红色史莱姆的液体，可用于基础治疗", rarity:"R"},
   {id:2, name:"蓝史莱姆粘液", desc:"蓝色史莱姆的液体，可加强自身魔力", rarity:"R"},
@@ -62,7 +62,6 @@ const materialsPool = [
   {id:18, name:"亡灵精华", desc:"高级亡灵掉落，可提供不死之力（持续回复）", rarity:"SSR"},
   {id:19, name:"凤凰羽毛", desc:"凤凰幼体掉落，可极强治疗与复苏", rarity:"UR"},
   {id:20, name:"古龙血滴", desc:"远古龙类掉落，全方位强化身体素质", rarity:"UR"},
-  // 基底材料放到最下面
   {id:11, name:"水", desc:"普通液体基底，无特殊效果，稳定易用", rarity:"R"},
   {id:12, name:"酒", desc:"酒精液体基底，可增强药效但可能产生轻微副作用", rarity:"SR"}
 ];
@@ -90,7 +89,6 @@ const recipesPool = [
   {id:20, level:5, name:"龙血强化药水", materials:[{id:20,qty:1},{id:13,qty:1},{id:8,qty:1},{id:12,qty:1}], gold:800, operating:13}
 ];
 
-// ==================== 精确顾客需求列表（保持你上次提供的完整列表） ====================
 const customerDemands = [
   // 1级商店
   {id:1, level:1, demand:"喂，老板！我跟红色史莱姆打架受伤了，来一瓶基础治疗药水！", satisfy:[1,9,12]},
@@ -142,7 +140,7 @@ const customerDemands = [
   {id:39, level:5, demand:"我现在什么都需要，最全面的顶级药水！", satisfy:[20,19,17]}
 ];
 
-// ==================== 商人系统数据====================
+// ==================== 商人系统数据 ====================
 const merchantPermanent = [
   { id: 'yaoXing', name: "450 ⭐ 耀星", costGold: 1000, qty: 450, icon: "⭐", maxBulk: 100 },
   { id: 'reinforceStone', name: "1 💎 强化石", costGold: 100, qty: 1, icon: "💎", maxBulk: 100 },
@@ -151,15 +149,12 @@ const merchantPermanent = [
 ];
 
 const materialPrices = {
-  1: 28, 2: 28, 3: 28, 4: 32,     // R级材料
-  5: 45, 6: 48, 7: 42, 8: 50, 9: 55, 13: 60, 14: 62, 15: 58, // SR级
-  10: 95, 16: 110, 17: 120, 18: 115, // SSR级
-  19: 280, 20: 320                 // UR级
+  1: 28, 2: 28, 3: 28, 4: 32,
+  5: 45, 6: 48, 7: 42, 8: 50, 9: 55, 13: 60, 14: 62, 15: 58,
+  10: 95, 16: 110, 17: 120, 18: 115,
+  19: 280, 20: 320
 };
 
-window.dungeonEnemies = dungeonEnemies;
-window.merchantPermanent = merchantPermanent;
-window.materialPrices = materialPrices;
 window.characterPool = characterPool;
 window.weaponPool = weaponPool;
 window.rarityWeights = rarityWeights;
@@ -170,3 +165,5 @@ window.weaponMap = weaponMap;
 window.materialsPool = materialsPool;
 window.recipesPool = recipesPool;
 window.customerDemands = customerDemands;
+window.merchantPermanent = merchantPermanent;
+window.materialPrices = materialPrices;

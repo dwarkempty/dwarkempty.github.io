@@ -9,16 +9,38 @@ const characterPool = [
   {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, category:"强袭", image:"images/Sorey_Illustration.jpg", description:"雷鸣骑士，雷电之力贯穿战场。"},
   {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, category:"强袭", image:"images/Shadowblade_Illustration.jpg", description:"暗夜刺客，擅长潜行与致命一击。"},
   {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, category:"辅助", image:"images/Sylvia_Illustration.jpg", 
-    description:"漫游星海的魔导大师，以星辰为书、魔力为笔。她借星芒之力强化一切侵蚀，让敌人的命运在群星的注视下逐步崩解。"},
+    description:"漫游星海的魔导大师，以星辰为书、魔力为笔。她借星芒之力强化一切侵蚀，让敌人的命运在群星的注视下逐步崩解。",
+    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
+    <p><strong>星辰腐朽咒</strong>（消耗2能量）：对全体敌人施加「星辰侵蚀」4回合，并降低所有敌人15%防御力，持续3回合。</p>
+    <p><strong>星芒增幅</strong>（消耗2能量）：立即使全场所有「侵蚀」本回合伤害提升40%，并为全队提供持续2回合的「星辰护盾」（吸收伤害）。</p>
+    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
+    <p><strong>星辰连锁</strong>：每当敌人因「侵蚀」受到伤害时，有40%概率对另一名随机敌人施加1层「星辰侵蚀」。</p>`},
   {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, category:"强袭", image:"images/Alesha_Illustration.jpg", description:"幻月弓神，月光箭矢可穿透现实与幻影。"},
   {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, category:"近卫", image:"images/Galan_Illustration.jpg", 
-    description:"圣辉王国的传奇骑士王，手持裁决圣剑，身披神圣铠甲。他以坚不可摧的意志守护后排，同时以神圣之火对一切胆敢侵犯的敌人进行永恒审判。"},
+    description:"圣辉王国的传奇骑士王，手持裁决圣剑，身披神圣铠甲。他以坚不可摧的意志守护后排，同时以神圣之火对一切胆敢侵犯的敌人进行永恒审判。",
+    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
+    <p><strong>圣辉壁垒</strong>（消耗2能量）：为全队生成厚实护盾（吸收量基于加兰防御×200%），自身额外获得「圣辉反伤」状态3回合。</p>
+    <p><strong>审判烈焰斩</strong>（消耗2能量）：对前排敌人造成伤害并施加「圣辉侵蚀」4回合，同时强制嘲讽2回合。</p>
+    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
+    <p><strong>神圣惩戒</strong>：当加兰被攻击时，对攻击者施加2层「圣辉侵蚀」，并根据受到伤害的20%回复自身生命。同时全队「侵蚀」伤害随加兰存活而提升（每少1名队友提升8%，最多+24%）。</p>`},
   {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg", description:"凤凰圣女，拥有不死之身与复苏之力。"},
   {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg", description:"创世光辉的化身，掌控起源之力。"},
   {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg", 
-    description:"掌控时间长河的至高存在，外表为银紫长发的优雅少女。她能让时间为她所用，使敌人在永恒的衰败中缓慢消亡，同时加速盟友的命运之轮。"},
+    description:"掌控时间长河的至高存在，外表为银紫长发的优雅少女。她能让时间为她所用，使敌人在永恒的衰败中缓慢消亡，同时加速盟友的命运之轮。",
+    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
+    <p><strong>时之加速·克罗诺斯</strong>（消耗3能量）：对全队施加「时之加速」3回合。期间全队所有「侵蚀」每回合额外触发1次伤害，且全队行动速度提升25%。</p>
+    <p><strong>命运蚀刻</strong>（消耗2能量）：对全体敌人施加「时之侵蚀」5回合（每回合造成相当于克罗诺攻击力×80%的伤害），并使敌人移动速度与攻击速度降低30%，持续4回合。</p>
+    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
+    <p><strong>时间恩赐</strong>：场上每存在1种「侵蚀」效果，克罗诺每回合为全队回复1点能量（最多回复2点）。</p>
+    <p><strong>永恒延长</strong>：所有「侵蚀」持续时间+2回合。首次对敌人施加「侵蚀」时，该次侵蚀伤害提升50%。</p>`},
   {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, category:"强袭", image:"images/Elwin_Illustration.jpg", 
-    description:"诞生于元素起源的原初精灵，身体由流动的元素光辉构成。她是毁灭与创造的具现，能从敌人体内唤醒最狂暴的本源力量，将其彻底瓦解。"}
+    description:"诞生于元素起源的原初精灵，身体由流动的元素光辉构成。她是毁灭与创造的具现，能从敌人体内唤醒最狂暴的本源力量，将其彻底瓦解。",
+    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
+    <p><strong>起源崩解</strong>（消耗3能量）：对主目标造成高额单体伤害，并叠加4层「源素侵蚀」（每层每回合造成攻击力×45%的伤害，可叠加），持续6回合。</p>
+    <p><strong>元素灭世潮</strong>（消耗3能量）：对所有敌人造成范围伤害，并为每个敌人施加2层「源素侵蚀」与1层随机其他侵蚀。</p>
+    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
+    <p><strong>多重侵蚀</strong>：对带有2种以上「侵蚀」的敌人造成伤害时，提升35%伤害。「源素侵蚀」伤害额外+25%。</p>
+    <p><strong>本源反噬</strong>：埃尔温造成的普通攻击与技能伤害的25%，转化为「源素侵蚀」持续3回合。</p>`}
 ];
 
 const weaponPool = [

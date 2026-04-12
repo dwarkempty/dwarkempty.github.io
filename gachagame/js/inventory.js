@@ -222,6 +222,8 @@ function showCharacterLore(index) {
   const item = player.owned[index];
   const char = window.getCharacterData(item.charId);
 
+  const skillHTML = char.skillDesc || '<p class="text-gray-400">暂无技能描述</p>';
+
   const loreHTML = `
     <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100000]">
       <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full mx-4 p-8 overflow-auto max-h-[90vh]">
@@ -236,13 +238,12 @@ function showCharacterLore(index) {
           
           <h4 class="text-orange-400 text-xl mt-10 mb-3">技能描述</h4>
           <div class="bg-zinc-800 rounded-3xl p-6 text-gray-300">
-            <p class="text-base">（技能描述暂未实装）</p>
-            <p class="mt-6 text-sm text-gray-400">未来可在此处展示该角色的主动技能、被动技能、专属故事等详细内容。</p>
+            ${skillHTML}
           </div>
         </div>
         
         <div class="text-center mt-10">
-          <button onclick="window.closeCharacterLore()" class="px-10 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-3xl text-lg font-bold">关闭窗口</button>
+          <button onclick="window.closeCharacterLore()" class="px-10 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭窗口</button>
         </div>
       </div>
     </div>`;

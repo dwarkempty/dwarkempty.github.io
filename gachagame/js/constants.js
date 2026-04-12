@@ -1,13 +1,29 @@
 // js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
-  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg", description:"一位来自森林的游侠，擅长远程狙击与自然魔法。"},
-  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg", description:"火焰学徒莎莉，性格活泼，擅长用火焰辅助队友。"},
-  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, category:"近卫", image:"images/Buck_Illustration.jpg", description:"坚不可摧的铁壁卫士，守护队友的前排坦克。"},
-  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, category:"辅助", image:"images/Lily_Illustration.jpg", description:"月影精灵，擅长月光治愈与幻术。"},
-  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, category:"强袭", image:"images/Kael_Illustration.jpg", description:"疾风剑豪，以速度与剑术闻名。"},
-  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, category:"辅助", image:"images/Mia_Illustration.jpg", description:"自然召唤师，能召唤植物与精灵助战。"},
-  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, category:"强袭", image:"images/Sorey_Illustration.jpg", description:"雷鸣骑士，雷电之力贯穿战场。"},
-  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, category:"强袭", image:"images/Shadowblade_Illustration.jpg", description:"暗夜刺客，擅长潜行与致命一击。"},
+  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg", 
+    description:"一位来自森林的游侠，擅长远程狙击与自然魔法。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg", 
+    description:"火焰学徒莎莉，性格活泼，擅长用火焰辅助队友。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, category:"近卫", image:"images/Buck_Illustration.jpg", 
+    description:"坚不可摧的铁壁卫士，守护队友的前排坦克。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, category:"辅助", image:"images/Lily_Illustration.jpg", 
+    description:"月影精灵，擅长月光治愈与幻术。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, category:"强袭", image:"images/Kael_Illustration.jpg", 
+    description:"疾风剑豪，以速度与剑术闻名。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, category:"辅助", image:"images/Mia_Illustration.jpg", 
+    description:"自然召唤师，能召唤植物与精灵助战。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, category:"强袭", image:"images/Sorey_Illustration.jpg", 
+    description:"雷鸣骑士，雷电之力贯穿战场。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, category:"强袭", image:"images/Shadowblade_Illustration.jpg", 
+    description:"暗夜刺客，擅长潜行与致命一击。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
   {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, category:"辅助", image:"images/Sylvia_Illustration.jpg", 
     description:"漫游星海的魔导大师，以星辰为书、魔力为笔。她借星芒之力强化一切侵蚀，让敌人的命运在群星的注视下逐步崩解。",
     skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
@@ -15,7 +31,9 @@ const characterPool = [
     <p><strong>星芒增幅</strong>（消耗2能量）：立即使全场所有「侵蚀」本回合伤害提升40%，并为全队提供持续2回合的「星辰护盾」（吸收伤害）。</p>
     <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
     <p><strong>星辰连锁</strong>：每当敌人因「侵蚀」受到伤害时，有40%概率对另一名随机敌人施加1层「星辰侵蚀」。</p>`},
-  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, category:"强袭", image:"images/Alesha_Illustration.jpg", description:"幻月弓神，月光箭矢可穿透现实与幻影。"},
+  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, category:"强袭", image:"images/Alesha_Illustration.jpg", 
+    description:"幻月弓神，月光箭矢可穿透现实与幻影。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
   {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, category:"近卫", image:"images/Galan_Illustration.jpg", 
     description:"圣辉王国的传奇骑士王，手持裁决圣剑，身披神圣铠甲。他以坚不可摧的意志守护后排，同时以神圣之火对一切胆敢侵犯的敌人进行永恒审判。",
     skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
@@ -23,8 +41,12 @@ const characterPool = [
     <p><strong>审判烈焰斩</strong>（消耗2能量）：对前排敌人造成伤害并施加「圣辉侵蚀」4回合，同时强制嘲讽2回合。</p>
     <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
     <p><strong>神圣惩戒</strong>：当加兰被攻击时，对攻击者施加2层「圣辉侵蚀」，并根据受到伤害的20%回复自身生命。同时全队「侵蚀」伤害随加兰存活而提升（每少1名队友提升8%，最多+24%）。</p>`},
-  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg", description:"凤凰圣女，拥有不死之身与复苏之力。"},
-  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg", description:"创世光辉的化身，掌控起源之力。"},
+  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg", 
+    description:"凤凰圣女，拥有不死之身与复苏之力。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
+  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg", 
+    description:"创世光辉的化身，掌控起源之力。",
+    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
   {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg", 
     description:"掌控时间长河的至高存在，外表为银紫长发的优雅少女。她能让时间为她所用，使敌人在永恒的衰败中缓慢消亡，同时加速盟友的命运之轮。",
     skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>

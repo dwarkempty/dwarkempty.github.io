@@ -1,18 +1,20 @@
-// js/battle.js - 完整DOT侵蚀战斗系统 v2.0（全部技能+被动+共鸣+实时演算）
-let currentTeam = [];           // 上场角色快照 [{id, charId, level, stars, currentHP, buffs, debuffs, shield, ...}]
+// js/battle.js - 完整DOT侵蚀战斗系统 v2.3（最终版）
+// 已修复：角色详细描述技能显示、每回合同种技能限制、点击角色先显示完整详情面板、结束回合按钮、点击怪物查看实时面板、伤害飘字、怪物血条
+
+let currentTeam = [];           // 上场角色快照
 let enemies = [];               // 敌人状态
 let battleTurn = 1;
 let teamEnergy = 4;
-let selectedCharIndex = null; // 当前选中角色，用于弹出技能面板
+let usedSkillsThisTurn = {};    // 每名角色本回合已使用的技能ID记录
 
-// ==================== 怪物池 ====================
+// ==================== 怪物池（3个怪物） ====================
 const enemyPool = [
   {id:1, name:"深渊影魔", hp:2800, maxHP:2800, atk:190, def:85, erosions:[]},
   {id:2, name:"元素守卫", hp:3400, maxHP:3400, atk:230, def:130, erosions:[]},
   {id:3, name:"狂暴炎兽", hp:4200, maxHP:4200, atk:280, def:110, erosions:[]}
 ];
 
-// ==================== 实时演算核心====================
+// ==================== 实时演算核心 ====================
 function calculateResonance(erosions) {
   const unique = new Set(erosions.map(e => e.type));
   return Math.min(45, (unique.size - 1) * 15);
@@ -41,6 +43,7 @@ function triggerDOTs() {
     });
     enemy.erosions = enemy.erosions.filter(e => e.duration > 0);
   });
+  // 克罗诺被动：时间恩赐
   currentTeam.forEach(char => {
     if (window.characterSkills[char.charId]?.passive.includes("timeBlessing")) {
       const uniqueCount = new Set(enemies.flatMap(e => e.erosions.map(er => er.type))).size;
@@ -54,26 +57,31 @@ function applyAllPassives() {
   currentTeam.forEach(charData => {
     const skills = window.characterSkills[charData.charId];
     if (!skills) return;
-    // 加兰被动：神圣惩戒（简化实时触发，在伤害阶段处理）
-    if (skills.passive.includes("holyTeamBoost")) {
-      const aliveCount = currentTeam.filter(c => (c.currentHP || 0) > 0).length;
-      // 实际加成在伤害计算时动态使用
-    }
   });
 }
 
-// ==================== 技能执行（全部按描述实装） ====================
+// ==================== 技能执行（每回合同种技能只能释放一次） ====================
 function executeSkill(charIdx, skillIdx) {
   const charData = currentTeam[charIdx];
   const char = window.getCharacterData(charData.charId);
   const skills = window.characterSkills[charData.charId];
-  if (!skills || !skills.active[skillIdx]) return alert("技能不存在！");
+  if (!skills || !skills.active[skillIdx]) return;
+
   const skill = skills.active[skillIdx];
+  const skillId = skill.id;
+
+  // 每回合同种技能限制
+  if (!usedSkillsThisTurn[charData.id]) usedSkillsThisTurn[charData.id] = [];
+  if (usedSkillsThisTurn[charData.id].includes(skillId)) {
+    return alert("该技能本回合已使用过！");
+  }
+  usedSkillsThisTurn[charData.id].push(skillId);
+
   if (teamEnergy < skill.cost) return alert("⚡ 能量不足！");
 
   teamEnergy -= skill.cost;
 
-  // 克罗诺
+  // 克罗诺技能
   if (charData.charId === 14) {
     if (skill.id === 1) { // 时之加速
       currentTeam.forEach(c => c.buffs.push({name:"时之加速", duration:3}));
@@ -84,7 +92,7 @@ function executeSkill(charIdx, skillIdx) {
       });
     }
   }
-  // 埃尔温
+  // 埃尔温技能
   else if (charData.charId === 15) {
     if (skill.id === 1) { // 起源崩解
       const target = enemies[0];
@@ -100,30 +108,24 @@ function executeSkill(charIdx, skillIdx) {
         e.erosions.push({type:randomKey, duration:4, sourceCharId:15});
       });
     }
-    // 被动多重侵蚀
-    if (window.characterSkills[15].passive.includes("multiErosion")) {
-      enemies.forEach(e => {
-        if (e.erosions.length >= 2) e.hp -= Math.floor(window.calculateStats(charData, char).atk * 0.35);
-      });
-    }
   }
-  // 塞尔维亚
+  // 塞尔维亚技能
   else if (charData.charId === 9) {
-    if (skill.id === 1) { // 星辰腐朽咒
+    if (skill.id === 1) {
       enemies.forEach(e => {
         e.erosions.push({type:"star", duration:4, sourceCharId:9});
         e.defDebuff = 3;
       });
-    } else if (skill.id === 2) { // 星芒增幅
+    } else if (skill.id === 2) {
       currentTeam.forEach(c => c.shield = Math.floor(window.calculateStats(c, window.getCharacterData(c.charId)).def * 1.5));
     }
   }
-  // 加兰
+  // 加兰技能
   else if (charData.charId === 11) {
-    if (skill.id === 1) { // 圣辉壁垒
+    if (skill.id === 1) {
       currentTeam.forEach(c => c.shield = Math.floor(window.calculateStats(charData, char).def * 2));
       charData.buffs.push({name:"圣辉反伤", duration:3});
-    } else if (skill.id === 2) { // 审判烈焰斩
+    } else if (skill.id === 2) {
       const target = enemies[0];
       const stats = window.calculateStats(charData, char);
       target.hp -= Math.floor(stats.atk * 1.9);
@@ -137,73 +139,122 @@ function executeSkill(charIdx, skillIdx) {
   if (checkBattleEnd()) return;
 }
 
-// ==================== 新增：伤害飘字 ====================
-function showDamageNumber(targetEl, damage, isCrit = false) {
-  const number = document.createElement("div");
-  number.className = `absolute text-3xl font-bold pointer-events-none ${isCrit ? 'text-red-400' : 'text-white'} drop-shadow-lg`;
-  number.style.left = "50%";
-  number.style.top = "30%";
-  number.textContent = `-${Math.floor(damage)}`;
-  targetEl.appendChild(number);
-  setTimeout(() => {
-    number.style.transition = "all 0.8s ease-out";
-    number.style.transform = "translateY(-80px)";
-    number.style.opacity = "0";
-    setTimeout(() => number.remove(), 800);
-  }, 50);
-}
+// ==================== 点击角色 → 显示完整详情面板（含技能释放按钮） ====================
+function showBattleCharDetail(idx) {
+  const item = currentTeam[idx];
+  const char = window.getCharacterData(item.charId);
+  const stats = window.calculateStats(item, char);
 
-// ==================== 技能面板（点击角色后弹出） ====================
-function showSkillPanel(idx) {
-  selectedCharIndex = idx;
-  const charData = currentTeam[idx];
-  const char = window.getCharacterData(charData.charId);
-  const skills = window.characterSkills[charData.charId] || {active:[]};
-
-  let html = `<div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[14000]">
-    <div class="bg-zinc-900 rounded-3xl max-w-md w-full mx-4 p-8">
-      <div class="flex justify-between mb-6">
-        <h3 class="text-2xl font-bold">${char.name} 的技能</h3>
-        <button onclick="window.hideSkillPanel()" class="text-4xl text-gray-400">×</button>
-      </div>
-      <div class="space-y-4">`;
-  
-  skills.active.forEach((skill, sIdx) => {
-    html += `
-      <button onclick="window.useSkill(${idx}, ${sIdx}); window.hideSkillPanel()" 
-              class="w-full bg-zinc-800 hover:bg-teal-600 p-5 rounded-2xl text-left flex justify-between items-center">
-        <div>
-          <div class="font-bold">${skill.name}</div>
-          <div class="text-xs text-teal-300">${skill.desc}</div>
+  const html = `
+    <div class="flex flex-col lg:flex-row gap-6 p-8">
+      <div class="flex-1 flex flex-col">
+        <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center">
+          <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl">
         </div>
-        <div class="text-amber-400 font-bold">${skill.cost} ⚡</div>
-      </button>`;
-  });
+      </div>
+      <div class="flex-1">
+        <div class="text-3xl font-bold mb-4">${char.name}</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">血量</div>
+            <div class="text-4xl font-bold">${Math.floor(item.currentHP || stats.hp)} / ${stats.hp}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">攻击</div>
+            <div class="text-4xl font-bold">${stats.atk}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">防御</div>
+            <div class="text-4xl font-bold">${stats.def}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击率</div>
+            <div class="text-4xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击伤害</div>
+            <div class="text-4xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">减伤</div>
+            <div class="text-4xl font-bold">0%</div>
+          </div>
+        </div>
+        <!-- 本回合技能释放区域 -->
+        <div class="mt-8 border-4 border-orange-500 rounded-3xl p-6">
+          <div class="text-lg font-bold mb-4">本回合可释放技能</div>
+          <div class="space-y-3">
+            ${(window.characterSkills[item.charId] || {active:[]}).active.map((skill, sIdx) => `
+              <button onclick="window.executeSkillFromDetail(${idx},${sIdx});" 
+                      class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-lg font-bold">
+                ${skill.name}（${skill.cost}⚡）
+              </button>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-center py-6">
+      <button onclick="window.hideBattleCharDetail()" class="text-gray-400 text-xl">关闭</button>
+    </div>
+  `;
 
-  html += `</div></div></div>`;
-  
-  const panel = document.createElement("div");
-  panel.id = "skillPanelModal";
-  panel.innerHTML = html;
-  document.body.appendChild(panel);
+  document.getElementById("battleModalInner").innerHTML = html;
+  document.getElementById("battleCharDetailModal").classList.remove("hidden");
 }
 
-function hideSkillPanel() {
-  const panel = document.getElementById("skillPanelModal");
-  if (panel) panel.remove();
-  selectedCharIndex = null;
+function executeSkillFromDetail(charIdx, skillIdx) {
+  hideBattleCharDetail();
+  executeSkill(charIdx, skillIdx);
 }
 
-function useSkill(charIdx, skillIdx) {
-  executeSkill(charIdx, skillIdx); // 调用原有技能执行逻辑
+function hideBattleCharDetail() {
+  document.getElementById("battleCharDetailModal").classList.add("hidden");
 }
 
-// ==================== 战斗UI渲染（怪物血条 + 点击角色弹出技能） ====================
+// ==================== 点击怪物查看实时面板 ====================
+function showEnemyDetail(enemyIdx) {
+  const enemy = enemies[enemyIdx];
+  const html = `
+    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[14000]">
+      <div class="bg-zinc-900 rounded-3xl max-w-md w-full mx-4 p-8">
+        <div class="flex justify-between mb-6">
+          <h3 class="text-2xl font-bold">${enemy.name}</h3>
+          <button onclick="window.hideEnemyDetail()" class="text-4xl text-gray-400">×</button>
+        </div>
+        <div class="text-4xl font-bold mb-4">❤️ ${Math.floor(enemy.hp)} / ${enemy.maxHP}</div>
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="text-center">攻击：${enemy.atk}</div>
+          <div class="text-center">防御：${enemy.def}</div>
+        </div>
+        <div class="text-lg font-bold mb-3">当前侵蚀</div>
+        <div class="flex flex-wrap gap-2">
+          ${enemy.erosions.map(e => {
+            const t = window.erosionTypes[e.type];
+            return `<span class="px-3 py-1 rounded-xl text-xs" style="background:${t.color}">${t.icon} ${t.name}×${e.layers||1}（${e.duration}回合）</span>`;
+          }).join('') || '<p class="text-gray-400">无侵蚀效果</p>'}
+        </div>
+        <div class="text-center mt-8">
+          <button onclick="window.hideEnemyDetail()" class="px-10 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭</button>
+        </div>
+      </div>
+    </div>`;
+  const div = document.createElement("div");
+  div.id = "enemyDetailModal";
+  div.innerHTML = html;
+  document.body.appendChild(div);
+}
+
+function hideEnemyDetail() {
+  const modal = document.getElementById("enemyDetailModal");
+  if (modal) modal.remove();
+}
+
+// ==================== 渲染战斗主界面 ====================
 function renderBattleUI() {
   document.getElementById("battleEnergy").textContent = `${teamEnergy} / 6`;
   document.getElementById("turnNumber").textContent = battleTurn;
 
-  // 我方队伍（点击弹出技能）
+  // 我方队伍
   const playerArea = document.getElementById("playerTeamArea");
   playerArea.innerHTML = "";
   const pFrag = document.createDocumentFragment();
@@ -217,40 +268,47 @@ function renderBattleUI() {
       <div class="font-bold text-sm">${char.name}</div>
       <div class="text-xs text-emerald-400">❤️ ${Math.floor(charData.currentHP || stats.hp)}/${stats.hp}</div>
     `;
-    div.onclick = () => showSkillPanel(i);   // ← 新设计：点击角色弹出技能面板
+    div.onclick = () => showBattleCharDetail(i);
     pFrag.appendChild(div);
   });
   playerArea.appendChild(pFrag);
 
-  // 敌方（新增血条）
+  // 行动栏（只保留结束回合按钮）
+  const bar = document.getElementById("actionBar");
+  bar.innerHTML = `<button onclick="window.endPlayerTurn()" class="px-12 py-5 bg-orange-600 hover:bg-orange-700 rounded-3xl text-2xl font-bold w-full">结束回合</button>`;
+
+  // 敌方（可点击）
   const enemyArea = document.getElementById("enemyArea");
   enemyArea.innerHTML = "";
   const eFrag = document.createDocumentFragment();
-  enemies.forEach(enemy => {
+  enemies.forEach((enemy, i) => {
     const percent = Math.max(0, Math.floor((enemy.hp / enemy.maxHP) * 100));
     const div = document.createElement("div");
-    div.className = "bg-red-950 border-4 border-red-500 rounded-3xl p-4 w-64 text-center relative";
+    div.className = "bg-red-950 border-4 border-red-500 rounded-3xl p-4 w-64 text-center cursor-pointer";
     div.innerHTML = `
       <div class="font-bold mb-1">${enemy.name}</div>
       <div class="text-xl mb-2">❤️ ${Math.floor(enemy.hp)} / ${enemy.maxHP}</div>
-      <div class="h-3 bg-zinc-800 rounded-full overflow-hidden">
+      <div class="h-3 bg-zinc-800 rounded-full overflow-hidden mb-3">
         <div class="h-full bg-red-500 transition-all" style="width:${percent}%"></div>
       </div>
-      <div class="flex flex-wrap gap-1 justify-center mt-3">
+      <div class="flex flex-wrap gap-1 justify-center">
         ${enemy.erosions.map(e => {
           const t = window.erosionTypes[e.type];
           return `<span class="text-xs px-2 py-0.5 rounded" style="background:${t.color}">${t.icon} ${t.name}×${e.layers||1}</span>`;
         }).join('') || '<span class="text-gray-400">无侵蚀</span>'}
       </div>
     `;
+    div.onclick = () => showEnemyDetail(i);
     eFrag.appendChild(div);
   });
   enemyArea.appendChild(eFrag);
 }
 
+// ==================== 回合结束 ====================
 function endPlayerTurn() {
+  usedSkillsThisTurn = {}; // 重置本回合技能使用记录
   triggerDOTs();
-  // 敌人反击（简易AI）
+  // 敌人反击
   enemies.forEach(enemy => {
     if (enemy.hp <= 0) return;
     const target = currentTeam[Math.floor(Math.random() * currentTeam.length)];
@@ -289,7 +347,7 @@ function checkBattleEnd() {
   return false;
 }
 
-// ==================== 选人界面 ====================
+// ==================== 战斗入口 ====================
 function openBattleStart() {
   currentTeam = [];
   document.getElementById("battleStartModal").classList.remove("hidden");
@@ -346,9 +404,10 @@ function startBattle() {
     currentHP: window.calculateStats(item, window.getCharacterData(item.charId)).hp,
     buffs: [], debuffs: [], shield: 0
   }));
-  enemies = [JSON.parse(JSON.stringify(enemyPool[0]))];
+  enemies = [JSON.parse(JSON.stringify(enemyPool[Math.floor(Math.random()*enemyPool.length)]))];
   battleTurn = 1;
   teamEnergy = 4;
+  usedSkillsThisTurn = {};
   document.getElementById("battleModal").classList.remove("hidden");
   renderBattleUI();
 }
@@ -361,74 +420,7 @@ function endBattle() {
   }
 }
 
-// ==================== 战斗详情面板====================
-function showBattleCharDetail(idx) {
-  const item = currentTeam[idx];
-  const char = window.getCharacterData(item.charId);
-  const stats = window.calculateStats(item, char);
-
-  const html = `
-    <div class="flex flex-col lg:flex-row gap-6 p-8">
-      <div class="flex-1 flex flex-col">
-        <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center">
-          <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl">
-        </div>
-      </div>
-      <div class="flex-1">
-        <div class="text-3xl font-bold mb-4">${char.name}</div>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">血量</div>
-            <div class="text-4xl font-bold">${Math.floor(item.currentHP || stats.hp)} / ${stats.hp}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">攻击</div>
-            <div class="text-4xl font-bold">${stats.atk}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">防御</div>
-            <div class="text-4xl font-bold">${stats.def}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">暴击率</div>
-            <div class="text-4xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">暴击伤害</div>
-            <div class="text-4xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">减伤</div>
-            <div class="text-4xl font-bold">0%</div>
-          </div>
-        </div>
-        <!-- 当前状态栏 -->
-        <div class="mt-8 border-4 border-orange-500 rounded-3xl p-6">
-          <div class="text-lg font-bold mb-4">当前状态</div>
-          <div class="space-y-2">
-            ${item.buffs ? item.buffs.map(b => `<div class="bg-emerald-900 px-4 py-2 rounded-2xl text-emerald-300">✅ ${b.name}</div>`).join('') : ''}
-            ${item.erosions ? item.erosions.map(e => {
-              const t = window.erosionTypes[e.type];
-              return `<div class="bg-purple-900 px-4 py-2 rounded-2xl text-purple-300">${t.icon} ${t.name}（${e.duration}回合）</div>`;
-            }).join('') : ''}
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="text-center py-6">
-      <button onclick="window.hideBattleCharDetail()" class="text-gray-400 text-xl">关闭</button>
-    </div>
-  `;
-
-  document.getElementById("battleModalInner").innerHTML = html;
-  document.getElementById("battleCharDetailModal").classList.remove("hidden");
-}
-
-function hideBattleCharDetail() {
-  document.getElementById("battleCharDetailModal").classList.add("hidden");
-}
-
-// ==================== 暴露 ====================
+// ==================== 暴露给全局 ====================
 window.openBattleStart = openBattleStart;
 window.hideBattleStartModal = hideBattleStartModal;
 window.startBattle = startBattle;
@@ -438,6 +430,6 @@ window.endPlayerTurn = endPlayerTurn;
 window.endBattle = endBattle;
 window.showBattleCharDetail = showBattleCharDetail;
 window.hideBattleCharDetail = hideBattleCharDetail;
-window.showSkillPanel = showSkillPanel;
-window.hideSkillPanel = hideSkillPanel;
-window.useSkill = useSkill;
+window.showEnemyDetail = showEnemyDetail;
+window.hideEnemyDetail = hideEnemyDetail;
+window.executeSkillFromDetail = executeSkillFromDetail;

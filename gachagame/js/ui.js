@@ -586,42 +586,59 @@ function renderMerchantModal() {
   `).join('');
 }
 
+// ==================== 购买函数（点击即购买，无确认弹窗） ====================
 function buyPermanent(index, bulk) {
   const item = window.merchantPermanent[index];
   const totalCost = item.costGold * bulk;
+
   if (player.gold < totalCost) return alert("金币不足！");
-  
+
   player.gold -= totalCost;
-  
+
   if (item.id === 'yaoXing') player.yaoXing += item.qty * bulk;
   else if (item.id === 'reinforceStone') player.reinforceStone += item.qty * bulk;
   else player.materials[item.id] = (player.materials[item.id] || 0) + item.qty * bulk;
 
+  // 立即刷新资源栏
   document.getElementById("gold").textContent = player.gold;
   document.getElementById("yaoXing").textContent = player.yaoXing;
   document.getElementById("reinforceStone").textContent = player.reinforceStone;
-  
+
   window.saveGame();
-  window.renderMaterialsWarehouse();   // 刷新材料仓库
-  alert(`✅ 已购买 ${bulk} 份 ${item.name}`);
+  window.renderMaterialsWarehouse();
+
+  // 短暂成功提示（不打断操作）
+  const tip = document.createElement("div");
+  tip.style.cssText = "position:fixed; top:20px; right:20px; background:#10b981; color:white; padding:12px 24px; border-radius:9999px; box-shadow:0 10px 15px -3px rgb(0 0 0 / 0.3); z-index:99999; font-weight:bold;";
+  tip.textContent = `✅ 已购买 ${bulk} 份 ${item.name}`;
+  document.body.appendChild(tip);
+  setTimeout(() => tip.remove(), 1600);
 }
 
 function buyRandom(index, bulk) {
   const item = player.merchantInventory[index];
   if (item.stock < bulk) return alert("库存不足！");
-  
+
   const totalCost = item.price * bulk;
   if (player.gold < totalCost) return alert("金币不足！");
-  
+
   player.gold -= totalCost;
   player.materials[item.id] = (player.materials[item.id] || 0) + bulk;
   item.stock -= bulk;
 
+  // 立即刷新资源栏
   document.getElementById("gold").textContent = player.gold;
+
   window.saveGame();
   window.renderMaterialsWarehouse();
-  renderMerchantModal();   // 刷新当前 modal
-  alert(`✅ 已购买 ${bulk} 份 ${item.name}`);
+  renderMerchantModal();   // 刷新库存显示
+
+  // 短暂成功提示
+  const tip = document.createElement("div");
+  tip.style.cssText = "position:fixed; top:20px; right:20px; background:#10b981; color:white; padding:12px 24px; border-radius:9999px; box-shadow:0 10px 15px -3px rgb(0 0 0 / 0.3); z-index:99999; font-weight:bold;";
+  tip.textContent = `✅ 已购买 ${bulk} 份 ${item.name}`;
+  document.body.appendChild(tip);
+  setTimeout(() => tip.remove(), 1600);
 }
 
 function hideMerchantModal() {

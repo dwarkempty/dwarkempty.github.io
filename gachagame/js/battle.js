@@ -1,17 +1,16 @@
-// js/battle.js - 完整DOT侵蚀战斗系统 v2.3（最终版）
-// 已修复：角色详细描述技能显示、每回合同种技能限制、点击角色先显示完整详情面板、结束回合按钮、点击怪物查看实时面板、伤害飘字、怪物血条
+// js/battle.js - 完整DOT侵蚀战斗系统 v2.4
 
 let currentTeam = [];           // 上场角色快照
 let enemies = [];               // 敌人状态
 let battleTurn = 1;
 let teamEnergy = 4;
-let usedSkillsThisTurn = {};    // 每名角色本回合已使用的技能ID记录
+let usedSkillsThisTurn = {};    // {角色唯一id: [已使用技能id数组]}
 
 // ==================== 怪物池（3个怪物） ====================
 const enemyPool = [
-  {id:1, name:"深渊影魔", hp:2800, maxHP:2800, atk:190, def:85, erosions:[]},
-  {id:2, name:"元素守卫", hp:3400, maxHP:3400, atk:230, def:130, erosions:[]},
-  {id:3, name:"狂暴炎兽", hp:4200, maxHP:4200, atk:280, def:110, erosions:[]}
+  {id:1, name:"深渊影魔", hp:2800, maxHP:2800, atk:190, def:85, erosions:[], defDebuff:0, speedDebuff:0, taunt:0},
+  {id:2, name:"元素守卫", hp:3400, maxHP:3400, atk:230, def:130, erosions:[], defDebuff:0, speedDebuff:0, taunt:0},
+  {id:3, name:"狂暴炎兽", hp:4200, maxHP:4200, atk:280, def:110, erosions:[], defDebuff:0, speedDebuff:0, taunt:0}
 ];
 
 // ==================== 实时演算核心 ====================
@@ -53,14 +52,74 @@ function triggerDOTs() {
   return totalDamage;
 }
 
-function applyAllPassives() {
-  currentTeam.forEach(charData => {
-    const skills = window.characterSkills[charData.charId];
-    if (!skills) return;
+// ==================== 伤害计算（考虑防御降低、护盾） ====================
+function calculateDamage(sourceChar, target, baseDmg) {
+  const stats = window.calculateStats(sourceChar, window.getCharacterData(sourceChar.charId));
+  let dmg = baseDmg;
+  if (target.defDebuff) dmg *= (1 - target.defDebuff / 100);
+  if (target.shield > 0) {
+    const absorbed = Math.min(target.shield, dmg);
+    target.shield -= absorbed;
+    dmg -= absorbed;
+  }
+  return Math.floor(dmg);
+}
+
+// ==================== 单独技能效果函数（全部按照描述实现，便于以后扩展） ====================
+function applyChronoSkill1(charData) { // 时之加速·克罗诺斯
+  currentTeam.forEach(c => c.buffs.push({name:"时之加速", duration:3}));
+}
+
+function applyChronoSkill2(charData) { // 命运蚀刻
+  enemies.forEach(e => {
+    e.erosions.push({type:"chrono", duration:5, sourceCharId:14});
+    e.speedDebuff = 4;
   });
 }
 
-// ==================== 技能执行（每回合同种技能只能释放一次） ====================
+function applyElwinSkill1(charData) { // 起源崩解
+  const target = enemies[0];
+  const stats = window.calculateStats(charData, window.getCharacterData(charData.charId));
+  target.hp -= calculateDamage(charData, target, stats.atk * 2.8);
+  target.erosions.push({type:"source", layers:4, duration:6, sourceCharId:15});
+}
+
+function applyElwinSkill2(charData) { // 元素灭世潮
+  const stats = window.calculateStats(charData, window.getCharacterData(charData.charId));
+  enemies.forEach(e => {
+    e.hp -= calculateDamage(charData, e, stats.atk * 1.4);
+    e.erosions.push({type:"source", layers:2, duration:6, sourceCharId:15});
+    const randomKey = Object.keys(window.erosionTypes)[Math.floor(Math.random() * 3) + 1];
+    e.erosions.push({type:randomKey, duration:4, sourceCharId:15});
+  });
+}
+
+function applySylviaSkill1(charData) { // 星辰腐朽咒
+  enemies.forEach(e => {
+    e.erosions.push({type:"star", duration:4, sourceCharId:9});
+    e.defDebuff = 15;   // ← 按照描述：降低15%防御力，持续3回合
+    e.defDebuffDuration = 3;
+  });
+}
+
+function applySylviaSkill2(charData) { // 星芒增幅
+  currentTeam.forEach(c => c.shield = Math.floor(window.calculateStats(c, window.getCharacterData(c.charId)).def * 1.5));
+}
+
+function applyGalanSkill1(charData) { // 圣辉壁垒
+  currentTeam.forEach(c => c.shield = Math.floor(window.calculateStats(charData, window.getCharacterData(charData.charId)).def * 2));
+  charData.buffs.push({name:"圣辉反伤", duration:3});
+}
+
+function applyGalanSkill2(charData) { // 审判烈焰斩
+  const target = enemies[0];
+  const stats = window.calculateStats(charData, window.getCharacterData(charData.charId));
+  target.hp -= calculateDamage(charData, target, stats.atk * 1.9);
+  target.erosions.push({type:"holy", duration:4, sourceCharId:11});
+  target.taunt = 2;
+}
+
+// ==================== 技能执行入口 ====================
 function executeSkill(charIdx, skillIdx) {
   const charData = currentTeam[charIdx];
   const char = window.getCharacterData(charData.charId);
@@ -70,7 +129,7 @@ function executeSkill(charIdx, skillIdx) {
   const skill = skills.active[skillIdx];
   const skillId = skill.id;
 
-  // 每回合同种技能限制
+  // 每回合同种技能只能释放一次
   if (!usedSkillsThisTurn[charData.id]) usedSkillsThisTurn[charData.id] = [];
   if (usedSkillsThisTurn[charData.id].includes(skillId)) {
     return alert("该技能本回合已使用过！");
@@ -78,60 +137,21 @@ function executeSkill(charIdx, skillIdx) {
   usedSkillsThisTurn[charData.id].push(skillId);
 
   if (teamEnergy < skill.cost) return alert("⚡ 能量不足！");
-
   teamEnergy -= skill.cost;
 
-  // 克罗诺技能
+  // 调用对应技能函数（全部实装）
   if (charData.charId === 14) {
-    if (skill.id === 1) { // 时之加速
-      currentTeam.forEach(c => c.buffs.push({name:"时之加速", duration:3}));
-    } else if (skill.id === 2) { // 命运蚀刻
-      enemies.forEach(e => {
-        e.erosions.push({type:"chrono", duration:5, sourceCharId:14});
-        e.speedDebuff = 4;
-      });
-    }
-  }
-  // 埃尔温技能
-  else if (charData.charId === 15) {
-    if (skill.id === 1) { // 起源崩解
-      const target = enemies[0];
-      const stats = window.calculateStats(charData, char);
-      target.hp -= Math.floor(stats.atk * 2.8);
-      target.erosions.push({type:"source", layers:4, duration:6, sourceCharId:15});
-    } else if (skill.id === 2) { // 元素灭世潮
-      const stats = window.calculateStats(charData, char);
-      enemies.forEach(e => {
-        e.hp -= Math.floor(stats.atk * 1.4);
-        e.erosions.push({type:"source", layers:2, duration:6, sourceCharId:15});
-        const randomKey = Object.keys(window.erosionTypes)[Math.floor(Math.random() * 3) + 1];
-        e.erosions.push({type:randomKey, duration:4, sourceCharId:15});
-      });
-    }
-  }
-  // 塞尔维亚技能
-  else if (charData.charId === 9) {
-    if (skill.id === 1) {
-      enemies.forEach(e => {
-        e.erosions.push({type:"star", duration:4, sourceCharId:9});
-        e.defDebuff = 3;
-      });
-    } else if (skill.id === 2) {
-      currentTeam.forEach(c => c.shield = Math.floor(window.calculateStats(c, window.getCharacterData(c.charId)).def * 1.5));
-    }
-  }
-  // 加兰技能
-  else if (charData.charId === 11) {
-    if (skill.id === 1) {
-      currentTeam.forEach(c => c.shield = Math.floor(window.calculateStats(charData, char).def * 2));
-      charData.buffs.push({name:"圣辉反伤", duration:3});
-    } else if (skill.id === 2) {
-      const target = enemies[0];
-      const stats = window.calculateStats(charData, char);
-      target.hp -= Math.floor(stats.atk * 1.9);
-      target.erosions.push({type:"holy", duration:4, sourceCharId:11});
-      target.taunt = 2;
-    }
+    if (skill.id === 1) applyChronoSkill1(charData);
+    else if (skill.id === 2) applyChronoSkill2(charData);
+  } else if (charData.charId === 15) {
+    if (skill.id === 1) applyElwinSkill1(charData);
+    else if (skill.id === 2) applyElwinSkill2(charData);
+  } else if (charData.charId === 9) {
+    if (skill.id === 1) applySylviaSkill1(charData);
+    else if (skill.id === 2) applySylviaSkill2(charData);
+  } else if (charData.charId === 11) {
+    if (skill.id === 1) applyGalanSkill1(charData);
+    else if (skill.id === 2) applyGalanSkill2(charData);
   }
 
   applyAllPassives();
@@ -139,11 +159,14 @@ function executeSkill(charIdx, skillIdx) {
   if (checkBattleEnd()) return;
 }
 
-// ==================== 点击角色 → 显示完整详情面板（含技能释放按钮） ====================
+// ==================== 点击角色 → 显示完整详情面板 ====================
 function showBattleCharDetail(idx) {
   const item = currentTeam[idx];
   const char = window.getCharacterData(item.charId);
   const stats = window.calculateStats(item, char);
+
+  let buffHTML = item.buffs ? item.buffs.map(b => `<div class="bg-emerald-900 px-4 py-2 rounded-2xl text-emerald-300">✅ ${b.name}</div>`).join('') : '';
+  let debuffHTML = item.debuffs ? item.debuffs.map(d => `<div class="bg-red-900 px-4 py-2 rounded-2xl text-red-300">❌ ${d.name}</div>`).join('') : '';
 
   const html = `
     <div class="flex flex-col lg:flex-row gap-6 p-8">
@@ -179,6 +202,11 @@ function showBattleCharDetail(idx) {
             <div class="text-sm text-orange-400">减伤</div>
             <div class="text-4xl font-bold">0%</div>
           </div>
+        </div>
+        <!-- 当前状态栏 -->
+        <div class="mt-8 border-4 border-orange-500 rounded-3xl p-6">
+          <div class="text-lg font-bold mb-4">当前状态（buff / debuff / 侵蚀）</div>
+          <div class="space-y-2">${buffHTML}${debuffHTML}</div>
         </div>
         <!-- 本回合技能释放区域 -->
         <div class="mt-8 border-4 border-orange-500 rounded-3xl p-6">
@@ -273,7 +301,7 @@ function renderBattleUI() {
   });
   playerArea.appendChild(pFrag);
 
-  // 行动栏（只保留结束回合按钮）
+  // 行动栏（结束回合按钮）
   const bar = document.getElementById("actionBar");
   bar.innerHTML = `<button onclick="window.endPlayerTurn()" class="px-12 py-5 bg-orange-600 hover:bg-orange-700 rounded-3xl text-2xl font-bold w-full">结束回合</button>`;
 
@@ -304,22 +332,25 @@ function renderBattleUI() {
   enemyArea.appendChild(eFrag);
 }
 
-// ==================== 回合结束 ====================
+// ==================== 回合结束（怪物攻击 + 重置技能记录） ====================
 function endPlayerTurn() {
   usedSkillsThisTurn = {}; // 重置本回合技能使用记录
   triggerDOTs();
-  // 敌人反击
+
+  // 怪物攻击
   enemies.forEach(enemy => {
     if (enemy.hp <= 0) return;
     const target = currentTeam[Math.floor(Math.random() * currentTeam.length)];
     const stats = window.calculateStats(target, window.getCharacterData(target.charId));
     let dmg = Math.max(1, enemy.atk - stats.def * 0.6);
     if (target.shield > 0) {
-      target.shield = Math.max(0, target.shield - dmg);
-      dmg = 0;
+      const absorbed = Math.min(target.shield, dmg);
+      target.shield -= absorbed;
+      dmg -= absorbed;
     }
     target.currentHP = Math.max(0, (target.currentHP || stats.hp) - Math.floor(dmg));
   });
+
   battleTurn++;
   teamEnergy = Math.min(6, teamEnergy + 2);
   renderBattleUI();
@@ -420,7 +451,7 @@ function endBattle() {
   }
 }
 
-// ==================== 暴露给全局 ====================
+// ==================== 暴露 ====================
 window.openBattleStart = openBattleStart;
 window.hideBattleStartModal = hideBattleStartModal;
 window.startBattle = startBattle;

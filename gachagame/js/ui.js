@@ -490,47 +490,6 @@ function resetGame() {
   }
 }
 
-// ==================== 角色仓库 - 详细描述界面 ====================
-function showCharacterLore(index) {
-  const item = player.owned[index];
-  const char = window.getCharacterData(item.charId);
-
-  const loreHTML = `
-    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100000]">
-      <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full mx-4 p-8">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-3xl font-bold">${char.name} 详细描述</h3>
-          <button onclick="window.closeCharacterLore()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
-        </div>
-        
-        <div class="prose prose-invert max-w-none">
-          <h4 class="text-orange-400 text-xl mb-2">人物背景</h4>
-          <p class="text-gray-200 leading-relaxed">${char.description || '这位冒险者有着神秘的过去，目前暂无详细记载……'}</p>
-          
-          <h4 class="text-orange-400 text-xl mt-8 mb-2">技能描述</h4>
-          <div class="bg-zinc-800 rounded-2xl p-6 text-gray-300">
-            <p>（技能描述暂未实装，留空待后续扩展）</p>
-            <p class="mt-4 text-sm text-gray-400">未来可在此处展示该角色的主动技能、被动技能等详细说明。</p>
-          </div>
-        </div>
-        
-        <div class="text-center mt-8">
-          <button onclick="window.closeCharacterLore()" class="px-8 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭</button>
-        </div>
-      </div>
-    </div>`;
-
-  const div = document.createElement("div");
-  div.id = "characterLoreModal";
-  div.innerHTML = loreHTML;
-  document.body.appendChild(div);
-}
-
-window.closeCharacterLore = function() {
-  const modal = document.getElementById("characterLoreModal");
-  if (modal) modal.remove();
-};
-
 // ==================== 商人系统（已优化） ====================
 function openMerchant() {
   const now = Date.now();

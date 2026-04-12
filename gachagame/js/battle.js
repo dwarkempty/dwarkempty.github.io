@@ -4,16 +4,17 @@ let enemies = [];               // 敌人状态
 let battleTurn = 1;
 let teamEnergy = 4;
 
-// ==================== 简单敌人池（可后续扩展） ====================
+// ==================== 怪物池 ====================
 const enemyPool = [
-  {id:1, name:"深渊影魔", hp:2800, maxHP:2800, atk:190, def:85, erosions:[], speedDebuff:0, defDebuff:0, taunt:0},
-  {id:2, name:"元素守卫", hp:3400, maxHP:3400, atk:230, def:130, erosions:[], speedDebuff:0, defDebuff:0, taunt:0}
+  {id:1, name:"深渊影魔", hp:2800, maxHP:2800, atk:190, def:85, erosions:[]},
+  {id:2, name:"元素守卫", hp:3400, maxHP:3400, atk:230, def:130, erosions:[]},
+  {id:3, name:"狂暴炎兽", hp:4200, maxHP:4200, atk:280, def:110, erosions:[]}
 ];
 
-// ==================== 实时演算核心 ====================
+// ==================== 实时演算核心====================
 function calculateResonance(erosions) {
   const unique = new Set(erosions.map(e => e.type));
-  return Math.min(45, (unique.size - 1) * 15); // 每多1种侵蚀 +15%，最高+45%
+  return Math.min(45, (unique.size - 1) * 15);
 }
 
 function triggerDOTs() {
@@ -39,7 +40,6 @@ function triggerDOTs() {
     });
     enemy.erosions = enemy.erosions.filter(e => e.duration > 0);
   });
-  // 克罗诺被动：时间恩赐
   currentTeam.forEach(char => {
     if (window.characterSkills[char.charId]?.passive.includes("timeBlessing")) {
       const uniqueCount = new Set(enemies.flatMap(e => e.erosions.map(er => er.type))).size;
@@ -134,6 +134,22 @@ function executeSkill(charIdx, skillIdx) {
   applyAllPassives();
   renderBattleUI();
   if (checkBattleEnd()) return;
+}
+
+// ==================== 新增：伤害飘字 ====================
+function showDamageNumber(targetEl, damage, isCrit = false) {
+  const number = document.createElement("div");
+  number.className = `absolute text-3xl font-bold pointer-events-none ${isCrit ? 'text-red-400' : 'text-white'} drop-shadow-lg`;
+  number.style.left = "50%";
+  number.style.top = "30%";
+  number.textContent = `-${Math.floor(damage)}`;
+  targetEl.appendChild(number);
+  setTimeout(() => {
+    number.style.transition = "all 0.8s ease-out";
+    number.style.transform = "translateY(-80px)";
+    number.style.opacity = "0";
+    setTimeout(() => number.remove(), 800);
+  }, 50);
 }
 
 // ==================== 战斗UI渲染 ====================
@@ -315,36 +331,57 @@ function endBattle() {
   }
 }
 
+// ==================== 战斗详情面板====================
 function showBattleCharDetail(idx) {
   const item = currentTeam[idx];
   const char = window.getCharacterData(item.charId);
   const stats = window.calculateStats(item, char);
-  const erosionList = enemies.flatMap(e => e.erosions).filter(e => e.sourceCharId === item.charId);
-  let statusHTML = item.buffs.map(b => `<div class="bg-emerald-900 px-4 py-2 rounded-2xl text-emerald-300">✅ ${b.name}</div>`).join('');
-  statusHTML += erosionList.map(e => {
-    const t = window.erosionTypes[e.type];
-    return `<div class="bg-purple-900 px-4 py-2 rounded-2xl text-purple-300">${t.icon} ${t.name}（剩余${e.duration}回合）</div>`;
-  }).join('');
+
   const html = `
     <div class="flex flex-col lg:flex-row gap-6 p-8">
-      <div class="flex-1">
-        <img src="${char.image}" class="character-img w-full rounded-2xl">
+      <div class="flex-1 flex flex-col">
+        <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center">
+          <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl">
+        </div>
       </div>
       <div class="flex-1">
-        <div class="text-3xl font-bold mb-2">${char.name}</div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="text-3xl font-bold mb-4">${char.name}</div>
+        <div class="grid grid-cols-2 gap-3">
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">血量</div>
-            <div class="text-4xl font-bold">${Math.floor(item.currentHP)}/${stats.hp}</div>
+            <div class="text-4xl font-bold">${Math.floor(item.currentHP || stats.hp)} / ${stats.hp}</div>
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">攻击</div>
             <div class="text-4xl font-bold">${stats.atk}</div>
           </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">防御</div>
+            <div class="text-4xl font-bold">${stats.def}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击率</div>
+            <div class="text-4xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">暴击伤害</div>
+            <div class="text-4xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">减伤</div>
+            <div class="text-4xl font-bold">0%</div>
+          </div>
         </div>
+        <!-- 当前状态栏 -->
         <div class="mt-8 border-4 border-orange-500 rounded-3xl p-6">
-          <div class="text-lg font-bold mb-4">当前状态（侵蚀/增益）</div>
-          <div class="space-y-2">${statusHTML || '<p class="text-gray-400">无状态效果</p>'}</div>
+          <div class="text-lg font-bold mb-4">当前状态</div>
+          <div class="space-y-2">
+            ${item.buffs ? item.buffs.map(b => `<div class="bg-emerald-900 px-4 py-2 rounded-2xl text-emerald-300">✅ ${b.name}</div>`).join('') : ''}
+            ${item.erosions ? item.erosions.map(e => {
+              const t = window.erosionTypes[e.type];
+              return `<div class="bg-purple-900 px-4 py-2 rounded-2xl text-purple-300">${t.icon} ${t.name}（${e.duration}回合）</div>`;
+            }).join('') : ''}
+          </div>
         </div>
       </div>
     </div>
@@ -352,6 +389,7 @@ function showBattleCharDetail(idx) {
       <button onclick="window.hideBattleCharDetail()" class="text-gray-400 text-xl">关闭</button>
     </div>
   `;
+
   document.getElementById("battleModalInner").innerHTML = html;
   document.getElementById("battleCharDetailModal").classList.remove("hidden");
 }

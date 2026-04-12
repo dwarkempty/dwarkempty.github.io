@@ -3,6 +3,7 @@ let currentTeam = [];           // 上场角色快照 [{id, charId, level, stars
 let enemies = [];               // 敌人状态
 let battleTurn = 1;
 let teamEnergy = 4;
+let selectedCharIndex = null; // 当前选中角色，用于弹出技能面板
 
 // ==================== 怪物池 ====================
 const enemyPool = [
@@ -152,12 +153,57 @@ function showDamageNumber(targetEl, damage, isCrit = false) {
   }, 50);
 }
 
-// ==================== 战斗UI渲染 ====================
+// ==================== 技能面板（点击角色后弹出） ====================
+function showSkillPanel(idx) {
+  selectedCharIndex = idx;
+  const charData = currentTeam[idx];
+  const char = window.getCharacterData(charData.charId);
+  const skills = window.characterSkills[charData.charId] || {active:[]};
+
+  let html = `<div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[14000]">
+    <div class="bg-zinc-900 rounded-3xl max-w-md w-full mx-4 p-8">
+      <div class="flex justify-between mb-6">
+        <h3 class="text-2xl font-bold">${char.name} 的技能</h3>
+        <button onclick="window.hideSkillPanel()" class="text-4xl text-gray-400">×</button>
+      </div>
+      <div class="space-y-4">`;
+  
+  skills.active.forEach((skill, sIdx) => {
+    html += `
+      <button onclick="window.useSkill(${idx}, ${sIdx}); window.hideSkillPanel()" 
+              class="w-full bg-zinc-800 hover:bg-teal-600 p-5 rounded-2xl text-left flex justify-between items-center">
+        <div>
+          <div class="font-bold">${skill.name}</div>
+          <div class="text-xs text-teal-300">${skill.desc}</div>
+        </div>
+        <div class="text-amber-400 font-bold">${skill.cost} ⚡</div>
+      </button>`;
+  });
+
+  html += `</div></div></div>`;
+  
+  const panel = document.createElement("div");
+  panel.id = "skillPanelModal";
+  panel.innerHTML = html;
+  document.body.appendChild(panel);
+}
+
+function hideSkillPanel() {
+  const panel = document.getElementById("skillPanelModal");
+  if (panel) panel.remove();
+  selectedCharIndex = null;
+}
+
+function useSkill(charIdx, skillIdx) {
+  executeSkill(charIdx, skillIdx); // 调用原有技能执行逻辑
+}
+
+// ==================== 战斗UI渲染（怪物血条 + 点击角色弹出技能） ====================
 function renderBattleUI() {
   document.getElementById("battleEnergy").textContent = `${teamEnergy} / 6`;
   document.getElementById("turnNumber").textContent = battleTurn;
 
-  // 我方队伍
+  // 我方队伍（点击弹出技能）
   const playerArea = document.getElementById("playerTeamArea");
   playerArea.innerHTML = "";
   const pFrag = document.createDocumentFragment();
@@ -170,48 +216,32 @@ function renderBattleUI() {
       <img src="${char.image}" class="character-img w-full rounded-2xl mb-2">
       <div class="font-bold text-sm">${char.name}</div>
       <div class="text-xs text-emerald-400">❤️ ${Math.floor(charData.currentHP || stats.hp)}/${stats.hp}</div>
-      <div class="text-[10px] text-teal-300">${charData.buffs ? charData.buffs.map(b => b.name).join(" ") : ""}</div>
     `;
-    div.onclick = () => showBattleCharDetail(i);
+    div.onclick = () => showSkillPanel(i);   // ← 新设计：点击角色弹出技能面板
     pFrag.appendChild(div);
   });
   playerArea.appendChild(pFrag);
 
-  // 行动栏
-  const bar = document.getElementById("actionBar");
-  bar.innerHTML = "";
-  currentTeam.forEach((charData, idx) => {
-    const skills = window.characterSkills[charData.charId] || {active:[]};
-    skills.active.forEach((skill, sIdx) => {
-      const btn = document.createElement("button");
-      btn.className = `px-5 py-3 bg-zinc-700 hover:bg-teal-600 rounded-2xl text-xs font-bold mx-1 ${teamEnergy < skill.cost ? 'opacity-40 cursor-not-allowed' : ''}`;
-      btn.textContent = `${charData.name.slice(0,2)} ${skill.name}`;
-      btn.onclick = () => executeSkill(idx, sIdx);
-      bar.appendChild(btn);
-    });
-  });
-  // 结束回合按钮
-  const endBtn = document.createElement("button");
-  endBtn.className = "ml-6 px-8 py-3 bg-orange-600 hover:bg-orange-700 rounded-3xl text-lg font-bold";
-  endBtn.textContent = "结束回合";
-  endBtn.onclick = endPlayerTurn;
-  bar.appendChild(endBtn);
-
-  // 敌方
+  // 敌方（新增血条）
   const enemyArea = document.getElementById("enemyArea");
   enemyArea.innerHTML = "";
   const eFrag = document.createDocumentFragment();
   enemies.forEach(enemy => {
+    const percent = Math.max(0, Math.floor((enemy.hp / enemy.maxHP) * 100));
     const div = document.createElement("div");
-    div.className = "bg-red-950 border-4 border-red-500 rounded-3xl p-4 w-56 text-center";
-    let erosionHTML = enemy.erosions.map(e => {
-      const t = window.erosionTypes[e.type];
-      return `<span class="text-xs px-2 py-0.5 rounded" style="background:${t.color}">${t.icon} ${t.name}×${e.layers||1}</span>`;
-    }).join("");
+    div.className = "bg-red-950 border-4 border-red-500 rounded-3xl p-4 w-64 text-center relative";
     div.innerHTML = `
-      <div class="font-bold">${enemy.name}</div>
-      <div class="text-xl">❤️ ${Math.floor(enemy.hp)}/${enemy.maxHP}</div>
-      <div class="flex flex-wrap gap-1 justify-center mt-3">${erosionHTML || '<span class="text-gray-400">无侵蚀</span>'}</div>
+      <div class="font-bold mb-1">${enemy.name}</div>
+      <div class="text-xl mb-2">❤️ ${Math.floor(enemy.hp)} / ${enemy.maxHP}</div>
+      <div class="h-3 bg-zinc-800 rounded-full overflow-hidden">
+        <div class="h-full bg-red-500 transition-all" style="width:${percent}%"></div>
+      </div>
+      <div class="flex flex-wrap gap-1 justify-center mt-3">
+        ${enemy.erosions.map(e => {
+          const t = window.erosionTypes[e.type];
+          return `<span class="text-xs px-2 py-0.5 rounded" style="background:${t.color}">${t.icon} ${t.name}×${e.layers||1}</span>`;
+        }).join('') || '<span class="text-gray-400">无侵蚀</span>'}
+      </div>
     `;
     eFrag.appendChild(div);
   });
@@ -408,3 +438,6 @@ window.endPlayerTurn = endPlayerTurn;
 window.endBattle = endBattle;
 window.showBattleCharDetail = showBattleCharDetail;
 window.hideBattleCharDetail = hideBattleCharDetail;
+window.showSkillPanel = showSkillPanel;
+window.hideSkillPanel = hideSkillPanel;
+window.useSkill = useSkill;

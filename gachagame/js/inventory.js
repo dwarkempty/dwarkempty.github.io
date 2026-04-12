@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统（已修复详细描述技能显示）
+// js/inventory.js - 仓库渲染 + 养成系统（已彻底修复详细描述技能显示）
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -221,6 +221,7 @@ function showCharacterLore(index) {
   const item = player.owned[index];
   const char = window.getCharacterData(item.charId);
 
+  // 关键修复：直接使用 constants.js 中定义的 skillDesc
   const skillHTML = char.skillDesc || '<p class="text-gray-400">暂无技能描述</p>';
 
   const loreHTML = `

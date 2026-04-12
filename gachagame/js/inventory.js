@@ -140,6 +140,7 @@ function showCharacterDetail(index) {
         <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">
           <img src="${char.image}" class="character-img w-full max-h-[420px] rounded-2xl" style="filter: drop-shadow(0 15px 25px rgba(249,115,22,0.5));">
         </div>
+        
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-4 bg-gray-950">
           <div class="text-center text-lg font-bold mb-3">装备武器</div>
           <div class="bg-gray-800 rounded-2xl p-3 text-center text-base mb-3">${equippedName}</div>
@@ -154,11 +155,16 @@ function showCharacterDetail(index) {
           </select>
           <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
         </div>
-        <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950 text-sm leading-relaxed">
-          <div class="font-bold text-orange-400 mb-3">角色描述</div>
-          <p>${char.description || '一位神秘的冒险者。'}</p>
+
+        <!-- 新增：可点击的“详细描述”按钮 -->
+        <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950">
+          <button onclick="window.showCharacterLore(${index})" 
+                  class="w-full py-4 text-xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 rounded-2xl btn-hover flex items-center justify-center gap-2">
+            <i class="fas fa-book-open"></i> 详细描述
+          </button>
         </div>
       </div>
+
       <div class="flex-1">
         <div class="grid grid-cols-2 gap-3">
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
@@ -208,8 +214,49 @@ function showCharacterDetail(index) {
       <button onclick="window.hideModal()" class="text-gray-400 text-lg btn-hover">关闭</button>
     </div>
   `;
+
   document.getElementById("modal").classList.remove("hidden");
 }
+
+function showCharacterLore(index) {
+  const item = player.owned[index];
+  const char = window.getCharacterData(item.charId);
+
+  const loreHTML = `
+    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100000]">
+      <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full mx-4 p-8 overflow-auto max-h-[90vh]">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-3xl font-bold">${char.name} 详细描述</h3>
+          <button onclick="window.closeCharacterLore()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
+        </div>
+        
+        <div class="prose prose-invert max-w-none">
+          <h4 class="text-orange-400 text-xl mb-3">人物背景</h4>
+          <p class="text-gray-200 leading-relaxed text-lg">${char.description || '这位冒险者有着神秘的过去，目前暂无详细记载……'}</p>
+          
+          <h4 class="text-orange-400 text-xl mt-10 mb-3">技能描述</h4>
+          <div class="bg-zinc-800 rounded-3xl p-6 text-gray-300">
+            <p class="text-base">（技能描述暂未实装）</p>
+            <p class="mt-6 text-sm text-gray-400">未来可在此处展示该角色的主动技能、被动技能、专属故事等详细内容。</p>
+          </div>
+        </div>
+        
+        <div class="text-center mt-10">
+          <button onclick="window.closeCharacterLore()" class="px-10 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-3xl text-lg font-bold">关闭窗口</button>
+        </div>
+      </div>
+    </div>`;
+
+  const div = document.createElement("div");
+  div.id = "characterLoreModal";
+  div.innerHTML = loreHTML;
+  document.body.appendChild(div);
+}
+
+window.closeCharacterLore = function() {
+  const modal = document.getElementById("characterLoreModal");
+  if (modal) modal.remove();
+};
 
 function showWeaponDetail(index) {
   currentModalIndex = index;
@@ -438,6 +485,8 @@ window.sortOwned = sortOwned;
 window.showCharacterDetail = showCharacterDetail;
 window.showWeaponDetail = showWeaponDetail;
 window.showCharacterDetailById = showCharacterDetailById;
+window.showCharacterLore = showCharacterLore;
+window.closeCharacterLore = window.closeCharacterLore;
 window.showWeaponDetailById = showWeaponDetailById;
 window.equipWeapon = equipWeapon;
 window.levelUp = levelUp;

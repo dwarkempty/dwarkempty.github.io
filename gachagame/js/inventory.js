@@ -221,8 +221,7 @@ function showCharacterLore(index) {
   const item = player.owned[index];
   const char = window.getCharacterData(item.charId);
 
-  // 关键修复：直接使用 constants.js 中定义的 skillDesc
-  const skillHTML = char.skillDesc || '<p class="text-gray-400">暂无技能描述</p>';
+  const skillHTML = char.skillDesc;
 
   const loreHTML = `
     <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100000]">

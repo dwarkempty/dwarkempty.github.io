@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统
+// js/inventory.js - 仓库渲染 + 养成系统（已修复详细描述技能显示）
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -156,7 +156,6 @@ function showCharacterDetail(index) {
           <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
         </div>
 
-        <!-- 新增：可点击的“详细描述”按钮 -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950">
           <button onclick="window.showCharacterLore(${index})" 
                   class="w-full py-4 text-xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 rounded-2xl btn-hover flex items-center justify-center gap-2">

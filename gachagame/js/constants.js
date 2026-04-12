@@ -14,7 +14,7 @@ const characterPool = [
   {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
   {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
   {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg"},
-  {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, category:"辅助", image:"images/Elwin_Illustration.jpg"}
+  {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, category:"强袭", image:"images/Elwin_Illustration.jpg"}
 ];
 
 const weaponPool = [
@@ -90,7 +90,6 @@ const recipesPool = [
 ];
 
 const customerDemands = [
-  // 1级商店
   {id:1, level:1, demand:"喂，老板！我跟红色史莱姆打架受伤了，来一瓶基础治疗药水！", satisfy:[1,9,12]},
   {id:2, level:1, demand:"我需要一瓶能补充自身魔力的药水，下一场战斗要靠它了。", satisfy:[2,10,12]},
   {id:3, level:1, demand:"跑了半天腿都软了，有恢复体力跟精力的药吗？", satisfy:[3,10,12]},
@@ -98,8 +97,6 @@ const customerDemands = [
   {id:5, level:1, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。", satisfy:[6,4,12]},
   {id:6, level:1, demand:"我要一瓶基础魔力药水，蓝史莱姆粘液那种！", satisfy:[2,10,12]},
   {id:7, level:1, demand:"我现在只想快速回血，其他都不重要！", satisfy:[1,9,12]},
-
-  // 2级商店
   {id:8, level:2, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。", satisfy:[6,4,12]},
   {id:9, level:2, demand:"我想要能够增强我实力的药水，越猛越好！", satisfy:[5,6,7,11,12]},
   {id:10, level:2, demand:"地牢里太黑了，有没有能让我看清路的药水？", satisfy:[8,12]},
@@ -108,16 +105,12 @@ const customerDemands = [
   {id:13, level:2, demand:"石巨人碎屑加水，能不能让我更耐打？", satisfy:[6,4]},
   {id:14, level:2, demand:"蝙蝠翅膜加水的药水，我要夜视能力！", satisfy:[8]},
   {id:15, level:2, demand:"幽灵残片加水的药水，能不能让我不怕精神攻击？", satisfy:[7,12]},
-
-  // 3级商店
   {id:16, level:3, demand:"给我来点红史莱姆粘液加小枯骨的组合，效果要强一点的！", satisfy:[9,12]},
   {id:17, level:3, demand:"我想让武器带点毒，下次打哥布林轻松点，有那种药吗？", satisfy:[11,12]},
   {id:18, level:3, demand:"我魔力跟体力都没了，来瓶能一起补的！", satisfy:[10,12]},
   {id:19, level:3, demand:"快！我要最强的治疗药水，红史莱姆粘液加小枯骨那种！", satisfy:[9,12]},
   {id:20, level:3, demand:"蜘蛛毒腺加狼牙再加酒，我要毒刃效果的！", satisfy:[11]},
   {id:21, level:3, demand:"绿史莱姆粘液加蓝史莱姆粘液，再加点酒，效果要猛！", satisfy:[10]},
-
-  // 4级商店
   {id:22, level:4, demand:"下一个boss会喷火，我需要能抗火又能反击的药水！", satisfy:[13,6,12]},
   {id:23, level:4, demand:"我速度太慢了，有没有能让我像闪电一样快的药？", satisfy:[14,5]},
   {id:24, level:4, demand:"我伤口一直不愈合，需要强力再生的药水！", satisfy:[15,9]},
@@ -127,8 +120,6 @@ const customerDemands = [
   {id:28, level:4, demand:"蘑菇孢子加绿史莱姆粘液，我要一直回血！", satisfy:[15]},
   {id:29, level:4, demand:"影魔残影加蝙蝠翅膜，我要隐身闪避！", satisfy:[16]},
   {id:30, level:4, demand:"我需要一瓶既能打又能防的全面强化药水！", satisfy:[13,14,12]},
-
-  // 5级商店
   {id:31, level:5, demand:"魔力快耗尽了，我要最强的魔力药水！", satisfy:[17,10]},
   {id:32, level:5, demand:"我快死了，但还想再战！有没有不死的药？", satisfy:[18,19]},
   {id:33, level:5, demand:"给我能起死回生的药水，凤凰那种！", satisfy:[19,9]},
@@ -153,6 +144,46 @@ const materialPrices = {
   5: 45, 6: 48, 7: 42, 8: 50, 9: 55, 13: 60, 14: 62, 15: 58,
   10: 95, 16: 110, 17: 120, 18: 115,
   19: 280, 20: 320
+};
+
+// ==================== DOT侵蚀技能系统（实时演算核心） ====================
+window.characterSkills = {
+  14: { // 永恒时女·克罗诺（UR）
+    active: [
+      {id:1, name:"时之加速·克罗诺斯", cost:3, type:"teamBuff", effect:"chronoAccel", desc:"全队「时之加速」3回合，所有侵蚀额外触发1次 + 全队速度+25%"},
+      {id:2, name:"命运蚀刻", cost:2, type:"enemyDebuff", effect:"chronoErosion", desc:"全体敌人「时之侵蚀」5回合 + 攻速/移速-30%（4回合）"}
+    ],
+    passive: ["timeBlessing", "eternalExtend"]
+  },
+  15: { // 元素起源·埃尔温（UR 强袭）
+    active: [
+      {id:1, name:"起源崩解", cost:3, type:"singleDamage", effect:"sourceErosionStack", desc:"主目标高额伤害 + 叠加4层「源素侵蚀」"},
+      {id:2, name:"元素灭世潮", cost:3, type:"aoeDamage", effect:"sourceErosionAoe", desc:"全体伤害 + 每个敌人2层源素侵蚀 + 1层随机其他侵蚀"}
+    ],
+    passive: ["multiErosion", "originRebound"]
+  },
+  9: { // 星辰魔导师·塞尔维亚（SSR）
+    active: [
+      {id:1, name:"星辰腐朽咒", cost:2, type:"enemyDebuff", effect:"starErosion", desc:"全体「星辰侵蚀」4回合 + 全体防御-15%（3回合）"},
+      {id:2, name:"星芒增幅", cost:2, type:"teamBuff", effect:"starAmplify", desc:"本回合所有侵蚀伤害+40% + 全队「星辰护盾」2回合"}
+    ],
+    passive: ["starChain"]
+  },
+  11: { // 圣辉骑士王·加兰（SSR）
+    active: [
+      {id:1, name:"圣辉壁垒", cost:2, type:"teamBuff", effect:"holyShield", desc:"全队护盾（DEF×200%）+ 自身「圣辉反伤」3回合"},
+      {id:2, name:"审判烈焰斩", cost:2, type:"singleDamage", effect:"holyErosion", desc:"前排伤害 + 「圣辉侵蚀」4回合 + 强制嘲讽2回合"}
+    ],
+    passive: ["holyPunishment", "holyTeamBoost"]
+  }
+};
+
+// 侵蚀类型映射（统一「侵蚀」体系）
+window.erosionTypes = {
+  chrono: { name: "时之侵蚀", color: "#a855f7", icon: "⏳" },
+  source: { name: "源素侵蚀", color: "#22d3ee", icon: "🌊" },
+  star:   { name: "星辰侵蚀", color: "#eab308", icon: "⭐" },
+  holy:   { name: "圣辉侵蚀", color: "#ec4899", icon: "☀️" }
 };
 
 window.characterPool = characterPool;

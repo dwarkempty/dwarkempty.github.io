@@ -1,4 +1,4 @@
-// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑（完整版，无任何省略）
+// js/ui.js - UI 动画、Modal、记录查询、控制台 + 经营系统完整逻辑（最终完整版）
 function showDrawAnimation(results, poolType) {
   const modal = document.getElementById("drawModal");
   const container = document.getElementById("drawResults");
@@ -249,7 +249,6 @@ let currentCrafting = [];
 let currentCraftedPotion = null;
 
 function startOperating() {
-  // 权重随机选择顾客
   let pool = [];
   if (player.shopLevel === 1) pool = window.customerDemands.filter(c => c.level === 1);
   else if (player.shopLevel === 2) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2);
@@ -481,8 +480,58 @@ function renderShopInfo() {
 }
 
 function openPlanting() { alert("🌱 种植系统开发中..."); }
+function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
 
-// ==================== 商人系统完整实现 ====================
+function resetGame() {
+  if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
+    localStorage.removeItem("gachaGame");
+    alert("✅ 网页已初始化！即将刷新页面...");
+    setTimeout(() => location.reload(), 600);
+  }
+}
+
+// ==================== 角色仓库 - 详细描述界面 ====================
+function showCharacterLore(index) {
+  const item = player.owned[index];
+  const char = window.getCharacterData(item.charId);
+
+  const loreHTML = `
+    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100000]">
+      <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full mx-4 p-8">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-3xl font-bold">${char.name} 详细描述</h3>
+          <button onclick="window.closeCharacterLore()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
+        </div>
+        
+        <div class="prose prose-invert max-w-none">
+          <h4 class="text-orange-400 text-xl mb-2">人物背景</h4>
+          <p class="text-gray-200 leading-relaxed">${char.description || '这位冒险者有着神秘的过去，目前暂无详细记载……'}</p>
+          
+          <h4 class="text-orange-400 text-xl mt-8 mb-2">技能描述</h4>
+          <div class="bg-zinc-800 rounded-2xl p-6 text-gray-300">
+            <p>（技能描述暂未实装，留空待后续扩展）</p>
+            <p class="mt-4 text-sm text-gray-400">未来可在此处展示该角色的主动技能、被动技能等详细说明。</p>
+          </div>
+        </div>
+        
+        <div class="text-center mt-8">
+          <button onclick="window.closeCharacterLore()" class="px-8 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭</button>
+        </div>
+      </div>
+    </div>`;
+
+  const div = document.createElement("div");
+  div.id = "characterLoreModal";
+  div.innerHTML = loreHTML;
+  document.body.appendChild(div);
+}
+
+window.closeCharacterLore = function() {
+  const modal = document.getElementById("characterLoreModal");
+  if (modal) modal.remove();
+};
+
+// ==================== 商人系统（已优化） ====================
 function openMerchant() {
   const now = Date.now();
   if (now - (player.lastMerchantRefresh || 0) > 30 * 60 * 1000 || !player.merchantInventory || player.merchantInventory.length === 0) {
@@ -497,13 +546,11 @@ function openMerchant() {
           <button onclick="window.hideMerchantModal()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
         </div>
         
-        <!-- 常驻商品 -->
         <div class="mb-8">
           <div class="text-emerald-400 text-xl font-bold mb-4">常驻商品（无限供应）</div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="permanentGoods"></div>
         </div>
         
-        <!-- 限时商品 -->
         <div>
           <div class="flex justify-between items-center mb-4">
             <div class="text-orange-400 text-xl font-bold">限时特供材料（${player.merchantInventory.length} 种）</div>
@@ -540,14 +587,13 @@ function refreshMerchantStock() {
 }
 
 function getRandomStock(rarity) {
-  if (rarity === "R") return Math.floor(Math.random() * 21) + 30;   // 30~50
-  if (rarity === "SR") return Math.floor(Math.random() * 16) + 20;  // 20~35
-  if (rarity === "SSR") return Math.floor(Math.random() * 11) + 10; // 10~20
-  return Math.floor(Math.random() * 6) + 10;                        // UR 10~15
+  if (rarity === "R") return Math.floor(Math.random() * 21) + 30;
+  if (rarity === "SR") return Math.floor(Math.random() * 16) + 20;
+  if (rarity === "SSR") return Math.floor(Math.random() * 11) + 10;
+  return Math.floor(Math.random() * 6) + 10;
 }
 
 function renderMerchantModal() {
-  // 常驻商品
   const permanentContainer = document.getElementById("permanentGoods");
   permanentContainer.innerHTML = window.merchantPermanent.map((item, i) => `
     <div class="bg-zinc-800 rounded-3xl p-5 text-center">
@@ -563,7 +609,6 @@ function renderMerchantModal() {
     </div>
   `).join('');
 
-  // 随机商品
   const randomContainer = document.getElementById("randomGoods");
   randomContainer.innerHTML = player.merchantInventory.map((item, i) => `
     <div class="bg-zinc-800 rounded-3xl p-5">
@@ -586,39 +631,27 @@ function renderMerchantModal() {
   `).join('');
 }
 
-// ==================== 购买函数（点击即购买，无确认弹窗） ====================
 function buyPermanent(index, bulk) {
   const item = window.merchantPermanent[index];
   const totalCost = item.costGold * bulk;
-
   if (player.gold < totalCost) return alert("金币不足！");
 
   player.gold -= totalCost;
-
   if (item.id === 'yaoXing') player.yaoXing += item.qty * bulk;
   else if (item.id === 'reinforceStone') player.reinforceStone += item.qty * bulk;
   else player.materials[item.id] = (player.materials[item.id] || 0) + item.qty * bulk;
 
-  // 立即刷新资源栏
   document.getElementById("gold").textContent = player.gold;
   document.getElementById("yaoXing").textContent = player.yaoXing;
   document.getElementById("reinforceStone").textContent = player.reinforceStone;
 
   window.saveGame();
   window.renderMaterialsWarehouse();
-
-  // 短暂成功提示（不打断操作）
-  const tip = document.createElement("div");
-  tip.style.cssText = "position:fixed; top:20px; right:20px; background:#10b981; color:white; padding:12px 24px; border-radius:9999px; box-shadow:0 10px 15px -3px rgb(0 0 0 / 0.3); z-index:99999; font-weight:bold;";
-  tip.textContent = `✅ 已购买 ${bulk} 份 ${item.name}`;
-  document.body.appendChild(tip);
-  setTimeout(() => tip.remove(), 1600);
 }
 
 function buyRandom(index, bulk) {
   const item = player.merchantInventory[index];
   if (item.stock < bulk) return alert("库存不足！");
-
   const totalCost = item.price * bulk;
   if (player.gold < totalCost) return alert("金币不足！");
 
@@ -626,19 +659,10 @@ function buyRandom(index, bulk) {
   player.materials[item.id] = (player.materials[item.id] || 0) + bulk;
   item.stock -= bulk;
 
-  // 立即刷新资源栏
   document.getElementById("gold").textContent = player.gold;
-
   window.saveGame();
   window.renderMaterialsWarehouse();
-  renderMerchantModal();   // 刷新库存显示
-
-  // 短暂成功提示
-  const tip = document.createElement("div");
-  tip.style.cssText = "position:fixed; top:20px; right:20px; background:#10b981; color:white; padding:12px 24px; border-radius:9999px; box-shadow:0 10px 15px -3px rgb(0 0 0 / 0.3); z-index:99999; font-weight:bold;";
-  tip.textContent = `✅ 已购买 ${bulk} 份 ${item.name}`;
-  document.body.appendChild(tip);
-  setTimeout(() => tip.remove(), 1600);
+  renderMerchantModal();
 }
 
 function hideMerchantModal() {
@@ -646,29 +670,18 @@ function hideMerchantModal() {
   if (modal) modal.remove();
 }
 
-function resetGame() {
-  if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
-    localStorage.removeItem("gachaGame");
-    alert("✅ 网页已初始化！即将刷新页面...");
-    setTimeout(() => location.reload(), 600);
-  }
-}
-
-// ==================== 完整暴露函数（已删除所有地牢相关内容） ====================
+// ==================== 完整暴露 ====================
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;
-
 window.setRecordTab = setRecordTab;
 window.showRecordModal = showRecordModal;
 window.hideRecordModal = hideRecordModal;
 window.exportSave = exportSave;
 window.importSave = importSave;
-
 window.openConsolePrompt = openConsolePrompt;
 window.hideConsole = hideConsole;
 window.executeConsoleCommand = executeConsoleCommand;
-
 window.startOperating = startOperating;
 window.craftPotion = craftPotion;
 window.deleteCraftedPotion = deleteCraftedPotion;
@@ -677,10 +690,10 @@ window.hideOperatingModal = hideOperatingModal;
 window.renderMaterialsWarehouse = renderMaterialsWarehouse;
 window.renderRecipeBook = renderRecipeBook;
 window.renderShopInfo = renderShopInfo;
-
 window.resetGame = resetGame;
-
 window.openMerchant = openMerchant;
 window.hideMerchantModal = hideMerchantModal;
 window.buyPermanent = buyPermanent;
 window.buyRandom = buyRandom;
+window.showCharacterLore = showCharacterLore;
+window.closeCharacterLore = window.closeCharacterLore;

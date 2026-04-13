@@ -567,7 +567,7 @@ function showCharacterLore(index) {
         <div class="flex justify-between items-center px-8 py-5 border-b border-zinc-700">
           <div>
             <h3 class="text-3xl font-bold text-orange-400">${char.name}</h3>
-            <p class="text-sm text-gray-400 mt-1">详细人物背景 · 强袭</p>
+            <p class="text-sm text-gray-400 mt-1">详细人物背景</p>
           </div>
           <button onclick="window.closeCharacterLore()" 
                   class="text-4xl leading-none text-gray-400 hover:text-white transition-colors">×</button>

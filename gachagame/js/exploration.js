@@ -434,7 +434,7 @@ function stopMinesweeper() {
   window.hideMinesweeper();
 }
 
-// ====================== 动态生成探索按钮======================
+// ====================== 动态生成探索按钮 ======================
 function renderExplorationButtons() {
   const grid = document.getElementById("explorationGrid");
   grid.innerHTML = `
@@ -465,12 +465,6 @@ function renderExplorationButtons() {
       <i class="fas fa-bomb text-6xl"></i>
       <div class="text-3xl font-bold">扫雷</div>
       <div class="text-red-200">标记雷获胜后统一结算</div>
-    </button>
-    <!-- 新增：DOT战斗测试按钮（与战斗系统完美联动） -->
-    <button onclick="window.openBattleStart()" class="bg-gradient-to-r from-red-600 to-orange-600 hover:brightness-110 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover border-4 border-orange-400">
-      <i class="fas fa-swords text-6xl"></i>
-      <div class="text-3xl font-bold">测试战斗</div>
-      <div class="text-orange-200">DOT侵蚀队实战</div>
     </button>
   `;
 }

@@ -1,72 +1,23 @@
 // js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
-  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg", 
-    description:"一位来自森林的游侠，擅长远程狙击与自然魔法。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg", 
-    description:"火焰学徒莎莉，性格活泼，擅长用火焰辅助队友。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, category:"近卫", image:"images/Buck_Illustration.jpg", 
-    description:"坚不可摧的铁壁卫士，守护队友的前排坦克。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, category:"辅助", image:"images/Lily_Illustration.jpg", 
-    description:"月影精灵，擅长月光治愈与幻术。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, category:"强袭", image:"images/Kael_Illustration.jpg", 
-    description:"疾风剑豪，以速度与剑术闻名。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, category:"辅助", image:"images/Mia_Illustration.jpg", 
-    description:"自然召唤师，能召唤植物与精灵助战。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, category:"强袭", image:"images/Sorey_Illustration.jpg", 
-    description:"雷鸣骑士，雷电之力贯穿战场。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, category:"强袭", image:"images/Shadowblade_Illustration.jpg", 
-    description:"暗夜刺客，擅长潜行与致命一击。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, category:"辅助", image:"images/Sylvia_Illustration.jpg", 
-    description:"漫游星海的魔导大师，以星辰为书、魔力为笔。她借星芒之力强化一切侵蚀，让敌人的命运在群星的注视下逐步崩解。",
-    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
-    <p><strong>星辰腐朽咒</strong>（消耗2能量）：对全体敌人施加「星辰侵蚀」4回合，并降低所有敌人15%防御力，持续3回合。</p>
-    <p><strong>星芒增幅</strong>（消耗2能量）：立即使全场所有「侵蚀」本回合伤害提升40%，并为全队提供持续2回合的「星辰护盾」（吸收伤害）。</p>
-    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
-    <p><strong>星辰连锁</strong>：每当敌人因「侵蚀」受到伤害时，有40%概率对另一名随机敌人施加1层「星辰侵蚀」。</p>`},
-  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, category:"强袭", image:"images/Alesha_Illustration.jpg", 
-    description:"幻月弓神，月光箭矢可穿透现实与幻影。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, category:"近卫", image:"images/Galan_Illustration.jpg", 
-    description:"圣辉王国的传奇骑士王，手持裁决圣剑，身披神圣铠甲。他以坚不可摧的意志守护后排，同时以神圣之火对一切胆敢侵犯的敌人进行永恒审判。",
-    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
-    <p><strong>圣辉壁垒</strong>（消耗2能量）：为全队生成厚实护盾（吸收量基于加兰防御×200%），自身额外获得「圣辉反伤」状态3回合。</p>
-    <p><strong>审判烈焰斩</strong>（消耗2能量）：对前排敌人造成伤害并施加「圣辉侵蚀」4回合，同时强制嘲讽2回合。</p>
-    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
-    <p><strong>神圣惩戒</strong>：当加兰被攻击时，对攻击者施加2层「圣辉侵蚀」，并根据受到伤害的20%回复自身生命。同时全队「侵蚀」伤害随加兰存活而提升（每少1名队友提升8%，最多+24%）。</p>`},
-  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg", 
-    description:"凤凰圣女，拥有不死之身与复苏之力。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg", 
-    description:"创世光辉的化身，掌控起源之力。",
-    skillDesc:`<p class="text-gray-400">暂无技能描述</p>`},
-  {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg", 
-    description:"掌控时间长河的至高存在，外表为银紫长发的优雅少女。她能让时间为她所用，使敌人在永恒的衰败中缓慢消亡，同时加速盟友的命运之轮。",
-    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
-    <p><strong>时之加速·克罗诺斯</strong>（消耗3能量）：对全队施加「时之加速」3回合。期间全队所有「侵蚀」每回合额外触发1次伤害，且全队行动速度提升25%。</p>
-    <p><strong>命运蚀刻</strong>（消耗2能量）：对全体敌人施加「时之侵蚀」5回合（每回合造成相当于克罗诺攻击力×80%的伤害），并使敌人移动速度与攻击速度降低30%，持续4回合。</p>
-    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
-    <p><strong>时间恩赐</strong>：场上每存在1种「侵蚀」效果，克罗诺每回合为全队回复1点能量（最多回复2点）。</p>
-    <p><strong>永恒延长</strong>：所有「侵蚀」持续时间+2回合。首次对敌人施加「侵蚀」时，该次侵蚀伤害提升50%。</p>`},
-  {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, category:"强袭", image:"images/Elwin_Illustration.jpg", 
-    description:"诞生于元素起源的原初精灵，身体由流动的元素光辉构成。她是毁灭与创造的具现，能从敌人体内唤醒最狂暴的本源力量，将其彻底瓦解。",
-    skillDesc:`<h4 class="text-orange-400 text-xl mt-8 mb-3">主动技能</h4>
-    <p><strong>起源崩解</strong>（消耗3能量）：对主目标造成高额单体伤害，并叠加4层「源素侵蚀」（每层每回合造成攻击力×45%的伤害，可叠加），持续6回合。</p>
-    <p><strong>元素灭世潮</strong>（消耗3能量）：对所有敌人造成范围伤害，并为每个敌人施加2层「源素侵蚀」与1层随机其他侵蚀。</p>
-    <h4 class="text-orange-400 text-xl mt-8 mb-3">被动技能</h4>
-    <p><strong>多重侵蚀</strong>：对带有2种以上「侵蚀」的敌人造成伤害时，提升35%伤害。「源素侵蚀」伤害额外+25%。</p>
-    <p><strong>本源反噬</strong>：埃尔温造成的普通攻击与技能伤害的25%，转化为「源素侵蚀」持续3回合。</p>`}
+  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg"},
+  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg"},
+  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, category:"近卫", image:"images/Buck_Illustration.jpg"},
+  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, category:"辅助", image:"images/Lily_Illustration.jpg"},
+  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, category:"强袭", image:"images/Kael_Illustration.jpg"},
+  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, category:"辅助", image:"images/Mia_Illustration.jpg"},
+  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, category:"强袭", image:"images/Sorey_Illustration.jpg"},
+  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, category:"强袭", image:"images/Shadowblade_Illustration.jpg"},
+  {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, category:"辅助", image:"images/Sylvia_Illustration.jpg"},
+  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, category:"强袭", image:"images/Alesha_Illustration.jpg"},
+  {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, category:"近卫", image:"images/Galan_Illustration.jpg"},
+  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
+  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
+  {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg"},
+  {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, category:"辅助", image:"images/Elwin_Illustration.jpg"}
 ];
 
 const weaponPool = [
-  // 武器池完整内容
   {id:1, name:"森林魔杖", enName:"Forest Wand", rarity:"R", type:"权杖", image:"images/ForestWand.jpg", baseHP:40, baseATK:25, baseDEF:15, baseCritRate:0.02, baseCritDamage:0.15},
   {id:2, name:"铁锋冒险剑", enName:"Iron Edge", rarity:"R", type:"单手剑", image:"images/IronEdge.jpg", baseHP:20, baseATK:50, baseDEF:25, baseCritRate:0, baseCritDamage:0.2},
   {id:3, name:"影林双刃", enName:"Shadowwood Twin Blades", rarity:"R", type:"双刀", image:"images/ShadowwoodTwinBlades.jpg", baseHP:25, baseATK:45, baseDEF:20, baseCritRate:0.03, baseCritDamage:0.25},
@@ -139,6 +90,7 @@ const recipesPool = [
 ];
 
 const customerDemands = [
+  // 1级商店
   {id:1, level:1, demand:"喂，老板！我跟红色史莱姆打架受伤了，来一瓶基础治疗药水！", satisfy:[1,9,12]},
   {id:2, level:1, demand:"我需要一瓶能补充自身魔力的药水，下一场战斗要靠它了。", satisfy:[2,10,12]},
   {id:3, level:1, demand:"跑了半天腿都软了，有恢复体力跟精力的药吗？", satisfy:[3,10,12]},
@@ -146,6 +98,8 @@ const customerDemands = [
   {id:5, level:1, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。", satisfy:[6,4,12]},
   {id:6, level:1, demand:"我要一瓶基础魔力药水，蓝史莱姆粘液那种！", satisfy:[2,10,12]},
   {id:7, level:1, demand:"我现在只想快速回血，其他都不重要！", satisfy:[1,9,12]},
+
+  // 2级商店
   {id:8, level:2, demand:"我希望我能变得更加坚硬！皮再厚一点就好了。", satisfy:[6,4,12]},
   {id:9, level:2, demand:"我想要能够增强我实力的药水，越猛越好！", satisfy:[5,6,7,11,12]},
   {id:10, level:2, demand:"地牢里太黑了，有没有能让我看清路的药水？", satisfy:[8,12]},
@@ -154,12 +108,16 @@ const customerDemands = [
   {id:13, level:2, demand:"石巨人碎屑加水，能不能让我更耐打？", satisfy:[6,4]},
   {id:14, level:2, demand:"蝙蝠翅膜加水的药水，我要夜视能力！", satisfy:[8]},
   {id:15, level:2, demand:"幽灵残片加水的药水，能不能让我不怕精神攻击？", satisfy:[7,12]},
+
+  // 3级商店
   {id:16, level:3, demand:"给我来点红史莱姆粘液加小枯骨的组合，效果要强一点的！", satisfy:[9,12]},
   {id:17, level:3, demand:"我想让武器带点毒，下次打哥布林轻松点，有那种药吗？", satisfy:[11,12]},
   {id:18, level:3, demand:"我魔力跟体力都没了，来瓶能一起补的！", satisfy:[10,12]},
   {id:19, level:3, demand:"快！我要最强的治疗药水，红史莱姆粘液加小枯骨那种！", satisfy:[9,12]},
   {id:20, level:3, demand:"蜘蛛毒腺加狼牙再加酒，我要毒刃效果的！", satisfy:[11]},
   {id:21, level:3, demand:"绿史莱姆粘液加蓝史莱姆粘液，再加点酒，效果要猛！", satisfy:[10]},
+
+  // 4级商店
   {id:22, level:4, demand:"下一个boss会喷火，我需要能抗火又能反击的药水！", satisfy:[13,6,12]},
   {id:23, level:4, demand:"我速度太慢了，有没有能让我像闪电一样快的药？", satisfy:[14,5]},
   {id:24, level:4, demand:"我伤口一直不愈合，需要强力再生的药水！", satisfy:[15,9]},
@@ -169,6 +127,8 @@ const customerDemands = [
   {id:28, level:4, demand:"蘑菇孢子加绿史莱姆粘液，我要一直回血！", satisfy:[15]},
   {id:29, level:4, demand:"影魔残影加蝙蝠翅膜，我要隐身闪避！", satisfy:[16]},
   {id:30, level:4, demand:"我需要一瓶既能打又能防的全面强化药水！", satisfy:[13,14,12]},
+
+  // 5级商店
   {id:31, level:5, demand:"魔力快耗尽了，我要最强的魔力药水！", satisfy:[17,10]},
   {id:32, level:5, demand:"我快死了，但还想再战！有没有不死的药？", satisfy:[18,19]},
   {id:33, level:5, demand:"给我能起死回生的药水，凤凰那种！", satisfy:[19,9]},
@@ -193,46 +153,6 @@ const materialPrices = {
   5: 45, 6: 48, 7: 42, 8: 50, 9: 55, 13: 60, 14: 62, 15: 58,
   10: 95, 16: 110, 17: 120, 18: 115,
   19: 280, 20: 320
-};
-
-// ==================== DOT侵蚀技能系统（实时演算核心） ====================
-window.characterSkills = {
-  14: { // 永恒时女·克罗诺（UR）
-    active: [
-      {id:1, name:"时之加速·克罗诺斯", cost:3, type:"teamBuff", effect:"chronoAccel", desc:"全队「时之加速」3回合，所有侵蚀额外触发1次 + 全队速度+25%"},
-      {id:2, name:"命运蚀刻", cost:2, type:"enemyDebuff", effect:"chronoErosion", desc:"全体敌人「时之侵蚀」5回合 + 攻速/移速-30%（4回合）"}
-    ],
-    passive: ["timeBlessing", "eternalExtend"]
-  },
-  15: { // 元素起源·埃尔温（UR 强袭）
-    active: [
-      {id:1, name:"起源崩解", cost:3, type:"singleDamage", effect:"sourceErosionStack", desc:"主目标高额伤害 + 叠加4层「源素侵蚀」"},
-      {id:2, name:"元素灭世潮", cost:3, type:"aoeDamage", effect:"sourceErosionAoe", desc:"全体伤害 + 每个敌人2层源素侵蚀 + 1层随机其他侵蚀"}
-    ],
-    passive: ["multiErosion", "originRebound"]
-  },
-  9: { // 星辰魔导师·塞尔维亚（SSR）
-    active: [
-      {id:1, name:"星辰腐朽咒", cost:2, type:"enemyDebuff", effect:"starErosion", desc:"全体「星辰侵蚀」4回合 + 全体防御-15%（3回合）"},
-      {id:2, name:"星芒增幅", cost:2, type:"teamBuff", effect:"starAmplify", desc:"本回合所有侵蚀伤害+40% + 全队「星辰护盾」2回合"}
-    ],
-    passive: ["starChain"]
-  },
-  11: { // 圣辉骑士王·加兰（SSR）
-    active: [
-      {id:1, name:"圣辉壁垒", cost:2, type:"teamBuff", effect:"holyShield", desc:"全队护盾（DEF×200%）+ 自身「圣辉反伤」3回合"},
-      {id:2, name:"审判烈焰斩", cost:2, type:"singleDamage", effect:"holyErosion", desc:"前排伤害 + 「圣辉侵蚀」4回合 + 强制嘲讽2回合"}
-    ],
-    passive: ["holyPunishment", "holyTeamBoost"]
-  }
-};
-
-// 侵蚀类型映射（统一「侵蚀」体系）
-window.erosionTypes = {
-  chrono: { name: "时之侵蚀", color: "#a855f7", icon: "⏳" },
-  source: { name: "源素侵蚀", color: "#22d3ee", icon: "🌊" },
-  star:   { name: "星辰侵蚀", color: "#eab308", icon: "⭐" },
-  holy:   { name: "圣辉侵蚀", color: "#ec4899", icon: "☀️" }
 };
 
 window.characterPool = characterPool;

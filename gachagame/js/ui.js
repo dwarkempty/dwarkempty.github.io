@@ -551,35 +551,46 @@ function resetGame() {
   }
 }
 
-// ==================== 角色仓库 - 详细描述界面 ====================
 function showCharacterLore(index) {
   const item = player.owned[index];
   const char = window.getCharacterData(item.charId);
+  if (!char) return;
+
+  // 使用角色自带的 lore（数据驱动，未来扩展超方便）
+  const storyText = char.lore || '这位冒险者有着神秘的过去，目前暂无详细记载……';
 
   const loreHTML = `
-    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100000]">
-      <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full mx-4 p-8">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-3xl font-bold">${char.name} 详细描述</h3>
-          <button onclick="window.closeCharacterLore()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
-        </div>
+    <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4">
+      <div class="bg-zinc-900 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden border-4 border-orange-500 shadow-2xl">
         
-        <div class="prose prose-invert max-w-none">
-          <h4 class="text-orange-400 text-xl mb-2">人物背景</h4>
-          <p class="text-gray-200 leading-relaxed">${char.description || '这位冒险者有着神秘的过去，目前暂无详细记载……'}</p>
-          
-          <h4 class="text-orange-400 text-xl mt-8 mb-2">技能描述</h4>
-          <div class="bg-zinc-800 rounded-2xl p-6 text-gray-300">
-            <p>（技能描述暂未实装，留空待后续扩展）</p>
-            <p class="mt-4 text-sm text-gray-400">未来可在此处展示该角色的主动技能、被动技能等详细说明。</p>
+        <!-- 标题栏 -->
+        <div class="flex justify-between items-center px-8 py-5 border-b border-zinc-700">
+          <div>
+            <h3 class="text-3xl font-bold text-orange-400">${char.name}</h3>
+            <p class="text-sm text-gray-400 mt-1">详细人物背景 · 强袭</p>
           </div>
+          <button onclick="window.closeCharacterLore()" 
+                  class="text-4xl leading-none text-gray-400 hover:text-white transition-colors">×</button>
         </div>
         
-        <div class="text-center mt-8">
-          <button onclick="window.closeCharacterLore()" class="px-8 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭</button>
+        <!-- 故事内容（支持超长文本，带滚动） -->
+        <div class="flex-1 p-8 overflow-auto text-gray-200 leading-relaxed text-[17px] prose prose-invert max-w-none">
+          ${storyText.replace(/\n/g, '<br>')}
+        </div>
+        
+        <!-- 底部关闭栏 -->
+        <div class="px-8 py-5 border-t border-zinc-700 text-center">
+          <button onclick="window.closeCharacterLore()" 
+                  class="px-10 py-4 bg-orange-600 hover:bg-orange-700 rounded-2xl text-lg font-bold transition-all">
+            关闭详细描述
+          </button>
         </div>
       </div>
     </div>`;
+
+  // 移除旧弹窗（防止重复）
+  const oldModal = document.getElementById("characterLoreModal");
+  if (oldModal) oldModal.remove();
 
   const div = document.createElement("div");
   div.id = "characterLoreModal";

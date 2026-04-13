@@ -14,7 +14,10 @@ const characterPool = [
   {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
   {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
   {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg"},
-  {id:15, name:"元素起源·埃尔温", enName:"Element Origin · Elwin", rarity:"UR", baseHP:205, baseATK:160, baseDEF:92, category:"辅助", image:"images/Elwin_Illustration.jpg"}
+  {id:15, name:"绚明者·阿特亚", enName:"Radiant Illuminator · Atya", rarity:"UR", 
+   baseHP:195, baseATK:175, baseDEF:75, category:"强袭", 
+   image:"images/Atya_Illustration.png", 
+   animatedImage:"images/Atya_Dynamic.mp4"}   // ← 动态视频（带声音）
 ];
 
 const weaponPool = [

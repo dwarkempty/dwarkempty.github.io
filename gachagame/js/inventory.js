@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统（已彻底修复详细描述技能显示）
+// js/inventory.js - 仓库渲染 + 养成系统
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -156,6 +156,7 @@ function showCharacterDetail(index) {
           <button onclick="window.equipWeapon()" class="w-full bg-teal-600 hover:bg-teal-700 py-4 rounded-2xl text-xl font-bold btn-hover">更换/装备武器</button>
         </div>
 
+        <!-- 新增：可点击的“详细描述”按钮 -->
         <div class="mt-4 border-4 border-orange-500 rounded-3xl p-5 bg-gray-950">
           <button onclick="window.showCharacterLore(${index})" 
                   class="w-full py-4 text-xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 rounded-2xl btn-hover flex items-center justify-center gap-2">
@@ -221,8 +222,6 @@ function showCharacterLore(index) {
   const item = player.owned[index];
   const char = window.getCharacterData(item.charId);
 
-  const skillHTML = char.skillDesc;
-
   const loreHTML = `
     <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100000]">
       <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full mx-4 p-8 overflow-auto max-h-[90vh]">
@@ -237,12 +236,13 @@ function showCharacterLore(index) {
           
           <h4 class="text-orange-400 text-xl mt-10 mb-3">技能描述</h4>
           <div class="bg-zinc-800 rounded-3xl p-6 text-gray-300">
-            ${skillHTML}
+            <p class="text-base">（技能描述暂未实装）</p>
+            <p class="mt-6 text-sm text-gray-400">未来可在此处展示该角色的主动技能、被动技能、专属故事等详细内容。</p>
           </div>
         </div>
         
         <div class="text-center mt-10">
-          <button onclick="window.closeCharacterLore()" class="px-10 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭窗口</button>
+          <button onclick="window.closeCharacterLore()" class="px-10 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-3xl text-lg font-bold">关闭窗口</button>
         </div>
       </div>
     </div>`;

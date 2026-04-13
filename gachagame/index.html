@@ -299,62 +299,6 @@
     </div>
   </div>
 
-  <!-- ==================== 战斗系统 Modal ==================== -->
-  <!-- 战斗入口 Modal -->
-  <div id="battleStartModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[11000]">
-    <div class="bg-zinc-900 rounded-3xl max-w-5xl w-full mx-4 overflow-hidden border-4 border-orange-500">
-      <div class="px-8 py-6 border-b border-zinc-700 flex justify-between items-center">
-        <h2 class="text-3xl font-bold flex items-center gap-3"><i class="fas fa-swords"></i> 战斗准备</h2>
-        <button onclick="window.hideBattleStartModal()" class="text-4xl text-gray-400 hover:text-white">×</button>
-      </div>
-      <div class="p-8">
-        <div class="flex justify-between items-center mb-6">
-          <div class="text-xl">选择上场角色（最多 4 名，同名只能上 1 次）</div>
-          <div id="teamEnergyPreview" class="flex items-center gap-2 bg-zinc-800 px-6 py-2 rounded-2xl">
-            <span class="text-emerald-400 text-2xl">⚡</span>
-            <span id="previewEnergy" class="text-3xl font-bold">4 / 6</span>
-          </div>
-        </div>
-        <div id="teamSelectionGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[420px] overflow-auto"></div>
-      </div>
-      <div class="px-8 py-6 border-t border-zinc-700 flex gap-4">
-        <button onclick="window.hideBattleStartModal()" class="flex-1 py-5 text-xl font-bold bg-zinc-700 hover:bg-zinc-600 rounded-3xl">取消</button>
-        <button onclick="window.startBattle()" id="startBattleBtn" class="flex-1 py-5 text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 hover:brightness-110 rounded-3xl disabled:opacity-50">开始战斗</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 战斗主界面 Modal -->
-  <div id="battleModal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[12000]">
-    <div class="bg-zinc-900 rounded-3xl w-full max-w-7xl mx-4 h-[95vh] flex flex-col overflow-hidden border-4 border-orange-500">
-      <div class="px-8 py-4 border-b border-zinc-700 flex justify-between items-center">
-        <div class="flex items-center gap-4">
-          <span class="text-2xl">回合 <span id="turnNumber" class="font-bold text-emerald-400">1</span></span>
-          <div class="flex items-center gap-2 bg-zinc-800 px-6 py-2 rounded-2xl">
-            <span class="text-yellow-400 text-3xl">⚡</span>
-            <span id="battleEnergy" class="text-3xl font-bold">4 / 6</span>
-          </div>
-        </div>
-        <button onclick="window.endBattle()" class="px-8 py-3 bg-red-600 hover:bg-red-700 rounded-2xl text-lg font-bold">退出战斗</button>
-      </div>
-      <div class="flex-1 p-8 flex flex-col">
-        <div class="text-center text-xl text-red-400 mb-4">敌方</div>
-        <div id="enemyArea" class="flex justify-center gap-6"></div>
-      </div>
-      <div class="h-px bg-gradient-to-r from-transparent via-orange-400 to-transparent"></div>
-      <div class="p-8">
-        <div class="text-center text-xl text-emerald-400 mb-4">我方队伍</div>
-        <div id="playerTeamArea" class="grid grid-cols-4 gap-6"></div>
-        <div class="mt-10 flex gap-4 justify-center" id="actionBar"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 战斗中角色详情 Modal -->
-  <div id="battleCharDetailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[13000]">
-    <div id="battleModalInner" class="modal-content bg-gray-900 rounded-3xl max-w-4xl w-full mx-4 overflow-hidden border-4 border-orange-500"></div>
-  </div>
-
   <!-- 开发者控制台 Modal -->
   <div id="consoleModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[99999]">
     <div class="bg-zinc-900 rounded-3xl w-full max-w-2xl mx-4 p-8">
@@ -395,6 +339,5 @@
   <script src="js/ui.js"></script>
   <script src="js/album.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/battle.js"></script>
 </body>
 </html>

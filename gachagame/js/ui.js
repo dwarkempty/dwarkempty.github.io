@@ -556,39 +556,53 @@ function showCharacterLore(index) {
   const char = window.getCharacterData(item.charId);
   if (!char) return;
 
-  // 使用角色自带的 lore（数据驱动，未来扩展超方便）
   const storyText = char.lore || '这位冒险者有着神秘的过去，目前暂无详细记载……';
+  const skillText = char.skills || '（技能暂未实装，敬请期待）';
 
   const loreHTML = `
     <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4">
-      <div class="bg-zinc-900 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden border-4 border-orange-500 shadow-2xl">
+      <div class="bg-zinc-900 rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col overflow-hidden border-4 border-orange-500 shadow-2xl">
         
         <!-- 标题栏 -->
         <div class="flex justify-between items-center px-8 py-5 border-b border-zinc-700">
           <div>
             <h3 class="text-3xl font-bold text-orange-400">${char.name}</h3>
-            <p class="text-sm text-gray-400 mt-1">详细人物背景</p>
+            <p class="text-sm text-gray-400 mt-1">详细描述 · ${char.category || '未知'}</p>
           </div>
-          <button onclick="window.closeCharacterLore()" 
-                  class="text-4xl leading-none text-gray-400 hover:text-white transition-colors">×</button>
+          <button onclick="window.closeCharacterLore()" class="text-4xl leading-none text-gray-400 hover:text-white transition-colors">×</button>
         </div>
         
-        <!-- 故事内容（支持超长文本，带滚动） -->
-        <div class="flex-1 p-8 overflow-auto text-gray-200 leading-relaxed text-[17px] prose prose-invert max-w-none">
-          ${storyText.replace(/\n/g, '<br>')}
+        <div class="flex-1 overflow-auto">
+          <!-- 人物背景 -->
+          <div class="p-8 border-b border-zinc-700">
+            <h4 class="text-orange-400 text-2xl font-bold mb-4 flex items-center gap-2">
+              <span>📜</span> 人物背景
+            </h4>
+            <div class="text-gray-200 leading-relaxed text-[17px] prose prose-invert max-w-none">
+              ${storyText.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+          
+          <!-- 新增：技能描述 -->
+          <div class="p-8">
+            <h4 class="text-orange-400 text-2xl font-bold mb-4 flex items-center gap-2">
+              <span>⚔️</span> 技能描述
+            </h4>
+            <div class="text-gray-200 leading-relaxed text-[17px] prose prose-invert max-w-none bg-zinc-800 rounded-2xl p-6">
+              ${skillText.replace(/\n/g, '<br>')}
+            </div>
+          </div>
         </div>
         
-        <!-- 底部关闭栏 -->
+        <!-- 底部 -->
         <div class="px-8 py-5 border-t border-zinc-700 text-center">
-          <button onclick="window.closeCharacterLore()" 
-                  class="px-10 py-4 bg-orange-600 hover:bg-orange-700 rounded-2xl text-lg font-bold transition-all">
-            关闭详细描述
+          <button onclick="window.closeCharacterLore()" class="px-12 py-4 bg-orange-600 hover:bg-orange-700 rounded-2xl text-lg font-bold transition-all">
+            关闭
           </button>
         </div>
       </div>
     </div>`;
 
-  // 移除旧弹窗（防止重复）
   const oldModal = document.getElementById("characterLoreModal");
   if (oldModal) oldModal.remove();
 

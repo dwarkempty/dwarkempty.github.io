@@ -7,23 +7,30 @@ function showDrawAnimation(results, poolType) {
   modal.classList.remove("hidden");
   title.textContent = poolType === "char" ? (results.length === 1 ? "🎉 单抽角色" : "🎉 十连角色") : (results.length === 1 ? "🎉 单抽武器" : "🎉 十连武器");
 
-  const atyaResult = results.find(r => r.id === 15);
+  // ==================== 通用动态视频检测（性能+拓展性优化） ====================
+  let dynamicItem = null;
+  if (poolType === "char") {
+    dynamicItem = results.find(item => {
+      const data = window.getCharacterData(item.id);
+      return data && data.animatedImage;   // 只要有 animatedImage 字段就触发
+    });
+  }
 
-  if (atyaResult && poolType === "char") {
-    // ==================== 加强版全屏动态视频（带声音 + 点击跳过 + 错误处理） ====================
+  if (dynamicItem) {
+    const charData = window.getCharacterData(dynamicItem.id);
     const videoContainer = document.createElement("div");
     videoContainer.className = "fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[99999] cursor-pointer";
-    videoContainer.style.zIndex = "99999";   // 最高层级，确保覆盖一切
+    videoContainer.style.zIndex = "99999";
 
     videoContainer.innerHTML = `
       <div class="text-center mb-6 px-4">
-        <div class="text-5xl font-bold text-orange-400 drop-shadow-lg">🎉 UR 绚明者·阿特亚 降临！</div>
+        <div class="text-5xl font-bold text-orange-400 drop-shadow-lg">🎉 UR ${charData.name} 降临！</div>
         <div class="text-xl text-gray-200 mt-3">点击屏幕任意位置跳过动画</div>
       </div>
       
-      <video id="atyaVideo" class="w-screen h-screen object-contain" 
-             autoplay loop playsinline preload="auto" controls="false">
-        <source src="images/Atya_Dynamic.mp4" type="video/mp4">
+      <video id="dynamicDrawVideo" class="w-screen h-screen object-contain" 
+             autoplay loop playsinline preload="auto" muted="false">
+        <source src="${charData.animatedImage}" type="video/mp4">
       </video>
       
       <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-gray-400 bg-black/50 px-6 py-2 rounded-3xl">
@@ -32,26 +39,23 @@ function showDrawAnimation(results, poolType) {
     `;
     document.body.appendChild(videoContainer);
 
-    const videoEl = document.getElementById("atyaVideo");
+    const videoEl = document.getElementById("dynamicDrawVideo");
     videoEl.volume = 0.75;
 
-    // 错误处理：如果视频加载失败，显示提示
+    // 错误处理
     videoEl.onerror = () => {
       videoContainer.innerHTML += `
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md">
           <div class="text-2xl mb-3">❌ 视频加载失败</div>
-          <div class="text-sm">可能原因：<br>
-            1. 文件路径错误<br>
-            2. 使用 file:// 直接打开（请用 Live Server）<br>
-            3. MP4 编码不兼容（建议转 WebM）</div>
+          <div class="text-sm">请确认文件路径正确且使用本地服务器运行</div>
           <button onclick="this.closest('.fixed').remove()" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">关闭</button>
         </div>`;
-      console.error("阿特亚视频加载失败，src:", videoEl.src);
+      console.error("动态立绘加载失败:", charData.animatedImage);
     };
 
-    // 点击任意位置跳过
+    // 点击跳过
     videoContainer.onclick = (e) => {
-      if (e.target.tagName === "VIDEO") return; // 点击视频本身不跳过
+      if (e.target.tagName === "VIDEO") return;
       videoEl.pause();
       videoContainer.remove();
       renderNormalDrawCards(results, poolType, container);
@@ -62,11 +66,12 @@ function showDrawAnimation(results, poolType) {
       renderNormalDrawCards(results, poolType, container);
     };
   } else {
+    // 普通抽卡
     renderNormalDrawCards(results, poolType, container);
   }
 }
 
-// 普通抽卡结果渲染函数（保持不变）
+// 普通抽卡卡片渲染（复用，保持不变）
 function renderNormalDrawCards(results, poolType, container) {
   results.forEach((item, i) => {
     const delay = results.length === 1 ? 0 : i * 80;

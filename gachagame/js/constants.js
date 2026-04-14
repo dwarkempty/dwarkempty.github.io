@@ -141,7 +141,6 @@ Aeltris：物质——力量——【源环之光】
    skills: `由于此角色出版技能过于超模。正在重做中！`
   }
 ];
-];
 
 const weaponPool = [
   {id:1, name:"森林魔杖", enName:"Forest Wand", rarity:"R", type:"权杖", image:"images/ForestWand.jpg", baseHP:40, baseATK:25, baseDEF:15, baseCritRate:0.02, baseCritDamage:0.15},

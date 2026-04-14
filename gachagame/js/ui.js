@@ -222,6 +222,7 @@ function executeConsoleCommand() {
     window.saveGame();
     if (document.getElementById("panel4") && !document.getElementById("panel4").classList.contains("hidden")) window.renderShopInfo();
   } 
+
   else if (cmd === "give" && parts[1] === "allmaterials") {
     let amount = parseInt(parts[2]) || 20;
     window.materialsPool.forEach(mat => {
@@ -232,10 +233,12 @@ function executeConsoleCommand() {
     window.renderInventory();
     if (document.getElementById("panel4") && !document.getElementById("panel4").classList.contains("hidden")) window.renderShopInfo();
   } 
+
   else if (cmd === "give" && parts[1] === "allcharacters") {
     const level = parseInt(parts[2]) || 1;
     const stars = parseInt(parts[3]) || 0;
-    for (let i = 1; i <= 15; i++) {
+    const maxId = window.characterPool.length;   // 自动支持所有角色（包括阿特亚和希罗·玛利亚）
+    for (let i = 1; i <= maxId; i++) {
       player.owned.push({
         id: Date.now() + i,
         charId: i,
@@ -244,14 +247,16 @@ function executeConsoleCommand() {
         equippedWeapon: null
       });
     }
-    log.innerHTML += `✅ 已获得全部15个角色（等级${level}，星级${stars}）<br>`;
+    log.innerHTML += `✅ 已获得全部 ${maxId} 个角色（等级${level}，星级${stars}）<br>`;
     window.saveGame();
     window.renderInventory();
   } 
+
   else if (cmd === "give" && parts[1] === "allweapons") {
     const level = parseInt(parts[2]) || 1;
     const stars = parseInt(parts[3]) || 0;
-    for (let i = 1; i <= 15; i++) {
+    const maxId = window.weaponPool.length;
+    for (let i = 1; i <= maxId; i++) {
       player.weapons.push({
         id: Date.now() + i,
         weaponId: i,
@@ -259,10 +264,11 @@ function executeConsoleCommand() {
         stars: Math.min(stars, 5)
       });
     }
-    log.innerHTML += `✅ 已获得全部15个武器（等级${level}，星级${stars}）<br>`;
+    log.innerHTML += `✅ 已获得全部 ${maxId} 个武器（等级${level}，星级${stars}）<br>`;
     window.saveGame();
     window.renderInventory();
   } 
+
   else if (cmd === "give") {
     const id = parseInt(parts[1]);
     let amount = parseInt(parts[2]) || 1;
@@ -279,16 +285,27 @@ function executeConsoleCommand() {
       player.reinforceStone += amount;
       document.getElementById("reinforceStone").textContent = player.reinforceStone;
       log.innerHTML += `✅ 已获得 ${amount} 个强化石<br>`;
-    } else if (id >= 1 && id <= 15) {
+    } else if (id >= 1 && id <= window.characterPool.length) {
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
-      player.owned.push({ id: Date.now(), charId: id, level: Math.min(level, 100), stars: Math.min(stars, 5), equippedWeapon: null });
+      player.owned.push({ 
+        id: Date.now(), 
+        charId: id, 
+        level: Math.min(level, 100), 
+        stars: Math.min(stars, 5), 
+        equippedWeapon: null 
+      });
       log.innerHTML += `✅ 已获得角色 ${window.getCharacterData(id).name} Lv.${level} ★${stars}<br>`;
-    } else if (id >= 100 && id <= 114) {
+    } else if (id >= 100 && id <= 100 + window.weaponPool.length) {
       const weaponRealId = id - 99;
       const level = parseInt(parts[2]) || 1;
       const stars = parseInt(parts[3]) || 0;
-      player.weapons.push({ id: Date.now(), weaponId: weaponRealId, level: Math.min(level, 100), stars: Math.min(stars, 5) });
+      player.weapons.push({ 
+        id: Date.now(), 
+        weaponId: weaponRealId, 
+        level: Math.min(level, 100), 
+        stars: Math.min(stars, 5) 
+      });
       log.innerHTML += `✅ 已获得武器 ${window.getWeaponData(weaponRealId).name} Lv.${level} ★${stars}<br>`;
     } else if (id >= 201 && id <= 220) {
       const mat = window.materialsPool.find(m => m.id === id - 200);
@@ -305,6 +322,7 @@ function executeConsoleCommand() {
   } else {
     log.innerHTML += `未知命令<br>`;
   }
+
   document.getElementById("consoleInput").value = "";
   log.scrollTop = log.scrollHeight;
 }

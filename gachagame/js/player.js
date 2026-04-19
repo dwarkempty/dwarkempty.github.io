@@ -81,40 +81,52 @@ function getWeaponData(weaponId) {
 }
 
 function calculateStats(item, charData, equippedWeapon = null) {
-  const levelMult = Math.pow(1.048, item.level);     // Lv.100 ≈ 110倍
-  const starMult = 1 + item.stars * 0.38;            // 5星 = 2.9倍
+  const X = item.level;      // 等级
+  const Y = item.stars;      // 星级
 
-  let hp = Math.floor(charData.baseHP * levelMult * starMult);
-  let atk = Math.floor(charData.baseATK * levelMult * starMult);
-  let def = Math.floor(charData.baseDEF * levelMult * starMult);
+  // ==================== 你指定的公式（角色） ====================
+  let hp  = Math.floor(charData.baseHP  * Math.pow(1.025, X) + 700 * Y);
+  let atk = Math.floor(charData.baseATK * Math.pow(1.02,  X) + 500 * Y);
+  let def = Math.floor(charData.baseDEF * Math.pow(1.015, X) + 400 * Y);
+
+  let spd = Math.floor(charData.baseSPD * (1 + 0.15 * Y));
+
   let critRate = 0.05;
   let critDamage = 0.5;
 
-  let spd = Math.floor(charData.baseSPD * (1 + item.stars * 0.12));
-
   if (equippedWeapon) {
     const wpData = getWeaponData(equippedWeapon.weaponId);
-    const wLevelMult = Math.pow(1.048, equippedWeapon.level);
-    const wStarMult = 1 + equippedWeapon.stars * 0.38;
-    hp += Math.floor(wpData.baseHP * wLevelMult * wStarMult);
-    atk += Math.floor(wpData.baseATK * wLevelMult * wStarMult);
-    def += Math.floor(wpData.baseDEF * wLevelMult * wStarMult);
-    critRate += wpData.baseCritRate * wStarMult;
-    critDamage += wpData.baseCritDamage * wStarMult;
+    const wX = equippedWeapon.level;
+    const wY = equippedWeapon.stars;
+
+    hp  += Math.floor(wpData.baseHP  * Math.pow(1.025, wX) + 700 * wY);
+    atk += Math.floor(wpData.baseATK * Math.pow(1.02,  wX) + 500 * wY);
+    def += Math.floor(wpData.baseDEF * Math.pow(1.015, wX) + 400 * wY);
     // 武器不影响速度
+    critRate += wpData.baseCritRate * (1 + wY * 0.38);
+    critDamage += wpData.baseCritDamage * (1 + wY * 0.38);
   }
-  return { hp, atk, def, critRate: Math.min(critRate, 1), critDamage, spd };
+
+  return { 
+    hp, 
+    atk, 
+    def, 
+    critRate: Math.min(critRate, 1), 
+    critDamage, 
+    spd 
+  };
 }
 
 function calculateWeaponStats(item, weaponData) {
-  const levelMult = Math.pow(1.048, item.level);
-  const starMult = 1 + item.stars * 0.38;
+  const X = item.level;
+  const Y = item.stars;
+
   return {
-    hp: Math.floor(weaponData.baseHP * levelMult * starMult),
-    atk: Math.floor(weaponData.baseATK * levelMult * starMult),
-    def: Math.floor(weaponData.baseDEF * levelMult * starMult),
-    critRate: weaponData.baseCritRate * starMult,
-    critDamage: weaponData.baseCritDamage * starMult
+    hp:  Math.floor(weaponData.baseHP  * Math.pow(1.025, X) + 700 * Y),
+    atk: Math.floor(weaponData.baseATK * Math.pow(1.02,  X) + 500 * Y),
+    def: Math.floor(weaponData.baseDEF * Math.pow(1.015, X) + 400 * Y),
+    critRate: weaponData.baseCritRate * (1 + Y * 0.38),
+    critDamage: weaponData.baseCritDamage * (1 + Y * 0.38)
   };
 }
 

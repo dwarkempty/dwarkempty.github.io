@@ -1,4 +1,4 @@
-// js/album.js - 图鉴系统（已新增世界观详解Tab）
+// js/album.js - 图鉴系统（已修复长文本description问题 + 世界观详解）
 let currentAlbumTab = 0; // 0=角色 1=武器 2=世界观
 
 function setAlbumTab(n) {
@@ -12,7 +12,6 @@ function renderAlbum() {
   grid.innerHTML = "";
 
   if (currentAlbumTab === 0) {
-    // 角色图鉴（原有逻辑）
     window.characterPool.forEach(char => {
       const owned = player.unlockedChars.includes(char.id);
       const count = player.owned.filter(o => o.charId === char.id).length;
@@ -33,7 +32,6 @@ function renderAlbum() {
       grid.appendChild(div);
     });
   } else if (currentAlbumTab === 1) {
-    // 武器图鉴（原有逻辑）
     window.weaponPool.forEach(weapon => {
       const owned = player.unlockedWeapons.includes(weapon.id);
       const count = player.weapons.filter(w => w.weaponId === weapon.id).length;
@@ -54,7 +52,7 @@ function renderAlbum() {
       grid.appendChild(div);
     });
   } else if (currentAlbumTab === 2) {
-    // ==================== 新增：世界观详解 ====================
+    // ==================== 世界观详解 ====================
     window.worldviewPool.forEach(item => {
       const div = document.createElement("div");
       div.className = `relative bg-zinc-900 rounded-3xl p-4 cursor-pointer border-4 border-purple-500 hover:border-violet-400 transition-all`;
@@ -66,39 +64,39 @@ function renderAlbum() {
           <div class="text-base font-bold text-purple-300">${item.name}</div>
         </div>
       `;
-      div.onclick = () => window.showWorldLore(item);
+      // 只传递 id，彻底解决长文本问题
+      div.onclick = () => window.showWorldLore(item.id);
       grid.appendChild(div);
     });
   }
 }
 
-// ==================== 新增：世界观详情Modal（先显示大图 → 点击查看解释） ====================
-function showWorldLore(item) {
+// ==================== 世界观大图Modal ====================
+function showWorldLore(id) {
+  const item = window.worldviewPool.find(w => w.id === id);
+  if (!item) return;
+
   const modalHTML = `
     <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4">
       <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border-4 border-purple-500">
-        
-        <!-- 标题栏 -->
         <div class="flex justify-between items-center px-8 py-5 border-b border-zinc-700">
           <h3 class="text-3xl font-bold text-purple-400">${item.name}</h3>
           <button onclick="window.closeWorldLore()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
         </div>
         
-        <!-- 大图区域 -->
         <div class="p-8 flex-1 flex items-center justify-center bg-black/30">
           <img src="${item.image}" class="max-h-[420px] max-w-full rounded-3xl shadow-2xl" loading="lazy">
         </div>
         
-        <!-- 查看解释按钮 -->
         <div class="px-8 py-6 border-t border-zinc-700 text-center">
-          <button onclick="window.showWorldDescription('${item.name}', '${item.description.replace(/'/g, "\\'")}')" 
+          <button onclick="window.showWorldDescription(${item.id})" 
                   class="w-full py-5 text-xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 rounded-3xl transition-all">
             查看详细解释
           </button>
         </div>
       </div>
     </div>`;
-  
+
   const old = document.getElementById("worldLoreModal");
   if (old) old.remove();
   
@@ -108,20 +106,23 @@ function showWorldLore(item) {
   document.body.appendChild(div);
 }
 
-window.showWorldDescription = function(name, desc) {
-  // 切换为详细解释页面（复用同一个Modal）
+// ==================== 详细解释页面（支持任意长文本） ====================
+window.showWorldDescription = function(id) {
+  const item = window.worldviewPool.find(w => w.id === id);
+  if (!item) return;
+
   const modal = document.getElementById("worldLoreModal");
   if (!modal) return;
-  
+
   modal.innerHTML = `
     <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4">
       <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border-4 border-purple-500">
         <div class="flex justify-between items-center px-8 py-5 border-b border-zinc-700">
-          <h3 class="text-3xl font-bold text-purple-400">${name}</h3>
+          <h3 class="text-3xl font-bold text-purple-400">${item.name}</h3>
           <button onclick="window.closeWorldLore()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
         </div>
         <div class="flex-1 p-8 overflow-auto text-gray-200 leading-relaxed text-[17px] prose prose-invert">
-          ${desc.replace(/\n/g, '<br>')}
+          ${item.description.replace(/\n/g, '<br>')}
         </div>
         <div class="px-8 py-5 border-t border-zinc-700 text-center">
           <button onclick="window.closeWorldLore()" class="px-12 py-4 bg-purple-600 hover:bg-purple-700 rounded-2xl text-lg font-bold">关闭</button>

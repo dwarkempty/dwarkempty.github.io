@@ -147,9 +147,16 @@
   <div id="panel3" class="panel hidden max-w-7xl mx-auto px-4">
     <div class="flex justify-between items-center mt-8 mb-6">
       <h2 class="text-3xl font-bold">📖 冒险图鉴</h2>
-      <div class="flex gap-4">
-        <button onclick="setAlbumTab(0)" id="albumTab0" class="album-tab active px-6 py-2 bg-zinc-900 rounded-3xl">🧙 角色图鉴</button>
-        <button onclick="setAlbumTab(1)" id="albumTab1" class="album-tab px-6 py-2 bg-zinc-900 rounded-3xl">⚔️ 武器图鉴</button>
+      <div class="flex gap-2 mb-6 overflow-x-auto pb-2 album-tabs">
+        <button onclick="setAlbumTab(0)" class="album-tab active flex-1 py-3 px-6 rounded-3xl font-bold text-lg flex items-center justify-center gap-2">
+          🧙 角色图鉴
+        </button>
+        <button onclick="setAlbumTab(1)" class="album-tab flex-1 py-3 px-6 rounded-3xl font-bold text-lg flex items-center justify-center gap-2">
+          ⚔️ 武器图鉴
+        </button>
+        <button onclick="setAlbumTab(2)" class="album-tab flex-1 py-3 px-6 rounded-3xl font-bold text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-violet-500 text-white">
+          🌍 世界观详解
+        </button>
       </div>
     </div>
     <div id="albumGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>

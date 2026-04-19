@@ -1,23 +1,20 @@
 // js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
-  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:125, baseATK:72, baseDEF:48, category:"强袭", image:"images/Allen_Illustration.jpg"},
-  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:108, baseATK:88, baseDEF:38, category:"辅助", image:"images/Sally_Illustration.jpg"},
-  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:145, baseATK:62, baseDEF:72, category:"近卫", image:"images/Buck_Illustration.jpg"},
-  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:115, baseATK:82, baseDEF:45, category:"辅助", image:"images/Lily_Illustration.jpg"},
-  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:158, baseATK:98, baseDEF:52, category:"强袭", image:"images/Kael_Illustration.jpg"},
-  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:132, baseATK:105, baseDEF:48, category:"辅助", image:"images/Mia_Illustration.jpg"},
-  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:165, baseATK:90, baseDEF:58, category:"强袭", image:"images/Sorey_Illustration.jpg"},
-  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:128, baseATK:118, baseDEF:50, category:"强袭", image:"images/Shadowblade_Illustration.jpg"},
-  {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:185, baseATK:82, baseDEF:78, category:"辅助", image:"images/Sylvia_Illustration.jpg"},
-  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:172, baseATK:95, baseDEF:65, category:"强袭", image:"images/Alesha_Illustration.jpg"},
-  {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:198, baseATK:88, baseDEF:85, category:"近卫", image:"images/Galan_Illustration.jpg"},
-  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:175, baseATK:110, baseDEF:70, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
-  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:230, baseATK:145, baseDEF:95, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
-  {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:210, baseATK:155, baseDEF:88, category:"辅助", image:"images/Chrono_Illustration.jpg"},
-  {id:15, name:"绚明者·阿特亚", enName:"Radiant Illuminator · Atya", rarity:"UR", 
-   baseHP:195, baseATK:175, baseDEF:75, category:"强袭", 
-   image:"images/Atya_Illustration.png", 
-   animatedImage:"images/Atya_Dynamic.mp4",
+  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:380, baseATK:220, baseDEF:160, baseSPD:108, category:"强袭", image:"images/Allen_Illustration.jpg"},
+  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:320, baseATK:260, baseDEF:130, baseSPD:112, category:"辅助", image:"images/Sally_Illustration.jpg"},
+  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:420, baseATK:190, baseDEF:240, baseSPD:102, category:"近卫", image:"images/Buck_Illustration.jpg"},
+  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:340, baseATK:250, baseDEF:150, baseSPD:115, category:"辅助", image:"images/Lily_Illustration.jpg"},
+  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:480, baseATK:310, baseDEF:180, baseSPD:122, category:"强袭", image:"images/Kael_Illustration.jpg"},
+  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:410, baseATK:330, baseDEF:170, baseSPD:118, category:"辅助", image:"images/Mia_Illustration.jpg"},
+  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:500, baseATK:290, baseDEF:200, baseSPD:125, category:"强袭", image:"images/Sorey_Illustration.jpg"},
+  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:390, baseATK:360, baseDEF:160, baseSPD:128, category:"强袭", image:"images/Shadowblade_Illustration.jpg"},
+  {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:580, baseATK:270, baseDEF:260, baseSPD:130, category:"辅助", image:"images/Sylvia_Illustration.jpg"},
+  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:540, baseATK:320, baseDEF:220, baseSPD:135, category:"强袭", image:"images/Alesha_Illustration.jpg"},
+  {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:620, baseATK:290, baseDEF:290, baseSPD:128, category:"近卫", image:"images/Galan_Illustration.jpg"},
+  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:550, baseATK:350, baseDEF:240, baseSPD:132, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
+  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:720, baseATK:480, baseDEF:310, baseSPD:138, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
+  {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:680, baseATK:510, baseDEF:290, baseSPD:142, category:"辅助", image:"images/Chrono_Illustration.jpg"},
+  {id:15, name:"绚明者·阿特亚", enName:"Radiant Illuminator · Atya", rarity:"UR", baseHP:650, baseATK:560, baseDEF:260, baseSPD:148, category:"强袭", image:"images/Atya_Illustration.png", animatedImage:"images/Atya_Dynamic.mp4",
    lore: `【绚明者——阿特亚】
 职位：强袭
 所属势力：联动角色/联合政府
@@ -79,10 +76,7 @@ const characterPool = [
 使敌方全体进入【绚明崩解】状态：后续3回合，每回合自动触发一次等同于引爆前该敌人身上印记层数的伤害，此伤害无视防御，且无法被驱散。
 终结技结束后，阿特亚进入【神子永辉】状态：攻击力增加50%，所有伤害均无视防御，【绚明印记】附加层数+1（持续2回合，无法叠加）。`
   },
-  {id:16, name:"源之光·希罗·玛利亚", enName:"Hiro Maria", rarity:"UR", 
-   baseHP:230, baseATK:150, baseDEF:85, category:"辅助", 
-   image:"images/Hiro_Illustration.png", 
-   animatedImage:"images/Hiro_Dynamic.mp4",
+  {id:16, name:"希罗·玛利亚", enName:"Hiro Maria", rarity:"UR", baseHP:710, baseATK:530, baseDEF:280, baseSPD:145, category:"强袭", image:"images/Hiro_Illustration.png", animatedImage:"images/Hiro_Dynamic.mp4",
    lore: `【源之光——希罗·玛利亚】
 姓名：希罗·玛利亚
 性别：女

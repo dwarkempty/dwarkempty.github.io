@@ -196,8 +196,8 @@ function showCharacterDetail(index) {
             <div class="text-3xl font-bold">${stats.def}</div>
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">减伤</div>
-            <div class="text-3xl font-bold">0%</div>
+            <div class="text-sm text-orange-400">速度</div>
+            <div class="text-3xl font-bold">${stats.spd}</div>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-8">

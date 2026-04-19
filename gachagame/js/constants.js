@@ -395,3 +395,4 @@ window.recipesPool = recipesPool;
 window.customerDemands = customerDemands;
 window.merchantPermanent = merchantPermanent;
 window.materialPrices = materialPrices;
+window.worldviewPool = worldviewPool;

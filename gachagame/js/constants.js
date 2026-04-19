@@ -343,6 +343,46 @@ const materialPrices = {
   19: 280, 20: 320
 };
 
+// ==================== 新增：世界观详解数据（数据驱动，未来扩展只需加对象） ====================
+const worldviewPool = [
+  {
+    id: 1,
+    name: "Aeltris",
+    image: "images/Aeltris.jpg",                  // ← 请把对应图片放进 images/ 文件夹
+    description: `Aeltris是物质之神，呈现为包容万物的炫彩二十四面体。它将“万般绚明”的力量赐予阿特亚，使其能自由改写世间一切物质的属性（火→冰、钢→水晶等）。Aeltris代表着“物质即规则”的核心世界观。`
+  },
+  {
+    id: 2,
+    name: "人类等级",
+    image: "images/HumanRank.jpg",
+    description: `新纪元将人类分为三等：旧人类（普通人）、新人类（觉醒肉身强化者）、使用者（获得能力者）。联合政府对三者进行严格管辖与平衡，避免混战。`
+  },
+  {
+    id: 3,
+    name: "五大系别",
+    image: "images/FiveElements.jpg",
+    description: `元素系别分为：物质（Aeltris系）、混沌、秩序、时空、精神五大系。每个系别对应不同的能力表现与世界规则。`
+  },
+  {
+    id: 4,
+    name: "圣痕/暴走/加护/",
+    image: "images/Stigmata.jpg",
+    description: `圣痕：能力觉醒的印记；暴走：能力失控导致的毁灭状态；加护：神明或更高存在的临时力量庇护。三者是使用者能力的核心机制。`
+  },
+  {
+    id: 5,
+    name: "复数使用者",
+    image: "images/MultipleUsers.jpg",
+    description: `指同时拥有两种以上系别能力的使用者，极为稀有且强大，但也更容易暴走。联合政府对其进行重点监控与保护。`
+  },
+  {
+    id: 6,
+    name: "新名词",
+    image: "images/新图片.jpg",
+    description: `这里写完整的详细解释，支持换行`
+  }
+];
+
 window.characterPool = characterPool;
 window.weaponPool = weaponPool;
 window.rarityWeights = rarityWeights;

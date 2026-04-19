@@ -492,3 +492,5 @@ window.handleMineFlag = handleMineFlag;
 window.checkWin = checkWin;
 window.stopMinesweeper = stopMinesweeper;
 window.renderExplorationButtons = renderExplorationButtons;
+// 测试：战斗模块暴露
+window.addBattleButton();

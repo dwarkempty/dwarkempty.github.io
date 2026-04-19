@@ -466,13 +466,6 @@ function renderExplorationButtons() {
       <div class="text-3xl font-bold">扫雷</div>
       <div class="text-red-200">标记雷获胜后统一结算</div>
     </button>
-    <!-- ==================== 新增：崩铁式战斗入口 ==================== -->
-    <button onclick="window.openBattleSelection()" 
-            class="bg-red-600 hover:bg-red-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
-      <i class="fas fa-swords text-6xl"></i>
-      <div class="text-3xl font-bold">进入战斗</div>
-      <div class="text-red-200">测试崩铁式回合制</div>
-    </button>
   `;
 }
 

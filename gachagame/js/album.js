@@ -1,5 +1,5 @@
-// js/album.js - 图鉴系统
-let currentAlbumTab = 0; // 0=角色 1=武器
+// js/album.js - 图鉴系统（已新增世界观详解Tab）
+let currentAlbumTab = 0; // 0=角色 1=武器 2=世界观
 
 function setAlbumTab(n) {
   currentAlbumTab = n;
@@ -12,8 +12,9 @@ function renderAlbum() {
   grid.innerHTML = "";
 
   if (currentAlbumTab === 0) {
+    // 角色图鉴（原有逻辑）
     window.characterPool.forEach(char => {
-      const owned = player.unlockedChars.includes(char.id); // 永久解锁
+      const owned = player.unlockedChars.includes(char.id);
       const count = player.owned.filter(o => o.charId === char.id).length;
       const div = document.createElement("div");
       div.className = `relative bg-zinc-900 rounded-3xl p-4 cursor-pointer border-4 ${owned ? window.getRarityColor(char.rarity) : 'border-gray-700 opacity-60'}`;
@@ -27,16 +28,14 @@ function renderAlbum() {
       `;
       if (owned) div.onclick = () => {
         const item = player.owned.find(o => o.charId === char.id);
-        if (item) {
-          const index = player.owned.indexOf(item);
-          window.showCharacterDetail(index);
-        }
+        if (item) window.showCharacterDetail(player.owned.indexOf(item));
       };
       grid.appendChild(div);
     });
-  } else {
+  } else if (currentAlbumTab === 1) {
+    // 武器图鉴（原有逻辑）
     window.weaponPool.forEach(weapon => {
-      const owned = player.unlockedWeapons.includes(weapon.id); // 永久解锁
+      const owned = player.unlockedWeapons.includes(weapon.id);
       const count = player.weapons.filter(w => w.weaponId === weapon.id).length;
       const div = document.createElement("div");
       div.className = `relative bg-zinc-900 rounded-3xl p-4 cursor-pointer border-4 ${owned ? window.getRarityColor(weapon.rarity) : 'border-gray-700 opacity-60'}`;
@@ -50,11 +49,24 @@ function renderAlbum() {
       `;
       if (owned) div.onclick = () => {
         const item = player.weapons.find(w => w.weaponId === weapon.id);
-        if (item) {
-          const index = player.weapons.indexOf(item);
-          window.showWeaponDetail(index);
-        }
+        if (item) window.showWeaponDetail(player.weapons.indexOf(item));
       };
+      grid.appendChild(div);
+    });
+  } else if (currentAlbumTab === 2) {
+    // ==================== 新增：世界观详解 ====================
+    window.worldviewPool.forEach(item => {
+      const div = document.createElement("div");
+      div.className = `relative bg-zinc-900 rounded-3xl p-4 cursor-pointer border-4 border-purple-500 hover:border-violet-400 transition-all`;
+      div.innerHTML = `
+        <div class="h-40 flex items-center justify-center bg-gradient-to-br from-purple-900 to-violet-900 rounded-2xl mb-4 overflow-hidden">
+          <img src="${item.image}" class="max-h-full max-w-full object-contain" loading="lazy">
+        </div>
+        <div class="text-center">
+          <div class="text-base font-bold text-purple-300">${item.name}</div>
+        </div>
+      `;
+      div.onclick = () => window.showWorldLore(item);
       grid.appendChild(div);
     });
   }

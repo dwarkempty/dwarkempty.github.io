@@ -229,6 +229,7 @@ function startBattle(selectedChars = null) {
   battleState.turn = 0;
   battleState.isRunning = true;
   battleState.selectedTarget = null;
+  battleState.pendingSkillUnit = null;
   
   // 初始化当前行动值 + 重置所有状态
   battleState.allUnits.forEach(u => {
@@ -338,6 +339,17 @@ function processNextTurn() {
   setTimeout(() => {
     if (battleState.isRunning) processNextTurn();
   }, delay);
+}
+
+// 行动后推进时间（必须调用！）
+function advanceTimeAfterAction(actor) {
+  if (!actor || !actor.actionValue) return;
+  
+  battleState.allUnits.forEach(u => {
+    if (u.isAlive) {
+      u.currentAV -= actor.actionValue;
+    }
+  });
 }
 
 // 处理回合结束效果
@@ -506,6 +518,10 @@ window.selectSkillAndExecute = function(unitId, skillType) {
   // 恢复战斗循环
   battleState.pendingSkillUnit = null;
   battleState.isRunning = true;
+  
+  // 关键修复：手动行动后必须推进时间（减去该单位行动值）
+  advanceTimeAfterAction(unit);
+  
   setTimeout(() => processNextTurn(), 300);
 };
 
@@ -656,15 +672,13 @@ function useSkill(unit, skillType, target) {
     }
   }
   
+  // 关键：无论手动还是自动，都必须推进时间
+  advanceTimeAfterAction(unit);
+  
   // 通用：检查死亡
   battleState.allUnits.forEach(u => {
     if (u.hp <= 0) u.isAlive = false;
   });
-  
-  // 应用被动（非阿特亚也可能触发，但这里只给阿特亚特殊处理）
-  if (result.damage > 0 && isAtya) {
-    // 阿特亚任何伤害都会触发被动（已在addSparkleMark中处理）
-  }
   
   addBattleLog(result.log, isPlayer ? "player" : "enemy");
   
@@ -856,7 +870,15 @@ function createUnitCard(unit, isPlayer) {
   const ultPercent = Math.floor((unit.ultimateEnergy / unit.maxUltimate) * 100);
   
   const card = document.createElement("div");
-  card.className = `relative bg-zinc-900 rounded-2xl p-3 border ${unit.isAlive ? (isPlayer ? 'border-emerald-500' : 'border-red-500') : 'border-gray-700 opacity-60'} transition-all`;
+  card.className = `relative bg-zinc-900 rounded-2xl p-3 border ${unit.isAlive ? (isPlayer ? 'border-emerald-500' : 'border-red-500') : 'border-gray-700 opacity-60'} transition-all cursor-pointer hover:scale-[1.02]`;
+  
+  // 生成buff/debuff标签
+  let buffHTML = '';
+  if (unit.sparkleMarks > 0) buffHTML += `<span class="text-[9px] bg-orange-500/80 px-1.5 rounded">印记×${unit.sparkleMarks}</span>`;
+  if (unit.godModeTurns > 0) buffHTML += `<span class="text-[9px] bg-yellow-500/80 px-1.5 rounded">神辉</span>`;
+  if (unit.lingeringCollapseActive) buffHTML += `<span class="text-[9px] bg-red-500/80 px-1.5 rounded">崩解</span>`;
+  if (unit.defenseShredTurns > 0) buffHTML += `<span class="text-[9px] bg-purple-500/80 px-1.5 rounded">凝视</span>`;
+  if (unit.atkBuffTurns > 0) buffHTML += `<span class="text-[9px] bg-emerald-500/80 px-1.5 rounded">强攻</span>`;
   
   card.innerHTML = `
     <div class="flex gap-3">
@@ -892,21 +914,76 @@ function createUnitCard(unit, isPlayer) {
           </div>
         </div>
         
-        <div class="text-[9px] text-gray-500 mt-1">行动值: ${unit.currentAV.toFixed(0)}</div>
+        <div class="flex justify-between items-center mt-1">
+          <div class="text-[9px] text-gray-500">行动值: ${unit.currentAV.toFixed(0)}</div>
+          <div class="flex gap-1">${buffHTML}</div>
+        </div>
       </div>
     </div>
   `;
   
-  // 点击可手动选择目标（未来扩展手动战斗）
-  if (unit.isAlive && !isPlayer) {
-    card.onclick = () => {
-      battleState.selectedTarget = unit;
-      addBattleLog(`已选择目标：${unit.name}`, "system");
-    };
-    card.style.cursor = "pointer";
-  }
+  // 点击显示详细面板
+  card.onclick = () => showUnitDetailModal(unit);
   
   return card;
+}
+
+// 详细数值面板（支持buff/debuff）
+function showUnitDetailModal(unit) {
+  const modal = document.createElement("div");
+  modal.className = "fixed inset-0 bg-black/80 flex items-center justify-center z-[100002] p-4";
+  
+  let buffList = '';
+  if (unit.sparkleMarks > 0) buffList += `<div class="flex justify-between"><span>【绚明印记】</span><span class="text-orange-400">×${unit.sparkleMarks} 层</span></div>`;
+  if (unit.godModeTurns > 0) buffList += `<div class="flex justify-between"><span>【神子永辉】</span><span class="text-yellow-400">${unit.godModeTurns}回合</span></div>`;
+  if (unit.lingeringCollapseActive) buffList += `<div class="flex justify-between"><span>【绚明崩解】</span><span class="text-red-400">剩余${unit.lingeringCollapseTurns}回合</span></div>`;
+  if (unit.defenseShredTurns > 0) buffList += `<div class="flex justify-between"><span>【元素凝视】</span><span class="text-purple-400">防御-15% (${unit.defenseShredTurns}回合)</span></div>`;
+  if (unit.atkBuffTurns > 0) buffList += `<div class="flex justify-between"><span>【攻击强化】</span><span class="text-emerald-400">+25% (${unit.atkBuffTurns}回合)</span></div>`;
+  
+  modal.innerHTML = `
+    <div class="bg-zinc-900 rounded-3xl max-w-md w-full p-8 border-4 ${unit.isPlayer ? 'border-emerald-500' : 'border-red-500'}">
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-4">
+          <img src="${unit.image}" class="w-20 h-20 rounded-2xl object-cover">
+          <div>
+            <div class="text-2xl font-bold">${unit.name}</div>
+            <div class="text-sm text-gray-400">${unit.category} · ${unit.rarity} · Lv.${unit.level} ★${unit.stars}</div>
+          </div>
+        </div>
+        <button onclick="this.closest('.fixed').remove()" class="text-4xl text-gray-400 hover:text-white">×</button>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-4 text-lg mb-6">
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">生命值</div>
+          <div class="text-3xl font-bold text-emerald-400">${unit.hp} <span class="text-base">/ ${unit.maxHp}</span></div>
+        </div>
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">攻击力</div>
+          <div class="text-3xl font-bold text-red-400">${unit.atk}</div>
+        </div>
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">防御力</div>
+          <div class="text-3xl font-bold text-blue-400">${unit.def}</div>
+        </div>
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">速度</div>
+          <div class="text-3xl font-bold text-purple-400">${unit.spd}</div>
+        </div>
+      </div>
+      
+      <div class="bg-zinc-800 rounded-2xl p-5 mb-6">
+        <div class="text-sm text-gray-400 mb-3">当前状态 / Buff & Debuff</div>
+        ${buffList || '<div class="text-gray-500 text-sm">暂无特殊状态</div>'}
+      </div>
+      
+      <div class="text-center">
+        <button onclick="this.closest('.fixed').remove()" class="px-10 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl">关闭</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
 }
 
 function addBattleLog(msg, type = "normal") {
@@ -1001,6 +1078,10 @@ function restartBattle() {
 
 function closeBattleModal() {
   battleState.isRunning = false;
+  battleState.pendingSkillUnit = null;
+  battleState.selectedTarget = null;
+  document.getElementById("skillSelectionBar")?.remove();
+  
   const modal = document.getElementById("battleModal");
   if (modal) modal.remove();
   battleState.battleModal = null;

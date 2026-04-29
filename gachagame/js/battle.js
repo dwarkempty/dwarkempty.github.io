@@ -350,6 +350,15 @@ function advanceTimeAfterAction(actor) {
       u.currentAV -= actor.actionValue;
     }
   });
+  
+  // 防止行动值过度负数（保持相对顺序，同时让数字好看）
+  const minAV = Math.min(...battleState.allUnits.filter(u => u.isAlive).map(u => u.currentAV));
+  if (minAV < -100) {
+    const adjust = Math.ceil(-minAV / 50) * 50; // 每次调整到合理范围
+    battleState.allUnits.forEach(u => {
+      if (u.isAlive) u.currentAV += adjust;
+    });
+  }
 }
 
 // 处理回合结束效果
@@ -495,22 +504,22 @@ window.selectSkillAndExecute = function(unitId, skillType) {
   // 移除技能条
   document.getElementById("skillSelectionBar")?.remove();
   
-  // 选择目标（简单版：自动选第一个敌人，或让玩家点击）
+  // 选择目标
   const aliveEnemies = battleState.enemyTeam.filter(e => e.isAlive);
   let target = aliveEnemies[0];
   
-  // 如果是单体技能且有多个敌人，让玩家快速选择
-  if ((skillType === 'normal' || skillType === 'skill2' || skillType === 'ultimate') && aliveEnemies.length > 1) {
-    // 简化：默认选第一个，未来可扩展点击选择
+  try {
+    useSkill(unit, skillType, target);
+  } catch (e) {
+    console.error("Skill execution error:", e);
+    addBattleLog("技能执行出错，已跳过", "system");
   }
-  
-  useSkill(unit, skillType, target);
   
   // 恢复战斗循环
   battleState.pendingSkillUnit = null;
   battleState.isRunning = true;
   
-  // 关键修复：手动行动后必须推进时间（减去该单位行动值）
+  // 推进时间
   advanceTimeAfterAction(unit);
   
   setTimeout(() => processNextTurn(), 300);
@@ -671,7 +680,7 @@ function useSkill(unit, skillType, target) {
     if (u.hp <= 0) u.isAlive = false;
   });
   
-  addBattleLog(result.log, isPlayer ? "player" : "enemy");
+  addBattleLog(result.log, unit.isPlayer ? "player" : "enemy");
   
   // 更新UI
   updateBattleUI();
@@ -863,8 +872,9 @@ function updateBattleUI() {
     orderContainer.innerHTML = sorted.map((u, idx) => {
       const isPlayer = u.isPlayer;
       const color = isPlayer ? 'text-emerald-400' : 'text-red-400';
+      const avDisplay = u.currentAV <= 0 ? 'Ready!' : u.currentAV.toFixed(0);
       const mark = u.sparkleMarks > 0 ? ` <span class="text-orange-400">★${u.sparkleMarks}</span>` : '';
-      return `<div class="${color} flex justify-between"><span>${idx+1}. ${u.name}</span><span class="text-gray-500">${u.currentAV.toFixed(0)}${mark}</span></div>`;
+      return `<div class="${color} flex justify-between"><span>${idx+1}. ${u.name}</span><span class="text-gray-500">${avDisplay}${mark}</span></div>`;
     }).join('');
   }
   
@@ -929,7 +939,7 @@ function createUnitCard(unit, isPlayer) {
         </div>
         
         <div class="flex justify-between items-center mt-1">
-          <div class="text-[9px] text-gray-500">行动值: ${unit.currentAV.toFixed(0)}</div>
+          <div class="text-[9px] text-gray-500">行动值: ${unit.currentAV <= 0 ? 'Ready!' : unit.currentAV.toFixed(0)}</div>
           <div class="flex gap-1">${buffHTML}</div>
         </div>
       </div>

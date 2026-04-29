@@ -1,4 +1,4 @@
-/ js/battle.js - 完整战斗系统（行动值回合制 + 能量机制 + 防御公式）
+// js/battle.js - 完整战斗系统（行动值回合制 + 能量机制 + 防御公式）
 // 设计完全遵循用户规格：行动值=10000/速度，每回合150行动值预算，防御减免公式，能量点5上限+每回合+1
 
 let battleState = {
@@ -150,8 +150,13 @@ function startBattle(selectedChars = null) {
   }
   
   if (selectedChars.length === 0) {
-    alert("请先拥有至少1个角色！");
-    return;
+    // 新玩家自动给予演示队伍（前4个角色，Lv.20）
+    console.log("%c[战斗系统] 新玩家检测到，自动创建演示队伍...", "color:#fbbf24");
+    const demoChars = window.characterPool.slice(0, 4);
+    selectedChars = demoChars.map((charData, idx) => {
+      return createBattleUnit(charData, 20 + idx * 5, 1, true, null);
+    });
+    alert("已为你自动创建演示队伍（Lv.20~35）！\n实际游戏中请先抽卡获得角色。");
   }
   
   battleState.playerTeam = selectedChars;

@@ -461,13 +461,13 @@ function showSkillSelectionUI(unit) {
     </div>
   `;
   
-  // 普攻
+  // 普攻（所有角色都有）
   html += `<button onclick="selectSkillAndExecute('${unit.id}', 'normal')" class="skill-btn px-6 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-center min-w-[110px]">
     <div class="text-lg">普攻</div>
     <div class="text-xs text-gray-400">0能量</div>
   </button>`;
   
-  // 战技1
+  // 战技（所有角色都有）
   const skill1Cost = isAtya ? 2 : 1;
   const skill1Disabled = unit.energy < skill1Cost ? 'opacity-50 cursor-not-allowed' : '';
   html += `<button onclick="selectSkillAndExecute('${unit.id}', 'skill1')" class="skill-btn px-6 py-4 bg-blue-900 hover:bg-blue-800 rounded-2xl text-center min-w-[110px] ${skill1Disabled}">
@@ -484,7 +484,7 @@ function showSkillSelectionUI(unit) {
     </button>`;
   }
   
-  // 终结技
+  // 终结技（所有角色都有）
   const ultDisabled = unit.ultimateEnergy < 80 ? 'opacity-50 cursor-not-allowed' : '';
   html += `<button onclick="selectSkillAndExecute('${unit.id}', 'ultimate')" class="skill-btn px-6 py-4 bg-gradient-to-br from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-2xl text-center min-w-[110px] ${ultDisabled}">
     <div class="text-lg font-bold">终结技</div>
@@ -785,6 +785,14 @@ function showBattleModal() {
             <div id="playerUnits" class="grid grid-cols-2 gap-3"></div>
           </div>
           
+          <!-- 行动顺序栏（新增） -->
+          <div class="w-52 bg-zinc-950 rounded-3xl p-4 border border-yellow-500/50 flex-shrink-0">
+            <div class="text-yellow-400 text-sm font-bold mb-3 flex items-center gap-2">
+              <i class="fas fa-clock"></i> 下回合行动顺序
+            </div>
+            <div id="actionOrderList" class="text-xs space-y-1"></div>
+          </div>
+          
           <!-- 敌方队伍 -->
           <div class="flex-1 bg-zinc-950 rounded-3xl p-4 border border-red-500/50">
             <div class="text-red-400 text-lg font-bold mb-3 flex items-center gap-2">
@@ -834,7 +842,7 @@ function updateBattleUI() {
   const speedEl = document.getElementById("battleSpeed");
   if (speedEl) speedEl.textContent = battleState.speed.toFixed(1) + "x";
   
-  // 渲染我方单位
+  // 渲染我方单位（强制清空）
   const playerContainer = document.getElementById("playerUnits");
   if (playerContainer) {
     playerContainer.innerHTML = "";
@@ -844,7 +852,7 @@ function updateBattleUI() {
     });
   }
   
-  // 渲染敌方单位
+  // 渲染敌方单位（强制清空）
   const enemyContainer = document.getElementById("enemyUnits");
   if (enemyContainer) {
     enemyContainer.innerHTML = "";
@@ -852,6 +860,21 @@ function updateBattleUI() {
       const el = createUnitCard(unit, false);
       enemyContainer.appendChild(el);
     });
+  }
+  
+  // 渲染行动顺序栏（新增）
+  const orderContainer = document.getElementById("actionOrderList");
+  if (orderContainer) {
+    const aliveUnits = battleState.allUnits.filter(u => u.isAlive);
+    // 按当前行动值从小到大排序（越小越先行动）
+    const sorted = [...aliveUnits].sort((a, b) => a.currentAV - b.currentAV).slice(0, 6);
+    
+    orderContainer.innerHTML = sorted.map((u, idx) => {
+      const isPlayer = u.isPlayer;
+      const color = isPlayer ? 'text-emerald-400' : 'text-red-400';
+      const mark = u.sparkleMarks > 0 ? ` <span class="text-orange-400">★${u.sparkleMarks}</span>` : '';
+      return `<div class="${color} flex justify-between"><span>${idx+1}. ${u.name}</span><span class="text-gray-500">${u.currentAV.toFixed(0)}${mark}</span></div>`;
+    }).join('');
   }
   
   // 更新日志
@@ -1284,6 +1307,17 @@ window.clearTeamSelection = function() {
 window.confirmTeamSelection = function() {
   if (selectedTeamForBattle.length === 0) {
     alert("请至少选择 1 名角色！");
+    return;
+  }
+  
+  // 优化：同名角色只能上阵一个
+  const names = selectedTeamForBattle.map(item => {
+    const data = window.getCharacterData(item.charId);
+    return data ? data.name : '';
+  });
+  const uniqueNames = new Set(names);
+  if (uniqueNames.size < names.length) {
+    alert("同名角色只能上阵一个！请重新选择。");
     return;
   }
   

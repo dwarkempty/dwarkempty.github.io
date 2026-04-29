@@ -5,13 +5,15 @@ let battleState = {
   playerTeam: [],
   enemyTeam: [],
   allUnits: [],
-  currentAV: {},      // 当前行动值
+  currentAV: {},      
   turn: 0,
   log: [],
   isRunning: false,
-  speed: 1,           // 战斗速度倍率
+  speed: 1,           
   selectedTarget: null,
-  battleModal: null
+  battleModal: null,
+  pendingSkillUnit: null,   // 当前等待手动选择技能的单位
+  isManualMode: true        // 开启手动技能选择
 };
 
 // ==================== 工具函数 ====================
@@ -27,6 +29,65 @@ function calculateActionValue(spd) {
 
 function calculateDamageReduction(def) {
   return 1 - 4000 / (4000 + def);
+}
+
+// ==================== 高级伤害计算系统（符合用户新公式） ====================
+function calculateDamage(attacker, target, skillMultiplier = 1.0, isCrit = false, extra = {}) {
+  // 1. 基础攻击 + 加成攻击值
+  let baseAtk = attacker.atk || 0;
+  let bonusAtk = extra.bonusAtk || 0;
+  let totalAtk = baseAtk + bonusAtk;
+  
+  // 2. 攻击加成倍率（百分比）
+  let atkPercent = (extra.atkPercent || 0) + (attacker.atkPercentBuff || 0);
+  
+  // 3. 技能倍率
+  let skillMult = skillMultiplier;
+  
+  // 4. 增伤加成区间（元素增伤、全伤加成等）
+  let dmgBonus = (extra.dmgBonus || 0) + (attacker.dmgBonus || 0);
+  
+  // 5. 暴击加成
+  let critMult = 1.0;
+  let finalIsCrit = isCrit;
+  
+  const critRate = (attacker.critRate || 0.05) + (extra.critRateBonus || 0);
+  if (!finalIsCrit && Math.random() < critRate) {
+    finalIsCrit = true;
+  }
+  
+  if (finalIsCrit) {
+    const critDmg = (attacker.critDamage || 0.5) + (extra.critDmgBonus || 0);
+    critMult = 1 + critDmg;
+  }
+  
+  // 总出伤公式
+  let outgoing = totalAtk * (1 + atkPercent) * skillMult * (1 + dmgBonus) * critMult;
+  
+  // 6. 防御减伤倍率
+  let defReduction = calculateDamageReduction(target.def || 0);
+  
+  // 7. 额外减伤倍率（来自debuff等）
+  let dmgReduction = extra.dmgReduction || 0;
+  if (target.defenseShredTurns > 0) {
+    defReduction = Math.min(0.8, defReduction + 0.15); // 元素凝视15%防御降低
+  }
+  
+  // 总受伤
+  let finalDamage = outgoing * (1 - defReduction) * (1 - dmgReduction);
+  
+  // 神子永辉 / 绚明崩解 等无视防御
+  if (attacker.ignoreDefense || target.lingeringCollapseActive) {
+    finalDamage = outgoing * (1 - dmgReduction); // 忽略防御减免
+  }
+  
+  return {
+    damage: Math.max(1, Math.floor(finalDamage)),
+    isCrit: finalIsCrit,
+    breakdown: {
+      totalAtk, atkPercent, skillMult, dmgBonus, critMult, defReduction
+    }
+  };
 }
 
 function calculateFinalDamage(baseDamage, attacker, target, isCrit = false) {
@@ -169,7 +230,7 @@ function startBattle(selectedChars = null) {
   battleState.isRunning = true;
   battleState.selectedTarget = null;
   
-  // 初始化当前行动值
+  // 初始化当前行动值 + 重置所有状态
   battleState.allUnits.forEach(u => {
     u.currentAV = u.actionValue;
     u.hp = u.maxHp;
@@ -178,6 +239,16 @@ function startBattle(selectedChars = null) {
     u.isAlive = true;
     u.buffs = [];
     u.debuffs = [];
+    u.sparkleMarks = 0;
+    u.lingeringCollapseTurns = 0;
+    u.lingeringCollapseActive = false;
+    u.defenseShredTurns = 0;
+    u.godModeTurns = 0;
+    u.atkPercentBuff = 0;
+    u.atkBuffTurns = 0;
+    u.ignoreDefense = false;
+    u.elementDmgBonus = 0;
+    u.ultEnergyThisTurn = 0;
   });
   
   // 打开战斗界面
@@ -256,6 +327,9 @@ function processNextTurn() {
   
   battleState.turn++;
   
+  // 处理持续效果（绚明崩解、防御降低、神子永辉等）
+  processEndOfTurnEffects();
+  
   // 更新UI
   updateBattleUI();
   
@@ -266,95 +340,399 @@ function processNextTurn() {
   }, delay);
 }
 
-// ==================== 行动执行 ====================
+// 处理回合结束效果
+function processEndOfTurnEffects() {
+  battleState.allUnits.forEach(unit => {
+    if (!unit.isAlive) return;
+    
+    // 绚明崩解：每回合自动触发印记伤害（无视防御）
+    if (unit.lingeringCollapseTurns > 0 && unit.lingeringCollapseActive) {
+      const markStacks = unit.sparkleMarks || 0;
+      if (markStacks > 0) {
+        const dmg = Math.floor(markStacks * (unit.atk || 200) * 0.8);
+        unit.hp = Math.max(0, unit.hp - dmg);
+        addBattleLog(`🌋 绚明崩解触发！${unit.name} 受到 <span class="text-red-400">${dmg}</span> 无视防御伤害`, "enemy");
+      }
+      unit.lingeringCollapseTurns--;
+      if (unit.lingeringCollapseTurns <= 0) {
+        unit.lingeringCollapseActive = false;
+        addBattleLog(`🌋 ${unit.name} 的绚明崩解状态结束`, "system");
+      }
+    }
+    
+    // 防御降低持续时间
+    if (unit.defenseShredTurns > 0) {
+      unit.defenseShredTurns--;
+      if (unit.defenseShredTurns === 0) {
+        addBattleLog(`🛡️ ${unit.name} 的元素凝视效果结束`, "system");
+      }
+    }
+    
+    // 攻击力提升持续时间
+    if (unit.atkBuffTurns > 0) {
+      unit.atkBuffTurns--;
+      if (unit.atkBuffTurns === 0 && unit.atkPercentBuff) {
+        unit.atkPercentBuff = Math.max(0, unit.atkPercentBuff - 0.25);
+        addBattleLog(`⚡ ${unit.name} 的攻击力提升效果结束`, "system");
+      }
+    }
+    
+    // 神子永辉持续
+    if (unit.godModeTurns > 0) {
+      unit.godModeTurns--;
+      if (unit.godModeTurns === 0) {
+        unit.ignoreDefense = false;
+        addBattleLog(`🌟 ${unit.name} 的神子永辉状态结束`, "system");
+      }
+    }
+  });
+}
+
+// ==================== 手动技能选择 + 阿特亚完整技能实现 ====================
 function executeAction(unit) {
   if (!unit.isAlive) return;
   
-  const isPlayerTurn = unit.isPlayer;
-  const enemies = battleState.enemyTeam.filter(e => e.isAlive);
-  const allies = (isPlayerTurn ? battleState.playerTeam : battleState.enemyTeam).filter(a => a.isAlive);
+  const isPlayer = unit.isPlayer;
+  const aliveEnemies = battleState.enemyTeam.filter(e => e.isAlive);
+  const aliveAllies = (isPlayer ? battleState.playerTeam : battleState.enemyTeam).filter(a => a.isAlive);
   
-  if (enemies.length === 0 || allies.length === 0) return;
+  if (aliveEnemies.length === 0 || aliveAllies.length === 0) return;
   
-  let actionType = "普攻";
+  // 玩家单位且开启手动模式 → 暂停并显示技能选择
+  if (isPlayer && battleState.isManualMode && !battleState.pendingSkillUnit) {
+    battleState.pendingSkillUnit = unit;
+    showSkillSelectionUI(unit);
+    return; // 等待玩家选择技能
+  }
+  
+  // 自动模式或敌人 → 使用原有简单AI
+  let skillType = "normal";
   let target = null;
-  let damage = 0;
-  let heal = 0;
-  let logMsg = "";
   
-  // 简单AI / 自动选择技能
-  const canUseSkill1 = unit.energy >= 1;
-  const canUseUltimate = unit.ultimateEnergy >= 80; // 降低门槛方便演示
-  
-  if (isPlayerTurn) {
-    // 玩家单位：优先使用高价值技能（演示用，实际可改为手动选择）
-    if (canUseUltimate && Math.random() > 0.6) {
-      actionType = "终结技";
-      target = enemies[Math.floor(Math.random() * enemies.length)];
-      damage = calculateFinalDamage(unit.atk * 4.2, unit, target, true);
-      unit.ultimateEnergy = 0;
-      unit.energy = Math.min(unit.maxEnergy, unit.energy + 1);
-      logMsg = `🌟 ${unit.name} 释放终结技！`;
-    } else if (canUseSkill1 && Math.random() > 0.4) {
-      actionType = "战技";
-      target = enemies[Math.floor(Math.random() * enemies.length)];
-      damage = calculateFinalDamage(unit.atk * 1.8, unit, target);
-      unit.energy -= 1;
-      unit.ultimateEnergy = Math.min(unit.maxUltimate, unit.ultimateEnergy + 12);
-      logMsg = `⚔️ ${unit.name} 使用战技`;
-    } else {
-      actionType = "普攻";
-      target = enemies[Math.floor(Math.random() * enemies.length)];
-      damage = calculateFinalDamage(unit.atk * 1.0, unit, target);
-      unit.ultimateEnergy = Math.min(unit.maxUltimate, unit.ultimateEnergy + 8);
-      logMsg = `${unit.name} 普攻`;
-    }
+  if (isPlayer) {
+    // 自动模式下的玩家行为（演示用）
+    const canSkill = unit.energy >= 2;
+    const canUlt = unit.ultimateEnergy >= 80;
+    if (canUlt && Math.random() > 0.5) skillType = "ultimate";
+    else if (canSkill && Math.random() > 0.5) skillType = "skill1";
+    else skillType = "normal";
+    target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
   } else {
-    // 敌人AI：简单随机
-    if (canUseUltimate && Math.random() > 0.7) {
-      actionType = "终结技";
-      target = allies[Math.floor(Math.random() * allies.length)];
-      damage = calculateFinalDamage(unit.atk * 3.8, unit, target, true);
-      unit.ultimateEnergy = 0;
-      logMsg = `💀 ${unit.name} 释放终结技！`;
-    } else if (canUseSkill1 && Math.random() > 0.5) {
-      actionType = "战技";
-      target = allies[Math.floor(Math.random() * allies.length)];
-      damage = calculateFinalDamage(unit.atk * 1.6, unit, target);
-      unit.energy -= 1;
-      logMsg = `${unit.name} 使用战技`;
+    // 敌人AI
+    const canSkill = unit.energy >= 2;
+    const canUlt = unit.ultimateEnergy >= 70;
+    if (canUlt && Math.random() > 0.6) skillType = "ultimate";
+    else if (canSkill && Math.random() > 0.4) skillType = "skill1";
+    else skillType = "normal";
+    target = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
+  }
+  
+  useSkill(unit, skillType, target);
+}
+
+// 显示技能选择UI（手动战斗核心）
+function showSkillSelectionUI(unit) {
+  // 暂停战斗循环
+  battleState.isRunning = false;
+  
+  const skillBar = document.createElement("div");
+  skillBar.id = "skillSelectionBar";
+  skillBar.className = `fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/95 border-2 border-emerald-500 rounded-3xl px-8 py-5 flex gap-4 z-[100001] shadow-2xl`;
+  
+  const isAtya = unit.name.includes("阿特亚");
+  
+  let html = `
+    <div class="flex flex-col items-center mr-4">
+      <div class="text-emerald-400 text-sm mb-1">当前行动</div>
+      <div class="font-bold">${unit.name}</div>
+      <div class="text-xs text-gray-400">能量 ${unit.energy}/5 | 终结 ${unit.ultimateEnergy}</div>
+    </div>
+  `;
+  
+  // 普攻
+  html += `<button onclick="selectSkillAndExecute('${unit.id}', 'normal')" class="skill-btn px-6 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-center min-w-[110px]">
+    <div class="text-lg">普攻</div>
+    <div class="text-xs text-gray-400">0能量</div>
+  </button>`;
+  
+  // 战技1
+  const skill1Cost = isAtya ? 2 : 1;
+  const skill1Disabled = unit.energy < skill1Cost ? 'opacity-50 cursor-not-allowed' : '';
+  html += `<button onclick="selectSkillAndExecute('${unit.id}', 'skill1')" class="skill-btn px-6 py-4 bg-blue-900 hover:bg-blue-800 rounded-2xl text-center min-w-[110px] ${skill1Disabled}">
+    <div class="text-lg">战技</div>
+    <div class="text-xs text-gray-400">${skill1Cost}能量</div>
+  </button>`;
+  
+  // 战技2（仅阿特亚有）
+  if (isAtya) {
+    const skill2Disabled = unit.energy < 2 ? 'opacity-50 cursor-not-allowed' : '';
+    html += `<button onclick="selectSkillAndExecute('${unit.id}', 'skill2')" class="skill-btn px-6 py-4 bg-purple-900 hover:bg-purple-800 rounded-2xl text-center min-w-[110px] ${skill2Disabled}">
+      <div class="text-lg">绚律易质</div>
+      <div class="text-xs text-gray-400">2能量</div>
+    </button>`;
+  }
+  
+  // 终结技
+  const ultDisabled = unit.ultimateEnergy < 80 ? 'opacity-50 cursor-not-allowed' : '';
+  html += `<button onclick="selectSkillAndExecute('${unit.id}', 'ultimate')" class="skill-btn px-6 py-4 bg-gradient-to-br from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-2xl text-center min-w-[110px] ${ultDisabled}">
+    <div class="text-lg font-bold">终结技</div>
+    <div class="text-xs">80能量</div>
+  </button>`;
+  
+  html += `<button onclick="cancelSkillSelection()" class="skill-btn px-5 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-sm">取消</button>`;
+  
+  skillBar.innerHTML = html;
+  document.body.appendChild(skillBar);
+}
+
+window.selectSkillAndExecute = function(unitId, skillType) {
+  const unit = battleState.allUnits.find(u => u.id == unitId);
+  if (!unit) return;
+  
+  // 移除技能条
+  document.getElementById("skillSelectionBar")?.remove();
+  
+  // 选择目标（简单版：自动选第一个敌人，或让玩家点击）
+  const aliveEnemies = battleState.enemyTeam.filter(e => e.isAlive);
+  let target = aliveEnemies[0];
+  
+  // 如果是单体技能且有多个敌人，让玩家快速选择
+  if ((skillType === 'normal' || skillType === 'skill2' || skillType === 'ultimate') && aliveEnemies.length > 1) {
+    // 简化：默认选第一个，未来可扩展点击选择
+  }
+  
+  useSkill(unit, skillType, target);
+  
+  // 恢复战斗循环
+  battleState.pendingSkillUnit = null;
+  battleState.isRunning = true;
+  setTimeout(() => processNextTurn(), 300);
+};
+
+window.cancelSkillSelection = function() {
+  document.getElementById("skillSelectionBar")?.remove();
+  battleState.pendingSkillUnit = null;
+  battleState.isRunning = true;
+  addBattleLog("已取消技能选择", "system");
+  setTimeout(() => processNextTurn(), 200);
+};
+
+// ==================== 核心技能执行函数（完整实现阿特亚） ====================
+function useSkill(unit, skillType, target) {
+  if (!unit.isAlive || !target) return;
+  
+  const isAtya = unit.name.includes("阿特亚");
+  let result = { damage: 0, log: "" };
+  
+  // 重置本回合终结能量计数
+  unit.ultEnergyThisTurn = unit.ultEnergyThisTurn || 0;
+  
+  if (skillType === "normal") {
+    // ========== 普攻 ==========
+    if (isAtya) {
+      // 阿特亚普攻：绚光初绽
+      const mainDmg = calculateDamage(unit, target, 1.1).damage;
+      target.hp = Math.max(0, target.hp - mainDmg);
+      result.damage = mainDmg;
+      result.log = `绚光初绽 → ${target.name} <span class="text-red-400">${mainDmg}</span>`;
+      
+      // 50%概率附加印记
+      if (Math.random() < 0.5) addSparkleMark(target, 1, unit);
+      
+      // 溅射到周围两个敌人
+      const others = battleState.enemyTeam.filter(e => e.isAlive && e.id !== target.id);
+      others.slice(0, 2).forEach(enemy => {
+        const splash = calculateDamage(unit, enemy, 0.8).damage;
+        enemy.hp = Math.max(0, enemy.hp - splash);
+        if (Math.random() < 0.3) addSparkleMark(enemy, 1, unit);
+      });
+      
+      // 被动触发
+      addSparkleMark(target, 0, unit); // 触发被动（stacks=0只触发效果）
+      
     } else {
-      actionType = "普攻";
-      target = allies[Math.floor(Math.random() * allies.length)];
-      damage = calculateFinalDamage(unit.atk * 1.0, unit, target);
-      unit.ultimateEnergy = Math.min(unit.maxUltimate, unit.ultimateEnergy + 10);
-      logMsg = `${unit.name} 普攻`;
+      // 普通角色普攻
+      const dmg = calculateDamage(unit, target, 1.0).damage;
+      target.hp = Math.max(0, target.hp - dmg);
+      result.damage = dmg;
+      result.log = `普攻 → ${target.name} <span class="text-red-400">${dmg}</span>`;
+    }
+    
+    unit.ultimateEnergy = Math.min(unit.maxUltimate || 100, unit.ultimateEnergy + 8);
+    
+  } else if (skillType === "skill1") {
+    // ========== 战技1 ==========
+    if (isAtya) {
+      // 万象绚华
+      if (unit.energy < 2) { addBattleLog("能量不足！", "system"); return; }
+      unit.energy -= 2;
+      
+      let totalDmg = 0;
+      battleState.enemyTeam.filter(e => e.isAlive).forEach(enemy => {
+        const dmg = calculateDamage(unit, enemy, 2.2).damage;
+        enemy.hp = Math.max(0, enemy.hp - dmg);
+        totalDmg += dmg;
+        addSparkleMark(enemy, 3, unit);
+      });
+      
+      result.damage = totalDmg;
+      result.log = `万象绚华！全体造成 <span class="text-red-400">${totalDmg}</span> 伤害 + 3层印记`;
+      
+      // 检查是否有敌人≥6层 → 元素凝视
+      const hasHighMark = battleState.enemyTeam.some(e => (e.sparkleMarks || 0) >= 6);
+      if (hasHighMark) {
+        battleState.enemyTeam.forEach(e => {
+          if (e.isAlive) e.defenseShredTurns = 2;
+        });
+        addBattleLog(`✨ 元素凝视触发！敌方全体防御降低15%（2回合）`, "player");
+      }
+      
+    } else {
+      // 普通战技
+      if (unit.energy < 1) return;
+      unit.energy -= 1;
+      const dmg = calculateDamage(unit, target, 1.8).damage;
+      target.hp = Math.max(0, target.hp - dmg);
+      result.damage = dmg;
+      result.log = `战技 → ${target.name} <span class="text-red-400">${dmg}</span>`;
+    }
+    
+    unit.ultimateEnergy = Math.min(unit.maxUltimate || 100, unit.ultimateEnergy + 15);
+    
+  } else if (skillType === "skill2" && isAtya) {
+    // ========== 阿特亚专属战技2：绚律易质 ==========
+    if (unit.energy < 2) { addBattleLog("能量不足！", "system"); return; }
+    unit.energy -= 2;
+    
+    const baseDmg = calculateDamage(unit, target, 3.4).damage;
+    target.hp = Math.max(0, target.hp - baseDmg);
+    
+    // 引爆所有印记
+    const explodeDmg = explodeSparkleMarks(target, target.sparkleMarks || 0, unit);
+    
+    result.damage = baseDmg + explodeDmg;
+    result.log = `绚律易质！${target.name} 受到 <span class="text-red-400">${baseDmg + explodeDmg}</span> 伤害`;
+    
+    // 回复35点终结能量 + 攻击力提升25%（2回合）
+    unit.ultimateEnergy = Math.min(unit.maxUltimate || 100, unit.ultimateEnergy + 35);
+    unit.atkPercentBuff = (unit.atkPercentBuff || 0) + 0.25;
+    unit.atkBuffTurns = 2;
+    
+    addBattleLog(`⚡ 攻击力提升25%（2回合） + 回复35终结能量`, "player");
+    
+  } else if (skillType === "ultimate") {
+    // ========== 终结技 ==========
+    if (unit.ultimateEnergy < 80) { addBattleLog("终结能量不足！", "system"); return; }
+    unit.ultimateEnergy = 0;
+    
+    if (isAtya) {
+      // 万般绚明
+      let totalDmg = 0;
+      const markBonus = battleState.enemyTeam.reduce((sum, e) => sum + (e.sparkleMarks || 0), 0) * 0.8;
+      
+      battleState.enemyTeam.filter(e => e.isAlive).forEach(enemy => {
+        const markDmg = (enemy.sparkleMarks || 0) * unit.atk * 0.8;
+        const base = calculateDamage(unit, enemy, 7.0).damage;
+        const final = base + markDmg;
+        enemy.hp = Math.max(0, enemy.hp - final);
+        totalDmg += final;
+      });
+      
+      result.damage = totalDmg;
+      result.log = `万般绚明！造成 <span class="text-red-400">${totalDmg}</span> 毁灭性伤害`;
+      
+      // 绚明崩解
+      applyLingeringCollapse(battleState.enemyTeam.filter(e => e.isAlive), 2);
+      
+      // 进入神子永辉
+      applyGodMode(unit, 1);
+      unit.atkPercentBuff = (unit.atkPercentBuff || 0) + 0.30;
+      
+    } else {
+      const dmg = calculateDamage(unit, target, 4.0, true).damage;
+      target.hp = Math.max(0, target.hp - dmg);
+      result.damage = dmg;
+      result.log = `终结技！${target.name} 受到 <span class="text-red-400">${dmg}</span> 伤害`;
     }
   }
   
-  // 应用伤害
-  if (damage > 0 && target) {
-    target.hp = Math.max(0, target.hp - damage);
-    if (target.hp <= 0) target.isAlive = false;
-    
-    addBattleLog(`${logMsg} → ${target.name} 造成 <span class="text-red-400 font-bold">${damage}</span> 伤害`, isPlayerTurn ? "player" : "enemy");
-    
-    // 暴击特效提示
-    if (damage > unit.atk * 1.5) {
-      addBattleLog(`💥 暴击！`, "crit");
-    }
+  // 通用：检查死亡
+  battleState.allUnits.forEach(u => {
+    if (u.hp <= 0) u.isAlive = false;
+  });
+  
+  // 应用被动（非阿特亚也可能触发，但这里只给阿特亚特殊处理）
+  if (result.damage > 0 && isAtya) {
+    // 阿特亚任何伤害都会触发被动（已在addSparkleMark中处理）
   }
   
-  // 简单治疗示例（辅助职业）
-  if (unit.category === "辅助" && Math.random() > 0.6 && allies.length > 1) {
-    const healTarget = allies[Math.floor(Math.random() * allies.length)];
-    heal = Math.floor(unit.atk * 0.6);
-    healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + heal);
-    addBattleLog(`💚 ${unit.name} 治疗 ${healTarget.name} +${heal}`, "heal");
-  }
+  addBattleLog(result.log, isPlayer ? "player" : "enemy");
   
   // 更新UI
   updateBattleUI();
+}
+
+// ==================== 绚明印记 & 效果系统 ====================
+function addSparkleMark(target, stacks = 1, source = null) {
+  if (!target.sparkleMarks) target.sparkleMarks = 0;
+  
+  const oldStacks = target.sparkleMarks;
+  target.sparkleMarks = Math.min(8, target.sparkleMarks + stacks);
+  
+  // 超出8层自动引爆
+  if (target.sparkleMarks > 8) {
+    const explodeStacks = target.sparkleMarks - 8;
+    target.sparkleMarks = 8;
+    explodeSparkleMarks(target, explodeStacks, source);
+  }
+  
+  // 被动：附加印记瞬间触发一次伤害 + 提升自身元素伤害 + 回复终结能量
+  if (source && source.name.includes("阿特亚")) {
+    // 立即触发一次印记伤害
+    const tickDamage = Math.floor(source.atk * 0.5);
+    target.hp = Math.max(0, target.hp - tickDamage);
+    addBattleLog(`✨ 绚明印记触发！${target.name} 受到 <span class="text-orange-400">${tickDamage}</span> 元素伤害`, "crit");
+    
+    // 提升自身10%元素伤害（最多3层）
+    if (!source.elementDmgBonus) source.elementDmgBonus = 0;
+    source.elementDmgBonus = Math.min(0.3, source.elementDmgBonus + 0.1);
+    
+    // 回复终结能量（每回合最多30点）
+    if (!source.ultEnergyThisTurn) source.ultEnergyThisTurn = 0;
+    if (source.ultEnergyThisTurn < 30) {
+      const gain = Math.min(5, 30 - source.ultEnergyThisTurn);
+      source.ultimateEnergy = Math.min(source.maxUltimate || 100, source.ultimateEnergy + gain);
+      source.ultEnergyThisTurn += gain;
+    }
+  }
+  
+  return target.sparkleMarks;
+}
+
+function explodeSparkleMarks(target, stacks, source = null) {
+  if (!target.sparkleMarks || stacks <= 0) return 0;
+  
+  const explodeDamage = Math.floor((source?.atk || 300) * 0.8 * stacks);
+  target.hp = Math.max(0, target.hp - explodeDamage);
+  
+  addBattleLog(`💥 绚明印记引爆！${target.name} 受到 <span class="text-red-400 font-bold">${explodeDamage}</span> 爆炸伤害（${stacks}层）`, "crit");
+  
+  target.sparkleMarks = 0;
+  return explodeDamage;
+}
+
+function applyGodMode(unit, turns = 1) {
+  unit.godModeTurns = (unit.godModeTurns || 0) + turns;
+  unit.ignoreDefense = true;
+  addBattleLog(`🌟 ${unit.name} 进入【神子永辉】状态！攻击力+30%，所有伤害无视防御`, "player");
+}
+
+function applyLingeringCollapse(targets, turns = 2) {
+  targets.forEach(t => {
+    t.lingeringCollapseTurns = turns;
+    t.lingeringCollapseActive = true;
+  });
+  addBattleLog(`🌋 敌方全体进入【绚明崩解】状态！后续2回合自动受到印记伤害（无视防御）`, "enemy");
 }
 
 // ==================== UI 相关 ====================
@@ -689,8 +1067,161 @@ window.renderBattleTeamPreview = function() {
   });
 };
 
-// 自定义队伍选择（简单版，可扩展为Modal多选）
+// ==================== 手动选择队伍系统 ====================
+let selectedTeamForBattle = [];
+
 window.showBattleTeamSelect = function() {
-  alert("自定义队伍功能开发中！当前自动选择最高等级角色。\n\n未来可在此处多选4名角色并保存预设。");
-  // TODO: 弹出多选Modal，让玩家手动选择队伍
+  if (!player.owned || player.owned.length === 0) {
+    alert("你还没有任何角色！请先去抽卡。");
+    return;
+  }
+
+  const modalHTML = `
+    <div id="teamSelectModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4">
+      <div class="bg-zinc-900 rounded-3xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden border-4 border-emerald-500">
+        <div class="flex justify-between items-center px-8 py-5 border-b border-zinc-700">
+          <div>
+            <h3 class="text-3xl font-bold text-emerald-400">手动选择战斗队伍</h3>
+            <p class="text-sm text-gray-400 mt-1">最多选择 4 名角色（已自动按等级/星级排序）</p>
+          </div>
+          <button onclick="closeTeamSelectModal()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
+        </div>
+        
+        <div class="flex-1 overflow-auto p-6">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="teamSelectGrid">
+            <!-- 动态生成角色卡片 -->
+          </div>
+        </div>
+        
+        <div class="px-8 py-5 border-t border-zinc-700 bg-zinc-950 flex justify-between items-center">
+          <div class="text-lg">
+            已选择 <span id="selectedCount" class="font-bold text-emerald-400">0</span>/4
+          </div>
+          <div class="flex gap-4">
+            <button onclick="clearTeamSelection()" class="px-8 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl">清空</button>
+            <button onclick="confirmTeamSelection()" class="px-10 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-lg font-bold">确认并开始战斗</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById("teamSelectModal")?.remove();
+  const div = document.createElement("div");
+  div.innerHTML = modalHTML;
+  document.body.appendChild(div.firstElementChild);
+  
+  renderTeamSelectGrid();
 };
+
+function renderTeamSelectGrid() {
+  const grid = document.getElementById("teamSelectGrid");
+  if (!grid) return;
+  
+  grid.innerHTML = "";
+  selectedTeamForBattle = [];
+  
+  // 按强度排序
+  const sortedOwned = [...player.owned].sort((a, b) => {
+    const da = window.getCharacterData(a.charId);
+    const db = window.getCharacterData(b.charId);
+    const scoreA = (a.level || 1) * 100 + (a.stars || 0) * 20 + (da ? (window.rarityOrder?.[da.rarity] || 0) * 50 : 0);
+    const scoreB = (b.level || 1) * 100 + (b.stars || 0) * 20 + (db ? (window.rarityOrder?.[db.rarity] || 0) * 50 : 0);
+    return scoreB - scoreA;
+  });
+  
+  sortedOwned.forEach((item, index) => {
+    const data = window.getCharacterData(item.charId);
+    if (!data) return;
+    
+    const stats = window.calculateStats ? window.calculateStats(item, data, null) : 
+      { hp: data.baseHP, atk: data.baseATK, def: data.baseDEF, spd: data.baseSPD };
+    
+    const isSelected = selectedTeamForBattle.some(s => s.id === item.id);
+    
+    const card = document.createElement("div");
+    card.className = `relative bg-zinc-800 rounded-2xl p-4 cursor-pointer border-2 transition-all ${isSelected ? 'border-emerald-500 scale-[1.02]' : 'border-transparent hover:border-zinc-600'}`;
+    card.innerHTML = `
+      <img src="${data.image}" class="w-full h-32 object-cover rounded-xl mb-3">
+      <div class="flex justify-between items-start">
+        <div>
+          <div class="font-bold">${data.name}</div>
+          <div class="text-xs text-gray-400">${data.category} · ${data.rarity}</div>
+        </div>
+        <div class="text-right text-xs">
+          <div>Lv.${item.level || 1}</div>
+          <div class="star-${Math.min(item.stars || 0, 5)}">★${item.stars || 0}</div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-1 text-xs mt-3 text-gray-300">
+        <div>❤️ ${Math.floor(stats.hp)}</div>
+        <div>⚔️ ${Math.floor(stats.atk)}</div>
+        <div>🛡️ ${Math.floor(stats.def)}</div>
+        <div>⚡ ${Math.floor(stats.spd)}</div>
+      </div>
+    `;
+    
+    card.onclick = () => toggleTeamMember(item, card, index);
+    grid.appendChild(card);
+  });
+  
+  updateSelectedCount();
+}
+
+function toggleTeamMember(item, cardElement, index) {
+  const existingIndex = selectedTeamForBattle.findIndex(s => s.id === item.id);
+  
+  if (existingIndex !== -1) {
+    // 取消选择
+    selectedTeamForBattle.splice(existingIndex, 1);
+    cardElement.classList.remove('border-emerald-500', 'scale-[1.02]');
+    cardElement.classList.add('border-transparent');
+  } else {
+    if (selectedTeamForBattle.length >= 4) {
+      alert("最多只能选择 4 名角色！");
+      return;
+    }
+    selectedTeamForBattle.push(item);
+    cardElement.classList.add('border-emerald-500', 'scale-[1.02]');
+    cardElement.classList.remove('border-transparent');
+  }
+  
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const countEl = document.getElementById("selectedCount");
+  if (countEl) countEl.textContent = selectedTeamForBattle.length;
+}
+
+window.clearTeamSelection = function() {
+  selectedTeamForBattle = [];
+  renderTeamSelectGrid();
+};
+
+window.confirmTeamSelection = function() {
+  if (selectedTeamForBattle.length === 0) {
+    alert("请至少选择 1 名角色！");
+    return;
+  }
+  
+  closeTeamSelectModal();
+  
+  // 将选择的角色转换为 battle units
+  const battleUnits = selectedTeamForBattle.map(item => {
+    const data = window.getCharacterData(item.charId);
+    let equipped = null;
+    if (item.equippedWeapon) {
+      equipped = player.weapons.find(w => w.id === item.equippedWeapon);
+    }
+    return createBattleUnit(data, item.level || 1, item.stars || 0, true, equipped);
+  });
+  
+  startBattle(battleUnits);
+};
+
+function closeTeamSelectModal() {
+  const modal = document.getElementById("teamSelectModal");
+  if (modal) modal.remove();
+}

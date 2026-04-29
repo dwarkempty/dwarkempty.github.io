@@ -19,6 +19,9 @@ function switchTab(n) {
   if (n === 4) {
     window.renderShopInfo();
   }
+  if (n === 5) {
+    window.renderBattleTeamPreview();
+  }
 }
 
 function hideAnnouncement() {
@@ -35,7 +38,7 @@ window.onload = () => {
 };
 
 window.addEventListener('beforeunload', () => {
-  localStorage.removeItem("gachaGame");
+  localStorage.removeItem("gachaGame");// 必要，初始化
   window.saveGame();
 });
 

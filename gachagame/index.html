@@ -50,6 +50,7 @@
       <button onclick="switchTab(2)" id="tab2" class="tab-btn px-8 py-3 rounded-3xl flex items-center gap-2 text-xl font-bold">🔍 探索</button>
       <button onclick="switchTab(3)" id="tab3" class="tab-btn px-8 py-3 rounded-3xl flex items-center gap-2 text-xl font-bold">📖 图鉴</button>
       <button onclick="switchTab(4)" id="tab4" class="tab-btn px-8 py-3 rounded-3xl flex items-center gap-2 text-xl font-bold">🏪 经营</button>
+      <button onclick="switchTab(5)" id="tab5" class="tab-btn px-8 py-3 rounded-3xl flex items-center gap-2 text-xl font-bold">⚔️ 战斗</button>
     </div>
   </div>
 
@@ -214,6 +215,39 @@
     </div>
   </div>
 </div>
+
+  <!-- Panel 5: 战斗 -->
+  <div id="panel5" class="panel hidden max-w-5xl mx-auto px-4 py-8">
+    <div class="text-center mb-8">
+      <div class="text-6xl mb-4">⚔️</div>
+      <h2 class="text-4xl font-bold mb-2">战斗系统</h2>
+      <p class="text-gray-400">行动值回合制 · 能量机制 · 真实伤害计算</p>
+    </div>
+    
+    <div class="bg-zinc-900 rounded-3xl p-8 max-w-2xl mx-auto">
+      <div class="text-xl font-bold mb-4 text-emerald-400">我的队伍（自动选择最高等级角色）</div>
+      
+      <div id="battleTeamPreview" class="grid grid-cols-4 gap-3 mb-6 min-h-[120px]">
+        <!-- JS 动态填充 -->
+      </div>
+      
+      <div class="flex gap-4">
+        <button onclick="startBattle()" 
+                class="flex-1 py-5 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-3xl text-2xl font-bold flex items-center justify-center gap-3 transition btn-hover">
+          <i class="fas fa-play"></i> 开始战斗
+        </button>
+        
+        <button onclick="showBattleTeamSelect()" 
+                class="px-8 py-5 bg-zinc-700 hover:bg-zinc-600 rounded-3xl text-lg font-bold">
+          自定义队伍
+        </button>
+      </div>
+      
+      <div class="mt-6 text-xs text-gray-500 text-center">
+        战斗机制：行动值 = 10000 / 速度 · 每回合150行动值预算 · 防御减免 = 1 - 4000/(4000+防御) · 能量点5上限+每回合回复1
+      </div>
+    </div>
+  </div>
   
   <!-- 赌博 Modal -->
   <div id="gamblingModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
@@ -346,6 +380,6 @@
   <script src="js/ui.js"></script>
   <script src="js/album.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/battle.js"></script> <!-- 留白 -->
+  <script src="js/battle.js"></script>
 </body>
 </html>

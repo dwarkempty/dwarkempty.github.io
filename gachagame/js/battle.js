@@ -410,34 +410,23 @@ function executeAction(unit) {
   
   if (aliveEnemies.length === 0 || aliveAllies.length === 0) return;
   
-  // 玩家单位且开启手动模式 → 暂停并显示技能选择
-  if (isPlayer && battleState.isManualMode && !battleState.pendingSkillUnit) {
-    battleState.pendingSkillUnit = unit;
-    showSkillSelectionUI(unit);
-    return; // 等待玩家选择技能
-  }
-  
-  // 自动模式或敌人 → 使用原有简单AI
-  let skillType = "normal";
-  let target = null;
-  
+  // 仅手动战斗：我方角色必须手动选择技能
   if (isPlayer) {
-    // 自动模式下的玩家行为（演示用）
-    const canSkill = unit.energy >= 2;
-    const canUlt = unit.ultimateEnergy >= 80;
-    if (canUlt && Math.random() > 0.5) skillType = "ultimate";
-    else if (canSkill && Math.random() > 0.5) skillType = "skill1";
-    else skillType = "normal";
-    target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
-  } else {
-    // 敌人AI
-    const canSkill = unit.energy >= 2;
-    const canUlt = unit.ultimateEnergy >= 70;
-    if (canUlt && Math.random() > 0.6) skillType = "ultimate";
-    else if (canSkill && Math.random() > 0.4) skillType = "skill1";
-    else skillType = "normal";
-    target = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
+    if (!battleState.pendingSkillUnit) {
+      battleState.pendingSkillUnit = unit;
+      showSkillSelectionUI(unit);
+    }
+    return;
   }
+  
+  // 敌人保持自动AI
+  let skillType = "normal";
+  let target = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
+  
+  const canSkill = unit.energy >= 2;
+  const canUlt = unit.ultimateEnergy >= 70;
+  if (canUlt && Math.random() > 0.6) skillType = "ultimate";
+  else if (canSkill && Math.random() > 0.4) skillType = "skill1";
   
   useSkill(unit, skillType, target);
 }
@@ -461,35 +450,37 @@ function showSkillSelectionUI(unit) {
     </div>
   `;
   
-  // 普攻（所有角色都有）
-  html += `<button onclick="selectSkillAndExecute('${unit.id}', 'normal')" class="skill-btn px-6 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-center min-w-[110px]">
-    <div class="text-lg">普攻</div>
-    <div class="text-xs text-gray-400">0能量</div>
-  </button>`;
-  
-  // 战技（所有角色都有）
-  const skill1Cost = isAtya ? 2 : 1;
-  const skill1Disabled = unit.energy < skill1Cost ? 'opacity-50 cursor-not-allowed' : '';
-  html += `<button onclick="selectSkillAndExecute('${unit.id}', 'skill1')" class="skill-btn px-6 py-4 bg-blue-900 hover:bg-blue-800 rounded-2xl text-center min-w-[110px] ${skill1Disabled}">
-    <div class="text-lg">战技</div>
-    <div class="text-xs text-gray-400">${skill1Cost}能量</div>
-  </button>`;
-  
-  // 战技2（仅阿特亚有）
   if (isAtya) {
-    const skill2Disabled = unit.energy < 2 ? 'opacity-50 cursor-not-allowed' : '';
-    html += `<button onclick="selectSkillAndExecute('${unit.id}', 'skill2')" class="skill-btn px-6 py-4 bg-purple-900 hover:bg-purple-800 rounded-2xl text-center min-w-[110px] ${skill2Disabled}">
+    // 阿特亚：完整技能组
+    html += `<button onclick="selectSkillAndExecute('${unit.id}', 'normal')" class="skill-btn px-6 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-center min-w-[110px]">
+      <div class="text-lg">普攻</div>
+      <div class="text-xs text-gray-400">0能量</div>
+    </button>`;
+    
+    html += `<button onclick="selectSkillAndExecute('${unit.id}', 'skill1')" class="skill-btn px-6 py-4 bg-blue-900 hover:bg-blue-800 rounded-2xl text-center min-w-[110px]">
+      <div class="text-lg">战技</div>
+      <div class="text-xs text-gray-400">2能量</div>
+    </button>`;
+    
+    html += `<button onclick="selectSkillAndExecute('${unit.id}', 'skill2')" class="skill-btn px-6 py-4 bg-purple-900 hover:bg-purple-800 rounded-2xl text-center min-w-[110px]">
       <div class="text-lg">绚律易质</div>
       <div class="text-xs text-gray-400">2能量</div>
     </button>`;
+    
+    const ultDisabled = unit.ultimateEnergy < 80 ? 'opacity-50 cursor-not-allowed' : '';
+    html += `<button onclick="selectSkillAndExecute('${unit.id}', 'ultimate')" class="skill-btn px-6 py-4 bg-gradient-to-br from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-2xl text-center min-w-[110px] ${ultDisabled}">
+      <div class="text-lg font-bold">终结技</div>
+      <div class="text-xs">80能量</div>
+    </button>`;
+  } else {
+    // 其他角色：仅普攻（后续可扩展）
+    html += `<button onclick="selectSkillAndExecute('${unit.id}', 'normal')" class="skill-btn px-8 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-center min-w-[140px]">
+      <div class="text-lg">普攻</div>
+      <div class="text-xs text-gray-400">0能量</div>
+    </button>`;
+    
+    html += `<div class="px-4 py-2 text-xs text-gray-500 self-center">其他技能<br>开发中</div>`;
   }
-  
-  // 终结技（所有角色都有）
-  const ultDisabled = unit.ultimateEnergy < 80 ? 'opacity-50 cursor-not-allowed' : '';
-  html += `<button onclick="selectSkillAndExecute('${unit.id}', 'ultimate')" class="skill-btn px-6 py-4 bg-gradient-to-br from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-2xl text-center min-w-[110px] ${ultDisabled}">
-    <div class="text-lg font-bold">终结技</div>
-    <div class="text-xs">80能量</div>
-  </button>`;
   
   html += `<button onclick="cancelSkillSelection()" class="skill-btn px-5 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-sm">取消</button>`;
   

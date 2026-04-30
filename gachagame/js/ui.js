@@ -81,9 +81,13 @@ function renderNormalDrawCards(results, poolType, container) {
     const hasShine = (data.rarity === "SSR" || data.rarity === "UR");
     div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${window.getRarityColor(data.rarity)} text-center w-40 sm:w-52 inventory-card`;
     
-    // 稀有度粒子庆祝
+    // 稀有度粒子庆祝 + UR 强制金色边框+彩虹光
     if (data.rarity === "SSR" || data.rarity === "UR") {
       setTimeout(() => createDrawParticles(div, true), 300);
+    }
+    if (data.rarity === "UR") {
+      div.style.border = "5px solid #fbbf24";
+      div.style.boxShadow = "0 0 30px #ec4899, 0 0 60px #8b5cf6, 0 0 90px #22d3ee";
     }
     div.innerHTML = `
       <img src="${data.image}" class="character-img w-full rounded-2xl mx-auto ${hasShine ? 'draw-shine' : ''}">

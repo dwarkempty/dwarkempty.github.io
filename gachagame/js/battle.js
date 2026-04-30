@@ -1,4 +1,4 @@
-// js/battle.js - 完整战斗系统（严格遵循战斗模块设计：回合制、SP/UE、速度行动、属性克制、伤害公式等）
+// js/battle.js - 完整战斗系统
 let battleState = {
   team: [],           // [{..., buffs:[], debuffs:[] }]
   enemies: [],        // [{name, currentHP, maxHP, atk, def, spd, attribute, buffs:[], debuffs:[] }, ...] 支持多个敌人

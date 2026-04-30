@@ -1,4 +1,4 @@
-// js/constants.js - 角色/武器池 + 常量 + 经营系统数据
+// js/constants.js - 角色/武器池
 const characterPool = [
   {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:680, baseATK:162, baseDEF:192, baseSPD:109, category:"强袭", image:"images/Allen_Illustration.jpg", attribute:"元素——土"},
   {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:920, baseATK:135, baseDEF:255, baseSPD:111, category:"辅助", image:"images/Sally_Illustration.jpg", attribute:"元素——火"},

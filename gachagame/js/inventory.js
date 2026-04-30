@@ -51,6 +51,11 @@ function renderInventory() {
           <div class="flex justify-between text-sm mt-4">
             <div>❤️ ${stats.hp}</div><div>⚔️ ${stats.atk}</div><div>🛡️ ${stats.def}</div>
           </div>
+          <div class="flex justify-between text-[10px] mt-1 text-purple-400">
+            <div>⚡ ${stats.spd}</div>
+            <div>${stats.attribute}</div>
+            <div>穿 ${stats.penFixed}</div>
+          </div>
         </div>
       `;
     } else {
@@ -166,7 +171,7 @@ function showCharacterDetail(index) {
       </div>
 
       <div class="flex-1">
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-3">
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">等级</div>
             <div class="text-4xl font-bold">${item.level}</div>
@@ -176,28 +181,56 @@ function showCharacterDetail(index) {
             <div class="text-4xl font-bold flex items-center justify-center gap-1">${starHTML}</div>
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">攻击</div>
+            <div class="text-sm text-orange-400">属性</div>
+            <div class="text-2xl font-bold text-purple-400">${stats.attribute}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">生命值</div>
+            <div class="text-3xl font-bold">${stats.hp}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">攻击力</div>
             <div class="text-3xl font-bold">${stats.atk}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">防御力</div>
+            <div class="text-3xl font-bold">${stats.def}</div>
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">暴击率</div>
             <div class="text-3xl font-bold">${(stats.critRate*100).toFixed(0)}%</div>
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">血量</div>
-            <div class="text-3xl font-bold">${stats.hp}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">暴击伤害</div>
             <div class="text-3xl font-bold">${(stats.critDamage*100).toFixed(0)}%</div>
           </div>
           <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
-            <div class="text-sm text-orange-400">防御</div>
-            <div class="text-3xl font-bold">${stats.def}</div>
-          </div>
-          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
             <div class="text-sm text-orange-400">速度</div>
             <div class="text-3xl font-bold">${stats.spd}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">穿透值</div>
+            <div class="text-3xl font-bold">${stats.penFixed}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">穿透率</div>
+            <div class="text-3xl font-bold">${(stats.penRate*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center">
+            <div class="text-sm text-orange-400">护盾强度</div>
+            <div class="text-3xl font-bold">${stats.shieldStr.toFixed(1)}</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center col-span-1">
+            <div class="text-sm text-orange-400">治疗加成</div>
+            <div class="text-3xl font-bold">${(stats.healBonus*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center col-span-1">
+            <div class="text-sm text-orange-400">受治疗加成</div>
+            <div class="text-3xl font-bold">${(stats.recvHealBonus*100).toFixed(0)}%</div>
+          </div>
+          <div class="stat-box border-4 border-orange-500 rounded-3xl p-4 text-center col-span-1">
+            <div class="text-sm text-orange-400">治疗/护盾</div>
+            <div class="text-xs text-gray-400">详见战斗</div>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-8">

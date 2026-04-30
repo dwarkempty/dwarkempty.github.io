@@ -9,6 +9,7 @@ let battleState = {
   isPlayerTurn: false,
   selectedTeam: []    // for pre-battle selection, char indices in player.owned
 };
+window.battleState = battleState;
 
 // 增益减益详细效果描述 (可扩展)
 const buffDescMap = {
@@ -793,7 +794,8 @@ function endBattle(isWin, fromVictory = false) {
   }
 
   // 重置状态
-  battleState = { team: [], enemy: null, turnOrder: [], currentTurnIndex: 0, bigTurn: 1, log: [], isPlayerTurn: false, selectedTeam: [] };
+  battleState = { team: [], enemies: [], turnOrder: [], currentTurnIndex: 0, bigTurn: 1, log: [], isPlayerTurn: false, selectedTeam: [] };
+  window.battleState = battleState;
   renderTeamSelectGrid();
 }
 
@@ -802,6 +804,7 @@ window.initBattleUI = initBattleUI;
 window.startBattle = startBattle;
 window.performAction = performAction;
 window.endBattle = endBattle;
+window.addLog = addLog;
 function updateActionOrder() {
   const listEl = document.getElementById("actionOrderList");
   if (!listEl || !battleState.turnOrder) return;

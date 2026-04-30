@@ -20,7 +20,7 @@ function switchTab(n) {
     window.renderShopInfo();
   }
   if (n === 5) {
-    window.renderBattleTeamPreview();
+    if (window.initBattleUI) window.initBattleUI();
   }
 }
 

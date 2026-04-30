@@ -313,6 +313,14 @@ function executeConsoleCommand() {
         player.materials[id - 200] = (player.materials[id - 200] || 0) + amount;
         log.innerHTML += `✅ 已获得 ${amount} 个 ${mat.name}<br>`;
       }
+    } else if (id >= 1001 && id <= 1016) {
+      const charId = id - 1000;
+      const charData = window.getCharacterData(charId);
+      if (charData) {
+        player.sourcePowers = player.sourcePowers || {};
+        player.sourcePowers[charId] = (player.sourcePowers[charId] || 0) + amount;
+        log.innerHTML += `✅ 已获得 ${amount} 个 ${charData.name}源力<br>`;
+      }
     } else {
       log.innerHTML += `❌ 未知物品ID<br>`;
     }

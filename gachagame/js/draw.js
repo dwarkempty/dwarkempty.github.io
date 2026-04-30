@@ -1,4 +1,4 @@
-// js/draw.js - 抽卡核心逻辑（已全部改为耀星）
+// js/draw.js - 抽卡核心逻辑
 function drawOne(poolType) {
   const isChar = poolType === "char";
   if (isChar) {

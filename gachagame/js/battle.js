@@ -1,706 +1,613 @@
-// =============================================
-// 全新战斗模块 v2.0 - 严格遵循《战斗模块.txt》设计
-// =============================================
-
+// js/battle.js - 完整战斗系统（严格遵循战斗模块设计：回合制、SP/UE、速度行动、属性克制、伤害公式等）
 let battleState = {
-  playerTeam: [],
-  enemyTeam: [],
-  allUnits: [],
-  currentBigTurn: 1,
-  turnOrder: [],           // 当前大回合的行动顺序
-  currentActorIndex: 0,    // 当前行动的单位在 turnOrder 中的索引
+  team: [],           // [{id, charId, stats, currentHP, maxHP, SP, UE, ultimateUsed: false, name, image, category}]
+  enemy: null,        // {name, maxHP, currentHP, atk, def, spd, attribute, ...}
+  turnOrder: [],      // array of 'team-0', 'team-1', 'enemy'
+  currentTurnIndex: 0,
+  bigTurn: 1,
   log: [],
-  isRunning: false,
-  pendingSkillUnit: null,
-  battleModal: null,
-  speed: 1
+  isPlayerTurn: false,
+  selectedTeam: []    // for pre-battle selection, char indices in player.owned
 };
 
-// ==================== 工具函数 ====================
-function getCategoryPriority(category) {
-  if (category === "近卫") return 3;
-  if (category === "辅助") return 2;
-  return 1; // 强袭
-}
-
-// 元素克制表
-const ELEMENT_ADVANTAGE = {
-  "混沌": { "灵幻": 1.3, "元素": 0.7, "裂隙": 1.0 },
-  "灵幻": { "元素": 1.3, "混沌": 0.7, "裂隙": 1.0 },
-  "元素": { "混沌": 1.3, "灵幻": 0.7, "裂隙": 1.0 },
-  "裂隙": { "混沌": 1.2, "灵幻": 1.2, "元素": 1.2 }
-};
-
-function getElementMultiplier(attackerType, targetType) {
-  if (!attackerType || !targetType) return 1.0;
-  return ELEMENT_ADVANTAGE[attackerType]?.[targetType] || 1.0;
-}
-
-// ==================== 伤害计算（严格按照新公式） ====================
-function calculateDamage(attacker, target, skillMultiplier = 1.0, isCrit = false, extra = {}) {
-  // 1. 基础伤害
-  const baseAtk = (attacker.atk || 0) + (extra.bonusAtk || 0);
-  const atkPercent = (extra.atkPercent || 0) + (attacker.atkPercentBuff || 0);
-  const baseDamage = baseAtk * (1 + atkPercent) * skillMultiplier;
-
-  // 2. 伤害扩大
-  const dmgBonus = (extra.dmgBonus || 0) + (attacker.dmgBonus || 0);
-  const elemAdv = getElementMultiplier(attacker.elementType || "元素", target.elementType || "元素");
-  let amplified = baseDamage * (1 + dmgBonus) * elemAdv;
-
-  // 3. 暴击
-  let critMult = 1.0;
-  let finalIsCrit = isCrit;
-  const critRate = (attacker.critRate || 0.05) + (extra.critRateBonus || 0);
-  if (!finalIsCrit && Math.random() < critRate) {
-    finalIsCrit = true;
-  }
-  if (finalIsCrit) {
-    critMult = 1 + ((attacker.critDamage || 0.5) + (extra.critDmgBonus || 0));
-  }
-  let totalOut = amplified * critMult;
-
-  // 4. 有效防御 & 减免
-  const penRate = attacker.penRate || 0;
-  const penValue = attacker.penValue || 0;
-  const effectiveDef = Math.max(0, (target.def || 0) * (1 - penRate) - penValue);
-  const defReduction = 1 - 4000 / (4000 + effectiveDef);
-
-  const dmgReduction = extra.dmgReduction || 0;
-  const elemDisadv = 1 / getElementMultiplier(target.elementType || "元素", attacker.elementType || "元素"); // 反向克制
-
-  let finalDamage = totalOut * (1 - defReduction) * (1 - dmgReduction) * elemDisadv;
-
-  // 5. 特殊状态（无视防御）
-  if (attacker.ignoreDefense) {
-    finalDamage = totalOut * (1 - dmgReduction) * elemDisadv;
-  }
-
-  return {
-    damage: Math.max(1, Math.floor(finalDamage)),
-    isCrit: finalIsCrit,
-    breakdown: { baseDamage, amplified, critMult, defReduction, elemAdv }
-  };
-}
-
-// ==================== 开始战斗 ====================
-function startBattle(selectedChars = null) {
-  // 如果没有传入队伍，自动选择前4个
-  if (!selectedChars || selectedChars.length === 0) {
-    const sorted = [...(player.owned || [])].sort((a, b) => {
-      const da = window.getCharacterData(a.charId);
-      const scoreA = (a.level || 1) * 100 + (a.stars || 0) * 20 + (da ? (window.rarityOrder?.[da.rarity] || 0) * 50 : 0);
-      const db = window.getCharacterData(b.charId);
-      const scoreB = (b.level || 1) * 100 + (b.stars || 0) * 20 + (db ? (window.rarityOrder?.[db.rarity] || 0) * 50 : 0);
-      return scoreB - scoreA;
-    }).slice(0, 4);
-
-    selectedChars = sorted.map(item => {
-      const data = window.getCharacterData(item.charId);
-      let equipped = null;
-      if (item.equippedWeapon) equipped = player.weapons.find(w => w.id === item.equippedWeapon);
-      return createBattleUnit(data, item.level || 1, item.stars || 0, true, equipped);
-    });
-  }
-
-  if (selectedChars.length === 0) {
-    // 给演示队伍
-    const demo = window.characterPool.slice(0, 4);
-    selectedChars = demo.map((d, i) => createBattleUnit(d, 25 + i * 3, 1, true, null));
-  }
-
-  battleState.playerTeam = selectedChars;
-  const avgLevel = selectedChars.reduce((s, u) => s + u.level, 0) / selectedChars.length;
-  battleState.enemyTeam = generateEnemyTeam(Math.floor(avgLevel), Math.max(2, Math.min(4, selectedChars.length)));
-
-  battleState.allUnits = [...battleState.playerTeam, ...battleState.enemyTeam];
-  battleState.currentBigTurn = 1;
-  battleState.log = [];
-  battleState.isRunning = true;
-  battleState.pendingSkillUnit = null;
-
-  // 初始化所有单位
-  battleState.allUnits.forEach(u => {
-    u.hp = u.maxHp;
-    u.energy = 3;
-    u.ultimateEnergy = 30; // 初始30点
-    u.isAlive = true;
-    u.sparkleMarks = 0;
-    u.usedUltimateThisBigTurn = false;
-    u.elementType = u.name.includes("阿特亚") || u.name.includes("希罗") ? "元素" : (u.elementType || "混沌");
-  });
-
-  showBattleModal();
-  startNewBigTurn();
-}
-
-// 生成敌人（简化）
-function generateEnemyTeam(avgLevel, count) {
-  const pool = [
-    { name: "森林史莱姆", rarity: "R", category: "强袭", baseHP: 320, baseATK: 190, baseDEF: 110, baseSPD: 98, elementType: "混沌", image: "images/Allen_Illustration.jpg" },
-    { name: "岩石傀儡", rarity: "SR", category: "近卫", baseHP: 580, baseATK: 150, baseDEF: 290, baseSPD: 82, elementType: "元素", image: "images/Buck_Illustration.jpg" },
-    { name: "暗影刺客", rarity: "SR", category: "强袭", baseHP: 350, baseATK: 270, baseDEF: 105, baseSPD: 138, elementType: "混沌", image: "images/Shadowblade_Illustration.jpg" },
-    { name: "雷鸣骑士", rarity: "SSR", category: "强袭", baseHP: 520, baseATK: 320, baseDEF: 175, baseSPD: 125, elementType: "元素", image: "images/Sorey_Illustration.jpg" }
-  ];
-  const enemies = [];
-  for (let i = 0; i < count; i++) {
-    const t = pool[Math.floor(Math.random() * pool.length)];
-    const u = createBattleUnit(t, avgLevel + Math.floor(Math.random() * 8) - 2, 0, false, null);
-    u.maxHp = Math.floor(u.maxHp * 1.2);
-    u.hp = u.maxHp;
-    enemies.push(u);
-  }
-  return enemies;
-}
-
-function createBattleUnit(charData, level = 1, stars = 0, isPlayer = true, equipped = null) {
-  const stats = window.calculateStats ? window.calculateStats({ level, stars }, charData, equipped) : {
-    hp: charData.baseHP, atk: charData.baseATK, def: charData.baseDEF, spd: charData.baseSPD,
-    critRate: 0.05, critDamage: 0.5
-  };
-  return {
-    id: Date.now() + Math.random(),
-    name: charData.name,
-    rarity: charData.rarity,
-    category: charData.category,
-    image: charData.image,
-    maxHp: Math.floor(stats.hp),
-    hp: Math.floor(stats.hp),
-    atk: Math.floor(stats.atk),
-    def: Math.floor(stats.def),
-    spd: Math.floor(stats.spd),
-    critRate: stats.critRate || 0.05,
-    critDamage: stats.critDamage || 0.5,
-    energy: 3,
-    ultimateEnergy: 30,
-    isPlayer: isPlayer,
-    isAlive: true,
-    usedUltimateThisBigTurn: false,
-    elementType: charData.elementType || "混沌",
-    sparkleMarks: 0
-  };
-}
-
-// ==================== 大回合开始 ====================
-function startNewBigTurn() {
-  // 重置所有单位本回合状态
-  battleState.allUnits.forEach(u => {
-    if (u.isAlive) {
-      u.usedUltimateThisBigTurn = false;
-      if (u.isPlayer) {
-        u.energy = Math.min(5, u.energy + 1); // 大回合开始 +1 SP
-      }
-    }
-  });
-
-  // 按速度排序（降序），同速玩家优先，同类近卫优先
-  const alive = battleState.allUnits.filter(u => u.isAlive);
-  alive.sort((a, b) => {
-    if (a.spd !== b.spd) return b.spd - a.spd;
-    if (a.isPlayer !== b.isPlayer) return a.isPlayer ? -1 : 1;
-    return getCategoryPriority(b.category) - getCategoryPriority(a.category);
-  });
-
-  battleState.turnOrder = alive;
-  battleState.currentActorIndex = 0;
-  battleState.currentBigTurn++;
-
-  addBattleLog(`=== 第 ${battleState.currentBigTurn} 大回合开始 ===`, "system");
-  updateBattleUI();
-
-  // 延迟开始第一个行动
-  setTimeout(() => processNextTurn(), 600);
-}
-
-// ==================== 处理下一个行动 ====================
-function processNextTurn() {
-  if (!battleState.isRunning) return;
-
-  // 检查胜负
-  const alivePlayers = battleState.playerTeam.filter(u => u.isAlive).length;
-  const aliveEnemies = battleState.enemyTeam.filter(u => u.isAlive).length;
-
-  if (alivePlayers === 0) { endBattle(false); return; }
-  if (aliveEnemies === 0) { endBattle(true); return; }
-
-  // 如果当前大回合所有单位都行动完毕 → 新大回合
-  if (battleState.currentActorIndex >= battleState.turnOrder.length) {
-    startNewBigTurn();
-    return;
-  }
-
-  const actor = battleState.turnOrder[battleState.currentActorIndex];
-
-  if (!actor || !actor.isAlive) {
-    battleState.currentActorIndex++;
-    processNextTurn();
-    return;
-  }
-
-  // 高亮当前行动者
-  highlightCurrentActor(actor);
-
-  if (actor.isPlayer) {
-    // 我方 → 手动选择技能
-    battleState.pendingSkillUnit = actor;
-    showSkillSelectionUI(actor);
-  } else {
-    // 敌人 → 自动AI
-    setTimeout(() => {
-      autoEnemyAction(actor);
-    }, 400);
-  }
-}
-
-function highlightCurrentActor(actor) {
-  // 简单实现：更新UI时会高亮
-  updateBattleUI();
-}
-
-// ==================== 敌人AI ====================
-function autoEnemyAction(unit) {
-  const alivePlayers = battleState.playerTeam.filter(p => p.isAlive);
-  if (alivePlayers.length === 0) return;
-
-  let skillType = "normal";
-  let target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-
-  const canSkill = unit.energy >= 1;
-  const canUlt = unit.ultimateEnergy >= 100 && !unit.usedUltimateThisBigTurn;
-
-  if (canUlt && Math.random() > 0.65) {
-    skillType = "ultimate";
-  } else if (canSkill && Math.random() > 0.4) {
-    skillType = "skill1";
-  }
-
-  useSkill(unit, skillType, target);
-  battleState.currentActorIndex++;
-  setTimeout(() => processNextTurn(), 500);
-}
-
-// ==================== 技能选择UI ====================
-function showSkillSelectionUI(unit) {
-  battleState.isRunning = false; // 暂停自动流程
-
-  const isAtya = unit.name.includes("阿特亚");
-  const canSkill1 = unit.energy >= 1;
-  const canSkill2 = unit.energy >= 2;
-  const canUlt = unit.ultimateEnergy >= 100 && !unit.usedUltimateThisBigTurn;
-
-  const bar = document.createElement("div");
-  bar.id = "skillSelectionBar";
-  bar.className = `fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900 border-2 border-emerald-500 rounded-3xl px-6 py-4 flex gap-3 z-[100001] shadow-2xl`;
-
-  let html = `
-    <div class="flex flex-col justify-center mr-4 text-center">
-      <div class="font-bold text-emerald-400">${unit.name}</div>
-      <div class="text-xs text-gray-400">SP ${unit.energy}/5 | UE ${unit.ultimateEnergy}</div>
-    </div>
-  `;
-
-  // 普攻（永远可用）
-  html += `<button onclick="playerUseSkill('${unit.id}', 'normal')" class="px-7 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm font-bold">普攻<br><span class="text-[10px] text-gray-400">结束回合</span></button>`;
-
-  // 战技1
-  html += `<button onclick="playerUseSkill('${unit.id}', 'skill1')" class="px-6 py-3 bg-blue-900 hover:bg-blue-800 rounded-2xl text-sm font-bold ${canSkill1 ? '' : 'opacity-40 cursor-not-allowed'}" ${canSkill1 ? '' : 'disabled'}>
-    战技1<br><span class="text-[10px] text-gray-400">消耗1 SP</span>
-  </button>`;
-
-  // 战技2（所有角色通用，效果留白）
-  html += `<button onclick="playerUseSkill('${unit.id}', 'skill2')" class="px-6 py-3 bg-purple-900 hover:bg-purple-800 rounded-2xl text-sm font-bold ${canSkill2 ? '' : 'opacity-40 cursor-not-allowed'}" ${canSkill2 ? '' : 'disabled'}>
-    战技2<br><span class="text-[10px] text-gray-400">消耗2 SP</span>
-  </button>`;
-
-  // 终结技
-  html += `<button onclick="playerUseSkill('${unit.id}', 'ultimate')" class="px-6 py-3 bg-gradient-to-br from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-2xl text-sm font-bold ${canUlt ? '' : 'opacity-40 cursor-not-allowed'}" ${canUlt ? '' : 'disabled'}>
-    终结技<br><span class="text-[10px]">消耗100 UE</span>
-  </button>`;
-
-  html += `<button onclick="cancelSkillSelection()" class="px-5 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-xs">取消</button>`;
-
-  bar.innerHTML = html;
-  document.body.appendChild(bar);
-}
-
-window.playerUseSkill = function(unitId, skillType) {
-  const unit = battleState.allUnits.find(u => u.id == unitId);
-  if (!unit) return;
-
-  document.getElementById("skillSelectionBar")?.remove();
-
-  const aliveEnemies = battleState.enemyTeam.filter(e => e.isAlive);
-  let target = aliveEnemies[0];
-
-  // 简单目标选择（后续可扩展点击选择）
-  useSkill(unit, skillType, target);
-
-  // 推进到下一个
-  battleState.pendingSkillUnit = null;
-  battleState.isRunning = true;
-  battleState.currentActorIndex++;
-
-  setTimeout(() => processNextTurn(), 450);
-};
-
-window.cancelSkillSelection = function() {
-  document.getElementById("skillSelectionBar")?.remove();
-  battleState.pendingSkillUnit = null;
-  battleState.isRunning = true;
-  addBattleLog("已取消行动", "system");
-  setTimeout(() => processNextTurn(), 300);
-};
-
-// ==================== 使用技能 ====================
-function useSkill(unit, skillType, target) {
-  if (!unit.isAlive || !target) return;
-
-  const isPlayer = unit.isPlayer;
-  const isAtya = unit.name.includes("阿特亚");
-  let logMsg = "";
-  let dmgInfo = null;
-
-  if (skillType === "normal") {
-    // 普攻
-    dmgInfo = calculateDamage(unit, target, 1.0);
-    target.hp = Math.max(0, target.hp - dmgInfo.damage);
-    logMsg = `${unit.name} 普攻 → ${target.name} <span class="text-red-400">${dmgInfo.damage}</span>`;
-    unit.ultimateEnergy = Math.min(100, unit.ultimateEnergy + 20);
-
-  } else if (skillType === "skill1") {
-    if (unit.energy < 1) { addBattleLog("SP不足", "system"); return; }
-    unit.energy -= 1;
-
-    const mult = isAtya ? 2.2 : 1.8;
-    dmgInfo = calculateDamage(unit, target, mult);
-    target.hp = Math.max(0, target.hp - dmgInfo.damage);
-    logMsg = `${unit.name} 战技 → ${target.name} <span class="text-red-400">${dmgInfo.damage}</span>`;
-    unit.ultimateEnergy = Math.min(100, unit.ultimateEnergy + 30);
-
-    if (isAtya) {
-      // 阿特亚战技1特殊效果：附加印记
-      target.sparkleMarks = Math.min(8, (target.sparkleMarks || 0) + 3);
-      logMsg += ` +3层印记`;
-    }
-
-  } else if (skillType === "skill2" && isAtya) {
-    if (unit.energy < 2) { addBattleLog("SP不足", "system"); return; }
-    unit.energy -= 2;
-
-    const base = calculateDamage(unit, target, 3.4).damage;
-    const explode = (target.sparkleMarks || 0) * unit.atk * 0.8;
-    const total = base + explode;
-
-    target.hp = Math.max(0, target.hp - total);
-    target.sparkleMarks = 0;
-
-    logMsg = `绚律易质！${target.name} 受到 <span class="text-red-400">${total}</span> 伤害（含爆炸）`;
-    unit.ultimateEnergy = Math.min(100, unit.ultimateEnergy + 35);
-    unit.atkPercentBuff = (unit.atkPercentBuff || 0) + 0.25;
-
-  } else if (skillType === "ultimate") {
-    if (unit.ultimateEnergy < 100 || unit.usedUltimateThisBigTurn) {
-      addBattleLog("终结技不可用", "system"); return;
-    }
-    unit.ultimateEnergy = 0;
-    unit.usedUltimateThisBigTurn = true;
-
-    if (isAtya) {
-      // 阿特亚终结技
-      let total = 0;
-      battleState.enemyTeam.filter(e => e.isAlive).forEach(e => {
-        const markDmg = (e.sparkleMarks || 0) * unit.atk * 0.8;
-        const base = calculateDamage(unit, e, 7.0).damage;
-        e.hp = Math.max(0, e.hp - (base + markDmg));
-        total += base + markDmg;
-      });
-      logMsg = `万般绚明！全体造成 <span class="text-red-400">${total}</span> 毁灭伤害`;
-      // 进入神子永辉
-      unit.ignoreDefense = true;
-      unit.godModeTurns = 2;
-    } else {
-      const dmg = calculateDamage(unit, target, 4.5, true).damage;
-      target.hp = Math.max(0, target.hp - dmg);
-      logMsg = `终结技！${target.name} 受到 <span class="text-red-400">${dmg}</span> 伤害`;
-    }
-  }
-
-  // 检查死亡
-  battleState.allUnits.forEach(u => { if (u.hp <= 0) u.isAlive = false; });
-
-  addBattleLog(logMsg, isPlayer ? "player" : "enemy");
-  updateBattleUI();
-}
-
-// ==================== UI 相关 ====================
-function showBattleModal() {
-  const html = `
-    <div id="battleModal" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[99999] p-2">
-      <div class="bg-zinc-900 rounded-3xl w-full max-w-6xl h-[92vh] flex flex-col overflow-hidden border-4 border-orange-500">
-        <!-- 顶部 -->
-        <div class="flex justify-between items-center px-6 py-4 bg-zinc-950 border-b border-zinc-700">
-          <div class="flex items-center gap-4">
-            <div class="text-2xl font-bold text-orange-400">⚔️ 战斗中</div>
-            <div class="text-sm text-gray-400">第 <span id="bigTurnNum">1</span> 大回合</div>
+function initBattleUI() {
+  const panel = document.getElementById("panel5");
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-4 bg-zinc-900 px-8 py-3 rounded-3xl border border-red-500">
+          <span class="text-6xl">⚔️</span>
+          <div>
+            <div class="text-5xl font-bold text-red-500 tracking-wider">战斗测试区</div>
+            <div class="text-sm text-gray-400 -mt-1">基于完整战斗模块 · 回合制 · SP/UE系统</div>
           </div>
-          <div class="flex items-center gap-3">
-            <button onclick="battleState.speed = Math.max(0.5, battleState.speed-0.5); updateBattleUI()" class="px-3 py-1 bg-zinc-800 rounded text-xs">慢</button>
-            <div id="battleSpeed" class="text-emerald-400 font-bold w-10 text-center">1.0x</div>
-            <button onclick="battleState.speed = Math.min(3, battleState.speed+0.5); updateBattleUI()" class="px-3 py-1 bg-zinc-800 rounded text-xs">快</button>
-            <button onclick="endBattle(false)" class="px-5 py-1.5 bg-red-600 hover:bg-red-700 rounded-2xl text-xs font-bold">投降</button>
+        </div>
+      </div>
+
+      <!-- 队伍选择 -->
+      <div id="preBattle" class="mb-10">
+        <div class="flex items-center justify-between mb-5">
+          <div class="text-2xl font-bold flex items-center gap-3">
+            🧙 选择出战队伍 <span class="text-base text-gray-400 font-normal">(最多 3 人)</span>
+          </div>
+          <div class="text-emerald-400 text-sm">已选 <span id="selectedCount" class="font-bold text-2xl">0</span>/3</div>
+        </div>
+        
+        <div id="teamSelectGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4 max-h-[420px] overflow-auto pr-2"></div>
+        
+        <div class="flex justify-center gap-4 mt-8">
+          <button onclick="startBattle()" 
+                  class="px-16 py-5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-2xl font-bold rounded-3xl flex items-center gap-3 shadow-xl btn-hover">
+            <i class="fas fa-play"></i> 开始战斗
+          </button>
+          <button onclick="resetTeamSelection()" 
+                  class="px-10 py-5 bg-zinc-800 hover:bg-zinc-700 text-xl rounded-3xl flex items-center gap-2">
+            <i class="fas fa-undo"></i> 重置选择
+          </button>
+        </div>
+      </div>
+
+      <!-- 战斗主界面 -->
+      <div id="battleArena" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <div class="text-2xl font-bold text-emerald-400">第 <span id="bigTurnDisplay">1</span> 大回合</div>
+          <div onclick="endBattle(true)" class="cursor-pointer text-red-400 hover:text-red-500 flex items-center gap-2 text-sm">
+            <i class="fas fa-times"></i> 结束战斗
           </div>
         </div>
 
-        <!-- 战场 -->
-        <div class="flex-1 flex p-4 gap-4 overflow-hidden">
-          <!-- 我方 -->
-          <div class="flex-1 bg-zinc-950 rounded-3xl p-4 border border-emerald-500/50">
-            <div class="text-emerald-400 text-lg font-bold mb-3">我方队伍</div>
-            <div id="playerUnits" class="grid grid-cols-2 gap-3"></div>
-          </div>
-
-          <!-- 行动顺序 -->
-          <div class="w-56 bg-zinc-950 rounded-3xl p-4 border border-yellow-500/50 flex-shrink-0">
-            <div class="text-yellow-400 text-sm font-bold mb-3">行动顺序</div>
-            <div id="actionOrderList" class="text-xs space-y-1"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- 我方队伍 -->
+          <div class="lg:col-span-7">
+            <div class="text-xl font-bold mb-4 text-emerald-400 flex items-center gap-2">
+              <span>我方</span> <span class="text-xs bg-emerald-900 px-3 py-0.5 rounded-full">TEAM</span>
+            </div>
+            <div id="teamDisplay" class="grid grid-cols-1 sm:grid-cols-3 gap-5"></div>
           </div>
 
           <!-- 敌方 -->
-          <div class="flex-1 bg-zinc-950 rounded-3xl p-4 border border-red-500/50">
-            <div class="text-red-400 text-lg font-bold mb-3">敌方队伍</div>
-            <div id="enemyUnits" class="grid grid-cols-2 gap-3"></div>
+          <div class="lg:col-span-5">
+            <div class="text-xl font-bold mb-4 text-red-400 flex items-center gap-2">
+              <span>敌方</span> <span class="text-xs bg-red-900 px-3 py-0.5 rounded-full">BOSS</span>
+            </div>
+            <div id="enemyDisplay" class="bg-zinc-900 border-4 border-red-600 rounded-3xl p-6 shadow-2xl"></div>
           </div>
         </div>
 
-        <!-- 日志 -->
-        <div class="h-44 bg-black/70 border-t border-zinc-700 p-4 overflow-auto font-mono text-sm" id="battleLog"></div>
+        <!-- 战斗日志 -->
+        <div class="mt-6">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <div class="text-lg font-bold text-amber-400">📜 战斗日志</div>
+            <button onclick="clearBattleLog()" class="text-xs px-3 py-1 bg-zinc-800 rounded-xl hover:bg-zinc-700">清空</button>
+          </div>
+          <div id="battleLog" class="bg-black/70 border border-zinc-700 rounded-3xl p-5 text-sm font-mono h-[220px] overflow-auto leading-relaxed text-gray-300"></div>
+        </div>
+
+        <!-- 操作栏 -->
+        <div id="actionBar" class="mt-6 bg-zinc-900 border-4 border-orange-500 rounded-3xl p-6 hidden">
+          <div class="text-center mb-5">
+            <div id="currentActorName" class="text-2xl font-bold text-orange-400"></div>
+            <div class="text-xs text-gray-400 mt-1">当前行动角色</div>
+          </div>
+          
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <button onclick="performAction('normal')" 
+                    class="py-6 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all rounded-3xl text-xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg">
+              <div>普攻</div>
+              <div class="text-xs opacity-75">0 SP • +20 UE</div>
+            </button>
+            <button onclick="performAction('skill1')" 
+                    class="py-6 bg-purple-600 hover:bg-purple-700 active:scale-95 transition-all rounded-3xl text-xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg">
+              <div>战技 1</div>
+              <div class="text-xs opacity-75">1 SP • +30 UE</div>
+            </button>
+            <button onclick="performAction('skill2')" 
+                    class="py-6 bg-purple-600 hover:bg-purple-700 active:scale-95 transition-all rounded-3xl text-xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg">
+              <div>战技 2</div>
+              <div class="text-xs opacity-75">1 SP • +30 UE</div>
+            </button>
+            <button onclick="performAction('ultimate')" 
+                    class="py-6 bg-gradient-to-br from-pink-600 via-purple-600 to-cyan-500 hover:brightness-110 active:scale-95 transition-all rounded-3xl text-xl font-bold flex flex-col items-center justify-center gap-1 shadow-lg">
+              <div>终结技</div>
+              <div class="text-xs opacity-75">100 UE • 每大回合1次</div>
+            </button>
+          </div>
+          
+          <div class="text-center mt-4 text-[10px] text-gray-500">终结技不会结束当前小回合，但每大回合仅限释放一次</div>
+        </div>
       </div>
     </div>
   `;
 
-  document.getElementById("battleModal")?.remove();
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  document.body.appendChild(div.firstElementChild);
-  battleState.battleModal = document.getElementById("battleModal");
+  renderTeamSelectGrid();
+  battleState.selectedTeam = [];
 }
 
-function updateBattleUI() {
-  if (!battleState.battleModal) return;
+// 渲染可选队伍
+function renderTeamSelectGrid() {
+  const container = document.getElementById("teamSelectGrid");
+  if (!container) return;
+  container.innerHTML = "";
 
-  // 大回合数
-  const turnEl = document.getElementById("bigTurnNum");
-  if (turnEl) turnEl.textContent = battleState.currentBigTurn;
-
-  // 速度
-  const speedEl = document.getElementById("battleSpeed");
-  if (speedEl) speedEl.textContent = battleState.speed.toFixed(1) + "x";
-
-  // 我方
-  const pContainer = document.getElementById("playerUnits");
-  if (pContainer) {
-    pContainer.innerHTML = "";
-    battleState.playerTeam.forEach(u => {
-      const card = createUnitCard(u, true);
-      pContainer.appendChild(card);
-    });
+  if (!player.owned || player.owned.length === 0) {
+    container.innerHTML = `<p class="col-span-full text-center text-gray-500 py-12">暂无角色，快去抽卡吧！</p>`;
+    return;
   }
 
-  // 敌方
-  const eContainer = document.getElementById("enemyUnits");
-  if (eContainer) {
-    eContainer.innerHTML = "";
-    battleState.enemyTeam.forEach(u => {
-      const card = createUnitCard(u, false);
-      eContainer.appendChild(card);
-    });
-  }
+  player.owned.forEach((item, idx) => {
+    const char = window.getCharacterData(item.charId);
+    if (!char) return;
 
-  // 行动顺序
-  const orderEl = document.getElementById("actionOrderList");
-  if (orderEl) {
-    const remaining = battleState.turnOrder.slice(battleState.currentActorIndex).filter(u => u.isAlive);
-    orderEl.innerHTML = remaining.map((u, i) => {
-      const color = u.isPlayer ? "text-emerald-400" : "text-red-400";
-      const mark = u.sparkleMarks > 0 ? `★${u.sparkleMarks}` : "";
-      return `<div class="${color} flex justify-between text-xs"><span>${i+1}. ${u.name}</span><span>${mark}</span></div>`;
-    }).join("");
-  }
+    const stats = window.calculateStats(item, char);
+    const isSelected = battleState.selectedTeam.includes(idx);
 
-  // 日志
-  const logEl = document.getElementById("battleLog");
-  if (logEl) {
-    logEl.innerHTML = battleState.log.slice(-15).map(l => 
-      `<div class="mb-0.5 ${l.type === 'player' ? 'text-emerald-300' : l.type === 'enemy' ? 'text-red-300' : 'text-gray-400'}">${l.msg}</div>`
-    ).join("");
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-}
-
-function createUnitCard(unit, isPlayer) {
-  const hpPct = Math.max(0, Math.floor((unit.hp / unit.maxHp) * 100));
-  const card = document.createElement("div");
-  card.className = `bg-zinc-900 rounded-2xl p-3 border ${unit.isAlive ? (isPlayer ? 'border-emerald-500' : 'border-red-500') : 'border-gray-700 opacity-60'} cursor-pointer hover:scale-[1.02] transition-all`;
-
-  let buff = "";
-  if (unit.sparkleMarks > 0) buff += `<span class="text-[9px] bg-orange-500 px-1 rounded">印记×${unit.sparkleMarks}</span>`;
-  if (unit.godModeTurns > 0) buff += `<span class="text-[9px] bg-yellow-500 px-1 rounded">神辉</span>`;
-
-  card.innerHTML = `
-    <div class="flex gap-3">
-      <img src="${unit.image}" class="w-14 h-14 rounded-xl object-cover">
-      <div class="flex-1 min-w-0">
-        <div class="flex justify-between">
-          <div class="font-bold text-sm truncate">${unit.name}</div>
-          <div class="text-xs font-bold ${unit.isAlive ? (isPlayer ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}">${unit.hp}/${unit.maxHp}</div>
-        </div>
-        <div class="h-2 bg-zinc-800 rounded mt-1"><div class="h-2 bg-emerald-500 rounded" style="width:${hpPct}%"></div></div>
-        <div class="flex justify-between text-[10px] text-gray-400 mt-1">
-          <div>SP ${unit.energy}</div>
-          <div>UE ${unit.ultimateEnergy}</div>
-        </div>
-        <div class="text-[9px] text-gray-500 mt-0.5">${buff}</div>
-      </div>
-    </div>
-  `;
-
-  card.onclick = () => showUnitDetailModal(unit);
-  return card;
-}
-
-function showUnitDetailModal(unit) {
-  const modal = document.createElement("div");
-  modal.className = "fixed inset-0 bg-black/80 flex items-center justify-center z-[100002] p-4";
-  
-  // Buff/Debuff 列表
-  let buffHTML = '<div class="text-xs text-gray-400">暂无特殊状态</div>';
-  const buffs = [];
-  if (unit.sparkleMarks > 0) buffs.push(`<div class="flex justify-between"><span>【绚明印记】</span><span class="text-orange-400">×${unit.sparkleMarks}</span></div>`);
-  if (unit.godModeTurns > 0) buffs.push(`<div class="flex justify-between"><span>【神子永辉】</span><span class="text-yellow-400">${unit.godModeTurns}回合</span></div>`);
-  if (unit.atkPercentBuff > 0) buffs.push(`<div class="flex justify-between"><span>【攻击强化】</span><span class="text-emerald-400">+25%</span></div>`);
-  if (buffs.length > 0) buffHTML = buffs.join('');
-  
-  modal.innerHTML = `
-    <div class="bg-zinc-900 rounded-3xl max-w-md w-full p-8 border-4 ${unit.isPlayer ? 'border-emerald-500' : 'border-red-500'}">
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <div class="font-bold text-2xl">${unit.name}</div>
-          <div class="text-sm text-gray-400">${unit.category} · ${unit.rarity} · Lv.${unit.level || 1}</div>
-        </div>
-        <button onclick="this.closest('.fixed').remove()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
-      </div>
-      
-      <!-- 核心数值 -->
-      <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-zinc-800 rounded-2xl p-4">
-          <div class="text-xs text-gray-400">生命值</div>
-          <div class="text-3xl font-bold text-emerald-400">${unit.hp} <span class="text-base">/ ${unit.maxHp}</span></div>
-        </div>
-        <div class="bg-zinc-800 rounded-2xl p-4">
-          <div class="text-xs text-gray-400">攻击力</div>
-          <div class="text-3xl font-bold text-red-400">${unit.atk}</div>
-        </div>
-        <div class="bg-zinc-800 rounded-2xl p-4">
-          <div class="text-xs text-gray-400">防御力</div>
-          <div class="text-3xl font-bold text-blue-400">${unit.def}</div>
-        </div>
-        <div class="bg-zinc-800 rounded-2xl p-4">
-          <div class="text-xs text-gray-400">速度</div>
-          <div class="text-3xl font-bold text-purple-400">${unit.spd}</div>
-        </div>
-      </div>
-      
-      <!-- 进阶属性 -->
-      <div class="bg-zinc-800 rounded-2xl p-5 mb-6">
-        <div class="text-sm text-gray-400 mb-3">进阶属性</div>
-        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-          <div>暴击率：<span class="font-bold">${((unit.critRate || 0.05)*100).toFixed(1)}%</span></div>
-          <div>暴击伤害：<span class="font-bold">${((unit.critDamage || 0.5)*100).toFixed(0)}%</span></div>
-          <div>能量点：<span class="font-bold">${unit.energy || 3}/5</span></div>
-          <div>终结能量：<span class="font-bold">${unit.ultimateEnergy || 0}/100</span></div>
-          <div>元素属性：<span class="font-bold">${unit.elementType || '混沌'}</span></div>
-          <div>穿透率：<span class="font-bold">${((unit.penRate || 0)*100).toFixed(0)}%</span></div>
-        </div>
-      </div>
-      
-      <!-- Buff & Debuff -->
-      <div class="bg-zinc-800 rounded-2xl p-5 mb-6">
-        <div class="text-sm text-gray-400 mb-3">当前状态 (Buff / Debuff)</div>
-        <div class="text-sm space-y-1">${buffHTML}</div>
-      </div>
-      
+    const div = document.createElement("div");
+    div.className = `relative bg-zinc-900 rounded-3xl p-3 cursor-pointer border-4 transition-all ${isSelected ? 'border-emerald-500 scale-[1.02] shadow-xl' : 'border-zinc-700 hover:border-zinc-500'}`;
+    div.innerHTML = `
+      <img src="${char.image}" class="w-full aspect-square object-cover rounded-2xl mb-3 ${isSelected ? 'ring-4 ring-emerald-500' : ''}">
       <div class="text-center">
-        <button onclick="this.closest('.fixed').remove()" class="px-12 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭</button>
+        <div class="rarity-${char.rarity.toLowerCase()} text-[10px] inline-block px-3 py-0.5 rounded-full text-white font-bold mb-1">${char.rarity}</div>
+        <div class="font-bold text-sm truncate">${char.name}</div>
+        <div class="text-xs text-gray-400">${char.category} · Lv.${item.level}</div>
+        
+        <div class="flex justify-center gap-2 text-xs mt-2 text-emerald-400">
+          <div>❤️${stats.hp}</div>
+          <div>⚔️${stats.atk}</div>
+        </div>
+        <div class="text-[10px] text-purple-400 mt-1">${stats.attribute} · 速${stats.spd}</div>
+      </div>
+    `;
+
+    div.onclick = () => toggleTeamMember(idx, div);
+    container.appendChild(div);
+  });
+}
+
+function toggleTeamMember(idx, element) {
+  const i = battleState.selectedTeam.indexOf(idx);
+  if (i > -1) {
+    battleState.selectedTeam.splice(i, 1);
+    element.classList.remove("border-emerald-500", "scale-[1.02]", "shadow-xl");
+    element.classList.add("border-zinc-700");
+    element.querySelector("img").classList.remove("ring-4", "ring-emerald-500");
+  } else {
+    if (battleState.selectedTeam.length >= 3) {
+      alert("最多只能选择 3 名角色出战！");
+      return;
+    }
+    battleState.selectedTeam.push(idx);
+    element.classList.add("border-emerald-500", "scale-[1.02]", "shadow-xl");
+    element.classList.remove("border-zinc-700");
+    element.querySelector("img").classList.add("ring-4", "ring-emerald-500");
+  }
+  document.getElementById("selectedCount").textContent = battleState.selectedTeam.length;
+}
+
+function resetTeamSelection() {
+  battleState.selectedTeam = [];
+  document.getElementById("selectedCount").textContent = "0";
+  renderTeamSelectGrid();
+}
+
+// 开始战斗
+function startBattle() {
+  if (battleState.selectedTeam.length === 0) {
+    alert("请至少选择 1 名角色！");
+    return;
+  }
+
+  // 构建队伍数据
+  battleState.team = battleState.selectedTeam.map((idx, i) => {
+    const item = player.owned[idx];
+    const char = window.getCharacterData(item.charId);
+    const stats = window.calculateStats(item, char);
+    return {
+      id: item.id,
+      charId: item.charId,
+      name: char.name,
+      image: char.image,
+      category: char.category,
+      stats: stats,
+      currentHP: stats.hp,
+      maxHP: stats.hp,
+      SP: 3,
+      UE: 40 + Math.floor(Math.random() * 30), // 初始 UE
+      ultimateUsed: false,
+      index: i
+    };
+  });
+
+  // 敌方（简单测试BOSS，可扩展）
+  battleState.enemy = {
+    name: "虚空裂隙兽 · 测试",
+    image: "https://picsum.photos/id/1015/300/300", // 临时图
+    maxHP: 8500,
+    currentHP: 8500,
+    atk: 420,
+    def: 380,
+    spd: 118,
+    attribute: "混沌",
+    penFixed: 40,
+    penRate: 0.08
+  };
+
+  battleState.bigTurn = 1;
+  battleState.log = [];
+  battleState.currentTurnIndex = 0;
+  battleState.ultimateUsedThisBigTurn = false; // 全局标记
+
+  // 生成行动顺序（速度降序，同速玩家优先，近卫>辅助>强袭）
+  battleState.turnOrder = generateTurnOrder();
+
+  // 切换UI
+  document.getElementById("preBattle").classList.add("hidden");
+  document.getElementById("battleArena").classList.remove("hidden");
+
+  addLog("⚔️ 战斗开始！敌方：虚空裂隙兽");
+  addLog(`我方 ${battleState.team.length} 人出战`);
+
+  renderBattleUI();
+  // 自动开始第一回合
+  setTimeout(() => nextTurn(), 600);
+}
+
+// 生成行动顺序
+function generateTurnOrder() {
+  let order = [];
+  battleState.team.forEach((member, i) => {
+    order.push({ type: 'team', index: i, spd: member.stats.spd, category: member.category });
+  });
+  order.push({ type: 'enemy', spd: battleState.enemy.spd, category: '敌方' });
+
+  order.sort((a, b) => {
+    if (b.spd !== a.spd) return b.spd - a.spd;
+    // 同速：玩家优先
+    if (a.type === 'team' && b.type === 'enemy') return -1;
+    if (a.type === 'enemy' && b.type === 'team') return 1;
+    // 玩家内部：近卫 > 辅助 > 强袭
+    const prio = { "近卫": 3, "辅助": 2, "强袭": 1 };
+    return (prio[b.category] || 0) - (prio[a.category] || 0);
+  });
+
+  return order.map(o => o.type === 'team' ? `team-${o.index}` : 'enemy');
+}
+
+function renderBattleUI() {
+  // 队伍显示
+  const teamContainer = document.getElementById("teamDisplay");
+  teamContainer.innerHTML = "";
+
+  battleState.team.forEach((member, i) => {
+    const hpPercent = Math.max(0, Math.floor(member.currentHP / member.maxHP * 100));
+    const spPercent = Math.floor(member.SP / 5 * 100);
+    const uePercent = Math.floor(member.UE / 100 * 100);
+
+    const div = document.createElement("div");
+    div.className = `bg-zinc-900 rounded-3xl p-4 border-2 ${member.currentHP > 0 ? 'border-emerald-600' : 'border-red-900 opacity-60'}`;
+    div.innerHTML = `
+      <div class="flex gap-4">
+        <img src="${member.image}" class="w-20 h-20 rounded-2xl object-cover border border-zinc-700 flex-shrink-0">
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-lg truncate">${member.name}</div>
+          <div class="text-xs text-gray-400">${member.category} · ${member.stats.attribute}</div>
+          
+          <div class="mt-3 space-y-2">
+            <!-- HP -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span>HP</span>
+                <span class="font-mono">${member.currentHP}/${member.maxHP}</span>
+              </div>
+              <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div class="h-2 bg-emerald-500 transition-all" style="width: ${hpPercent}%"></div>
+              </div>
+            </div>
+            
+            <!-- SP -->
+            <div class="flex items-center gap-2 text-xs">
+              <span class="w-6">SP</span>
+              <div class="flex-1 flex gap-1">
+                ${Array.from({length:5}).map((_,s) => 
+                  `<div class="flex-1 h-1.5 rounded ${s < member.SP ? 'bg-cyan-400' : 'bg-zinc-700'}"></div>`
+                ).join('')}
+              </div>
+              <span class="font-mono w-6 text-right">${member.SP}/5</span>
+            </div>
+            
+            <!-- UE -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span>UE</span>
+                <span class="font-mono">${member.UE}/100</span>
+              </div>
+              <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div class="h-2 bg-gradient-to-r from-pink-500 to-purple-500 transition-all" style="width: ${uePercent}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    teamContainer.appendChild(div);
+  });
+
+  // 敌方显示
+  const enemyContainer = document.getElementById("enemyDisplay");
+  const enemy = battleState.enemy;
+  const eHpPercent = Math.max(0, Math.floor(enemy.currentHP / enemy.maxHP * 100));
+
+  enemyContainer.innerHTML = `
+    <div class="text-center">
+      <img src="${enemy.image}" class="w-32 h-32 mx-auto rounded-3xl border-4 border-red-500 object-cover mb-4">
+      <div class="font-bold text-2xl text-red-400">${enemy.name}</div>
+      <div class="text-xs text-gray-400 mb-4">${enemy.attribute} · 速 ${enemy.spd}</div>
+      
+      <div class="mb-2">
+        <div class="flex justify-between text-sm mb-1 px-2">
+          <span>生命值</span>
+          <span class="font-mono">${enemy.currentHP} / ${enemy.maxHP}</span>
+        </div>
+        <div class="h-4 bg-zinc-800 rounded-full overflow-hidden border border-red-900">
+          <div class="h-4 bg-red-600 transition-all" style="width: ${eHpPercent}%"></div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-3 gap-2 text-xs mt-4">
+        <div class="bg-zinc-800 rounded-xl p-2">攻击 ${enemy.atk}</div>
+        <div class="bg-zinc-800 rounded-xl p-2">防御 ${enemy.def}</div>
+        <div class="bg-zinc-800 rounded-xl p-2">穿透 ${enemy.penFixed}</div>
       </div>
     </div>
   `;
-  document.body.appendChild(modal);
+
+  document.getElementById("bigTurnDisplay").textContent = battleState.bigTurn;
+
+  // 更新行动栏
+  updateActionBar();
 }
 
-function addBattleLog(msg, type = "normal") {
-  battleState.log.push({ msg, type });
-  if (battleState.log.length > 30) battleState.log.shift();
+function updateActionBar() {
+  const bar = document.getElementById("actionBar");
+  if (!bar) return;
+
+  const current = getCurrentActor();
+  if (!current || current.type === 'enemy') {
+    bar.classList.add("hidden");
+    return;
+  }
+
+  bar.classList.remove("hidden");
+  document.getElementById("currentActorName").innerHTML = `
+    <span class="text-emerald-400">${current.member.name}</span> 
+    <span class="text-xs text-gray-400">(SP:${current.member.SP} UE:${current.member.UE})</span>
+  `;
+
+  // 禁用终结技如果已用或UE不足
+  const ultBtn = bar.querySelector('button[onclick*="ultimate"]');
+  if (ultBtn) {
+    const canUlt = current.member.UE >= 100 && !current.member.ultimateUsed;
+    ultBtn.disabled = !canUlt;
+    ultBtn.style.opacity = canUlt ? "1" : "0.5";
+  }
+}
+
+function getCurrentActor() {
+  if (!battleState.turnOrder || battleState.currentTurnIndex >= battleState.turnOrder.length) return null;
+  const key = battleState.turnOrder[battleState.currentTurnIndex];
+  if (key.startsWith('team-')) {
+    const idx = parseInt(key.split('-')[1]);
+    return { type: 'team', index: idx, member: battleState.team[idx] };
+  }
+  return { type: 'enemy' };
+}
+
+function addLog(text) {
+  battleState.log.push(text);
   const logEl = document.getElementById("battleLog");
   if (logEl) {
-    logEl.innerHTML = battleState.log.slice(-15).map(l => 
-      `<div class="mb-0.5 ${l.type === 'player' ? 'text-emerald-300' : l.type === 'enemy' ? 'text-red-300' : 'text-gray-400'}">${l.msg}</div>`
-    ).join("");
+    logEl.innerHTML = battleState.log.map(l => `<div class="py-0.5">${l}</div>`).join('');
     logEl.scrollTop = logEl.scrollHeight;
   }
 }
 
-function endBattle(playerWin) {
-  battleState.isRunning = false;
-  const modal = battleState.battleModal;
-  if (!modal) return;
+function clearBattleLog() {
+  battleState.log = [];
+  document.getElementById("battleLog").innerHTML = "";
+}
 
-  let reward = "";
-  if (playerWin) {
-    const gold = Math.floor(800 + battleState.currentBigTurn * 120);
-    const yao = Math.floor(120 + battleState.currentBigTurn * 18);
-    player.gold = (player.gold || 0) + gold;
-    player.yaoXing = (player.yaoXing || 0) + yao;
-    document.getElementById("gold").textContent = player.gold;
-    document.getElementById("yaoXing").textContent = player.yaoXing;
-    window.saveGame();
-    reward = `<div class="text-emerald-400 mt-4">获得 ${gold} 金币 + ${yao} 耀星</div>`;
+function nextTurn() {
+  if (!battleState.turnOrder || battleState.currentTurnIndex >= battleState.turnOrder.length) {
+    // 大回合结束，恢复SP +1， 重置终结技标记
+    battleState.bigTurn++;
+    battleState.team.forEach(m => {
+      if (m.currentHP > 0) m.SP = Math.min(5, m.SP + 1);
+      m.ultimateUsed = false;
+    });
+    battleState.turnOrder = generateTurnOrder();
+    battleState.currentTurnIndex = 0;
+    addLog(`=== 第 ${battleState.bigTurn} 大回合开始 ===`);
+    renderBattleUI();
   }
 
-  modal.innerHTML = `
-    <div class="fixed inset-0 bg-black/95 flex items-center justify-center">
-      <div class="bg-zinc-900 rounded-3xl max-w-md w-full p-10 text-center border-4 ${playerWin ? 'border-emerald-500' : 'border-red-500'}">
-        <div class="text-7xl mb-6">${playerWin ? "🏆" : "☠️"}</div>
-        <h2 class="text-4xl font-bold mb-4 ${playerWin ? 'text-emerald-400' : 'text-red-400'}">${playerWin ? "胜利！" : "失败..."}</h2>
-        <div class="text-gray-300">战斗持续了 ${battleState.currentBigTurn} 个大回合</div>
-        ${reward}
-        <div class="flex gap-4 mt-8">
-          <button onclick="restartBattle()" class="flex-1 py-4 bg-emerald-600 rounded-2xl text-lg font-bold">再来一局</button>
-          <button onclick="closeBattleModal()" class="flex-1 py-4 bg-zinc-700 rounded-2xl text-lg font-bold">返回</button>
-        </div>
-      </div>
-    </div>
-  `;
+  const actor = getCurrentActor();
+  if (!actor) {
+    endBattle(true);
+    return;
+  }
+
+  if (actor.type === 'enemy') {
+    // 敌方AI行动
+    setTimeout(() => enemyAction(), 800);
+  } else {
+    // 玩家角色行动
+    battleState.isPlayerTurn = true;
+    renderBattleUI();
+    addLog(`▶ ${actor.member.name} 的回合`);
+  }
 }
 
-function restartBattle() {
-  closeBattleModal();
-  setTimeout(() => startBattle(battleState.playerTeam), 300);
+function performAction(actionType) {
+  const actor = getCurrentActor();
+  if (!actor || actor.type !== 'team' || !battleState.isPlayerTurn) return;
+
+  const member = actor.member;
+  let skillMult = 1.0;
+  let spCost = 0;
+  let ueGain = 20;
+  let isUltimate = false;
+
+  if (actionType === 'normal') {
+    skillMult = 1.0;
+    spCost = 0;
+    ueGain = 20;
+  } else if (actionType === 'skill1') {
+    if (member.SP < 1) { alert("SP不足！"); return; }
+    skillMult = 1.8;
+    spCost = 1;
+    ueGain = 30;
+  } else if (actionType === 'skill2') {
+    if (member.SP < 1) { alert("SP不足！"); return; }
+    skillMult = 2.4;
+    spCost = 1;
+    ueGain = 30;
+  } else if (actionType === 'ultimate') {
+    if (member.UE < 100 || member.ultimateUsed) { alert("无法释放终结技！"); return; }
+    skillMult = 6.5;
+    spCost = 0;
+    ueGain = 0;
+    isUltimate = true;
+    member.ultimateUsed = true;
+  }
+
+  // 消耗
+  member.SP = Math.max(0, member.SP - spCost);
+  member.UE = Math.min(100, member.UE + ueGain);
+
+  // 计算伤害
+  const damage = calculateBattleDamage(member.stats, skillMult, battleState.enemy);
+  battleState.enemy.currentHP = Math.max(0, battleState.enemy.currentHP - damage);
+
+  addLog(`💥 ${member.name} 使用 ${actionType === 'normal' ? '普攻' : actionType === 'skill1' ? '战技1' : actionType === 'skill2' ? '战技2' : '终结技'}！造成 ${damage} 点伤害`);
+
+  renderBattleUI();
+
+  // 检查敌方死亡
+  if (battleState.enemy.currentHP <= 0) {
+    addLog("🎉 敌方被击败！战斗胜利！");
+    setTimeout(() => endBattle(true, true), 1200);
+    return;
+  }
+
+  // 结束小回合（除非终结技）
+  if (!isUltimate) {
+    battleState.currentTurnIndex++;
+    battleState.isPlayerTurn = false;
+    setTimeout(() => nextTurn(), 900);
+  } else {
+    // 终结技不结束回合，允许再行动一次
+    addLog("⚡ 终结技释放完毕，可继续行动！");
+    renderBattleUI();
+  }
 }
 
-function closeBattleModal() {
-  battleState.isRunning = false;
-  battleState.pendingSkillUnit = null;
-  
-  // 强制清理所有技能栏（防止残留）
-  document.querySelectorAll("#skillSelectionBar").forEach(el => el.remove());
-  
-  const modal = document.getElementById("battleModal");
-  if (modal) modal.remove();
-  battleState.battleModal = null;
+function enemyAction() {
+  const enemy = battleState.enemy;
+  if (enemy.currentHP <= 0) return;
+
+  // 随机攻击我方存活角色
+  const aliveTeam = battleState.team.filter(m => m.currentHP > 0);
+  if (aliveTeam.length === 0) {
+    endBattle(false);
+    return;
+  }
+
+  const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)];
+  const targetIdx = battleState.team.indexOf(target);
+
+  // 简单伤害计算（敌方无暴击模拟）
+  const dmg = Math.floor(enemy.atk * 1.2 * (1 - target.stats.def / (target.stats.def + 4000)));
+  target.currentHP = Math.max(0, target.currentHP - dmg);
+
+  addLog(`👹 ${enemy.name} 攻击 ${target.name}，造成 ${dmg} 点伤害`);
+
+  renderBattleUI();
+
+  // 检查我方全灭
+  if (battleState.team.every(m => m.currentHP <= 0)) {
+    addLog("💀 全队阵亡...战斗失败");
+    setTimeout(() => endBattle(false), 1000);
+    return;
+  }
+
+  // 结束敌方回合
+  battleState.currentTurnIndex++;
+  setTimeout(() => nextTurn(), 700);
 }
 
-// 暴露
+// 核心伤害公式（严格参考战斗模块）
+function calculateBattleDamage(attackerStats, skillMult, defender) {
+  // 基础伤害
+  let base = attackerStats.atk * skillMult;
+
+  // 伤害扩大
+  let expand = base * (1 + 0.1); // 模拟少量增伤
+
+  // 暴击
+  const isCrit = Math.random() < attackerStats.critRate;
+  let critCoef = isCrit ? (1 + attackerStats.critDamage) : 1;
+  if (isCrit) expand *= critCoef;
+
+  // 属性克制
+  const attrMult = getAttributeAdvantage(attackerStats.attribute, defender.attribute);
+  expand *= attrMult;
+
+  // 有效防御 & 减伤
+  let effDef = Math.max(0, defender.def * (1 - attackerStats.penRate) - attackerStats.penFixed);
+  let dmgReduction = 1 - 4000 / (4000 + effDef);
+
+  let finalDmg = Math.floor(expand * (1 - dmgReduction) * attrMult); // attrMult 同时影响受伤
+
+  // 最小伤害
+  return Math.max(10, finalDmg);
+}
+
+function getAttributeAdvantage(att1, att2) {
+  if (att1 === "裂隙") return 1.2;
+  if (att2 === "裂隙") return 0.85;
+
+  const cycle = { "混沌": "灵幻", "灵幻": "元素", "元素": "混沌" };
+  if (cycle[att1] === att2) return 1.3;
+  if (cycle[att2] === att1) return 0.7;
+  return 1.0;
+}
+
+function endBattle(isWin, fromVictory = false) {
+  const arena = document.getElementById("battleArena");
+  const pre = document.getElementById("preBattle");
+  if (!arena || !pre) return;
+
+  arena.classList.add("hidden");
+  pre.classList.remove("hidden");
+
+  if (isWin) {
+    const reward = 150 + battleState.bigTurn * 40;
+    player.gold = (player.gold || 0) + reward;
+    document.getElementById("gold").textContent = player.gold;
+    alert(`🎉 战斗胜利！获得 ${reward} 金币奖励！`);
+    addLog(`🏆 获得 ${reward} 金币`);
+  } else {
+    alert("战斗失败...下次再来挑战吧！");
+  }
+
+  // 重置状态
+  battleState = { team: [], enemy: null, turnOrder: [], currentTurnIndex: 0, bigTurn: 1, log: [], isPlayerTurn: false, selectedTeam: [] };
+  renderTeamSelectGrid();
+}
+
+// 暴露全局函数
+window.initBattleUI = initBattleUI;
 window.startBattle = startBattle;
-window.showBattleModal = showBattleModal;
-
-console.log("%c✅ 全新战斗模块 v2.0 已加载（严格遵循新设计）", "color:#22c55e");
+window.performAction = performAction;
+window.endBattle = endBattle;

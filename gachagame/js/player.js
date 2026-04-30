@@ -204,3 +204,25 @@ window.getCharacterData = getCharacterData;
 window.getWeaponData = getWeaponData;
 window.getRarityColor = getRarityColor;
 window.getRarityBorderClass = getRarityBorderClass;
+
+function getURRate() {
+  const totalDraws = (player.totalCharDraws || 0) + (player.totalWeaponDraws || 0);
+  if (totalDraws === 0) return 0;
+  const totalUR = (player.urCount || 0) + (player.wUR || 0);
+  return (totalUR / totalDraws * 100);
+}
+
+function getPlayerTitle() {
+  const rate = getURRate();
+  if (rate <= 0.1) return "万里挑一大非酋";
+  if (rate <= 0.5) return "千里挑一大非酋";
+  if (rate <= 0.8) return "非酋";
+  if (rate <= 1.2) return "正常玩家";
+  if (rate <= 2) return "欧皇";
+  if (rate <= 3) return "千里挑一大欧皇";
+  if (rate <= 4) return "万里挑一大欧皇";
+  return "终极至尊欧皇";
+}
+
+window.getURRate = getURRate;
+window.getPlayerTitle = getPlayerTitle;

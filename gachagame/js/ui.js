@@ -42,15 +42,20 @@ function showDrawAnimation(results, poolType) {
     const videoEl = document.getElementById("dynamicDrawVideo");
     videoEl.volume = 0.75;
 
-    // 错误处理
+    // 错误处理（关键修复：视频失败时自动降级显示卡片）
     videoEl.onerror = () => {
       videoContainer.innerHTML += `
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md z-[100001]">
           <div class="text-2xl mb-3">❌ 视频加载失败</div>
-          <div class="text-sm">请确认文件路径正确且使用本地服务器运行</div>
-          <button onclick="this.closest('.fixed').remove()" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">关闭</button>
+          <div class="text-sm">动态立绘不存在，已自动显示普通卡片</div>
         </div>`;
       console.error("动态立绘加载失败:", charData.animatedImage);
+      
+      // 强制降级显示普通卡片（解决UR卡片不显示的bug）
+      setTimeout(() => {
+        if (videoContainer.parentNode) videoContainer.remove();
+        renderNormalDrawCards(results, poolType, container);
+      }, 600);
     };
 
     // 点击跳过

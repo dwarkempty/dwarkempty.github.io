@@ -195,6 +195,9 @@ function renderCard(card, isBack = false) {
   if (isBack) {
     return `<div class="card-back"></div>`;
   }
+  if (!card || !card.value) {
+    return `<div class="w-16 h-24 bg-white text-black rounded-xl flex flex-col items-center justify-center shadow-lg text-3xl border border-gray-300">?</div>`;
+  }
   return `<div class="w-16 h-24 bg-white text-black rounded-xl flex flex-col items-center justify-center shadow-lg text-3xl border border-gray-300">${card.value}<span class="text-4xl">${card.suit}</span></div>`;
 }
 
@@ -233,6 +236,9 @@ function startBlackjack() {
 }
 
 function hitBlackjack() {
+  if (!blackjackDeck || blackjackDeck.length === 0) {
+    blackjackDeck = createDeck(); // 牌堆用完自动重洗
+  }
   playerHand.push(blackjackDeck.pop());
   document.getElementById("playerCards").innerHTML = playerHand.map(c => renderCard(c)).join('');
   const score = handScore(playerHand);
@@ -247,6 +253,7 @@ function standBlackjack() {
   document.getElementById("standBtn").disabled = true;
 
   while (handScore(dealerHand) < 17) {
+    if (!blackjackDeck || blackjackDeck.length === 0) blackjackDeck = createDeck();
     dealerHand.push(blackjackDeck.pop());
   }
   document.getElementById("dealerCards").innerHTML = dealerHand.map(c => renderCard(c)).join('');

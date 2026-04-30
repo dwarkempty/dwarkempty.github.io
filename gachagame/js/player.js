@@ -1,4 +1,4 @@
-// js/player.js - 玩家数据 + 存档 + 属性计算
+// js/player.js - 玩家数据+存档+属性计算
 let player = {
   yaoXing: 1000,
   gold: 0,

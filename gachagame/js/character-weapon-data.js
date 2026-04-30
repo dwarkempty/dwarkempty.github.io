@@ -1,6 +1,6 @@
-// js/character-weapon-data.js - 角色/武器池 + 常量
+// js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
-  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:380, baseATK:220, baseDEF:160, baseSPD:108, category:"强袭", image:"images/Allen_Illustration.jpg", attribute:"元素——土"},
+  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:695, baseATK:165, baseDEF:195, baseSPD:109, category:"强袭", image:"images/Allen_Illustration.jpg", attribute:"元素——土"},
   {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:320, baseATK:260, baseDEF:130, baseSPD:112, category:"辅助", image:"images/Sally_Illustration.jpg", attribute:"元素——火"},
   {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:420, baseATK:190, baseDEF:240, baseSPD:102, category:"近卫", image:"images/Buck_Illustration.jpg", attribute:"混沌——虚"},
   {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:340, baseATK:250, baseDEF:150, baseSPD:115, category:"辅助", image:"images/Lily_Illustration.jpg", attribute:"灵幻——相"},

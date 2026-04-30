@@ -1,3 +1,4 @@
+// worldview-data.js-世界观
 const worldviewPool = [
   {
     id: 1,

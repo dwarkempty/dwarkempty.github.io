@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统
+// js/inventory.js - 仓库渲染 + 养成系统修改
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {

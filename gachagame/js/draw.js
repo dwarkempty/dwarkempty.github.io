@@ -1,4 +1,4 @@
-// js/draw.js - 抽卡核心逻辑
+// js/draw.js - 抽卡核心逻辑（已全部改为耀星）
 function drawOne(poolType) {
   const isChar = poolType === "char";
   if (isChar) {
@@ -50,7 +50,9 @@ function drawOne(poolType) {
   }
 
   if (isChar) {
-    if (!player.unlockedChars.includes(item.id)) player.unlockedChars.push(item.id);
+    if (!player.unlockedChars.includes(item.id)) {
+      player.unlockedChars.push(item.id);
+    }
   } else {
     if (!player.unlockedWeapons.includes(item.id)) player.unlockedWeapons.push(item.id);
   }
@@ -69,7 +71,13 @@ function drawCard(times) {
   for (let i = 0; i < times; i++) {
     const item = drawOne(currentDrawPool);
     if (currentDrawPool === "char") {
-      player.owned.push({ id: Date.now() + i, charId: item.id, level: 1, stars: 0, equippedWeapon: null });
+      if (player.owned.some(o => o.charId === item.id)) {
+        // 重复角色 → 转换为角色源力
+        player.sourcePowers = player.sourcePowers || {};
+        player.sourcePowers[item.id] = (player.sourcePowers[item.id] || 0) + 1;
+      } else {
+        player.owned.push({ id: Date.now() + i, charId: item.id, level: 1, stars: 0, equippedWeapon: null });
+      }
       player.totalCharDraws++;
       if (item.rarity === "R") player.rCount++;
       else if (item.rarity === "SR") player.srCount++;

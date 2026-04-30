@@ -1,4 +1,4 @@
-// js/constants.js - 角色/武器池
+// js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
   {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:680, baseATK:162, baseDEF:192, baseSPD:109, category:"强袭", image:"images/Allen_Illustration.jpg", attribute:"元素——土"},
   {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:920, baseATK:135, baseDEF:255, baseSPD:111, category:"辅助", image:"images/Sally_Illustration.jpg", attribute:"元素——火"},
@@ -204,7 +204,7 @@ const weaponPool = [
   {id:15, name:"元素起源杖·万象", enName:"Element Origin Staff", rarity:"UR", type:"权杖", owner:15, image:"images/ElementOriginStaff.jpg", baseHP:140, baseATK:130, baseDEF:75, baseCritRate:0.09, baseCritDamage:0.65}
 ];
 
-const rarityWeights = { R: 60, SR: 25, SSR: 12, UR: 3 };
+const rarityWeights = { R: 60, SR: 25, SSR: 14, UR: 1 };
 const decomposeValue = { R: 10, SR: 50, SSR: 200, UR: 1000 };
 const rarityOrder = { UR: 4, SSR: 3, SR: 2, R: 1 };
 
@@ -220,3 +220,4 @@ window.decomposeValue = decomposeValue;
 window.rarityOrder = rarityOrder;
 window.characterMap = characterMap;
 window.weaponMap = weaponMap;
+

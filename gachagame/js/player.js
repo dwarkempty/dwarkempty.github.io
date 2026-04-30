@@ -1,4 +1,4 @@
-// js/player.js - 玩家数据 + 存档 + 属性计算（完整版，无任何省略）
+// js/player.js - 玩家数据 + 存档 + 属性计算
 let player = {
   yaoXing: 1000,
   gold: 0,
@@ -107,13 +107,27 @@ function calculateStats(item, charData, equippedWeapon = null) {
     critDamage += wpData.baseCritDamage * (1 + wY * 0.38);
   }
 
+  // 新增战斗属性（基于战斗模块）
+  let penFixed = (charData.basePenFixed || 30) + Math.floor(X * 3 + Y * 15);
+  let penRate = Math.min(0.5, (charData.basePenRate || 0.03) + Y * 0.02 + X * 0.001);
+  let attribute = charData.attribute || "元素";
+  let healBonus = (charData.healBonus || 0.05) + Y * 0.03;
+  let recvHealBonus = (charData.recvHealBonus || 0.05) + Y * 0.03;
+  let shieldStr = (charData.shieldStr || 1.0) + Y * 0.08;
+
   return { 
     hp, 
     atk, 
     def, 
     critRate: Math.min(critRate, 1), 
     critDamage, 
-    spd 
+    spd,
+    penFixed: Math.floor(penFixed),
+    penRate: Math.min(1, penRate),
+    attribute,
+    healBonus: Math.min(1, healBonus),
+    recvHealBonus: Math.min(1, recvHealBonus),
+    shieldStr: Math.min(2.5, shieldStr)
   };
 }
 

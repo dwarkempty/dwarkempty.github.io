@@ -45,17 +45,12 @@ function showDrawAnimation(results, poolType) {
     // 错误处理
     videoEl.onerror = () => {
       videoContainer.innerHTML += `
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md z-[100000]">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md">
           <div class="text-2xl mb-3">❌ 视频加载失败</div>
-          <div class="text-sm">动态立绘文件不存在，已切换为普通卡片展示</div>
-          <button onclick="this.closest('.fixed').remove(); renderNormalDrawCards(results, poolType, container);" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">显示卡片</button>
+          <div class="text-sm">请确认文件路径正确且使用本地服务器运行</div>
+          <button onclick="this.closest('.fixed').remove()" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">关闭</button>
         </div>`;
       console.error("动态立绘加载失败:", charData.animatedImage);
-      // 自动降级显示普通卡片
-      setTimeout(() => {
-        if (videoContainer.parentNode) videoContainer.remove();
-        renderNormalDrawCards(results, poolType, container);
-      }, 1500);
     };
 
     // 点击跳过

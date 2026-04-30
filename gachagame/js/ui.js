@@ -104,6 +104,9 @@ function setDrawPool(type) {
   document.getElementById("poolCharBtn").classList.toggle("active", type === "char");
   document.getElementById("poolWeaponBtn").classList.toggle("active", type === "weapon");
   document.getElementById("poolTitle").textContent = type === "char" ? "角色池抽取" : "武器池抽取";
+  // 更新称号
+  const titleEl = document.getElementById("playerTitle");
+  if (titleEl) titleEl.textContent = `当前称号：${window.getPlayerTitle()}`;
 }
 
 function setRecordTab(n) {

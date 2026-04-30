@@ -1,8 +1,8 @@
 // js/battle.js - 完整战斗系统（严格遵循战斗模块设计：回合制、SP/UE、速度行动、属性克制、伤害公式等）
 let battleState = {
   team: [],           // [{..., buffs:[], debuffs:[] }]
-  enemy: null,        // {..., buffs:[], debuffs:[] }
-  turnOrder: [],      // array of 'team-0', 'team-1', 'enemy'
+  enemies: [],        // [{name, currentHP, maxHP, atk, def, spd, attribute, buffs:[], debuffs:[] }, ...] 支持多个敌人
+  turnOrder: [],      // array of 'team-0', 'team-1', 'enemy-0', 'enemy-1'...
   currentTurnIndex: 0,
   bigTurn: 1,
   log: [],
@@ -14,14 +14,30 @@ let battleState = {
 const buffDescMap = {
   "终结余辉": "终结技释放后获得，攻击力临时提升50%，持续2回合，无法被驱散。",
   "裂隙侵蚀": "受到BOSS攻击时附加，受到所有伤害增加15%，持续2回合。",
-  "神子永辉": "阿特亚终结技后，攻击力+50%且无视防御，持续2回合。",
-  "元素凝视": "防御降低25%，持续2回合。",
-  "源环加护": "全队获得随机正面效果，持续至移除。"
+  "神子永辉": "阿特亚终结技后，攻击力增加30%（可与其他攻击力加成叠加），所有伤害无视防御，【绚明印记】附加层数+1，持续1回合。",
+  "元素凝视": "防御降低15%，持续2回合，不可叠加。",
+  "源环加护": "全队获得随机正面效果，持续至移除。",
+  "绚明印记": "可叠加元素DoT，每层每回合造成攻击力×50%伤害，最高8层。超出时引爆，单层80%伤害。被动触发时立即结算。",
+  "绚明崩解": "后续2回合，每回合自动触发等同引爆前层数的无视防御伤害，无法被驱散，不触发阿特亚被动。"
   // 未来新buff/debuff在此添加描述
 };
 
 function getBuffDesc(name) {
   return buffDescMap[name] || "该效果暂无详细描述，将在后续更新中补充。";
+}
+
+// 辅助：添加或刷新同名增益/减益（同名覆盖，刷新duration）
+function addOrRefreshEffect(entity, name, duration, isDebuff = true) {
+  const list = isDebuff ? (entity.debuffs = entity.debuffs || []) : (entity.buffs = entity.buffs || []);
+  const existing = list.find(e => e.name === name);
+  if (existing) {
+    existing.duration = duration;
+    if (name === "绚明印记" && existing.stacks) existing.stacks = Math.min(8, (existing.stacks || 1) + 1);
+  } else {
+    const effect = {name, duration};
+    if (name === "绚明印记") effect.stacks = 1;
+    list.push(effect);
+  }
 }
 
 function initBattleUI() {
@@ -252,26 +268,69 @@ function startBattle() {
     };
   });
 
-  // 敌方（简单测试BOSS，可扩展）
-  battleState.enemy = {
-    name: "虚空裂隙兽 · 测试",
-    image: "https://picsum.photos/id/1015/300/300", // 临时图
-    maxHP: 8500,
-    currentHP: 8500,
-    atk: 420,
-    def: 380,
-    spd: 118,
-    attribute: "混沌——虚",
-    penFixed: 40,
-    penRate: 0.08,
-    healBonus: 0,
-    recvHealBonus: 0,
-    shieldStr: 1.0,
-    dmgBonus: 0,
-    dmgReduction: 0,
-    buffs: [],
-    debuffs: []
-  };
+  // 敌方：3个裂隙属性敌人，高血低攻
+  battleState.enemies = [
+    {
+      id: 0,
+      name: "虚空裂隙兽·湮",
+      image: "https://picsum.photos/id/1015/300/300",
+      maxHP: 1000000,
+      currentHP: 1000000,
+      atk: 80,
+      def: 200,
+      spd: 110,
+      attribute: "裂隙",
+      penFixed: 50,
+      penRate: 0.05,
+      healBonus: 0,
+      recvHealBonus: 0,
+      shieldStr: 1.0,
+      dmgBonus: 0,
+      dmgReduction: 0,
+      buffs: [],
+      debuffs: []
+    },
+    {
+      id: 1,
+      name: "虚空裂隙兽·极",
+      image: "https://picsum.photos/id/102/300/300",
+      maxHP: 1000000,
+      currentHP: 1000000,
+      atk: 75,
+      def: 210,
+      spd: 112,
+      attribute: "裂隙",
+      penFixed: 40,
+      penRate: 0.06,
+      healBonus: 0,
+      recvHealBonus: 0,
+      shieldStr: 1.0,
+      dmgBonus: 0,
+      dmgReduction: 0,
+      buffs: [],
+      debuffs: []
+    },
+    {
+      id: 2,
+      name: "虚空裂隙兽·辉",
+      image: "https://picsum.photos/id/1033/300/300",
+      maxHP: 1000000,
+      currentHP: 1000000,
+      atk: 85,
+      def: 190,
+      spd: 109,
+      attribute: "裂隙",
+      penFixed: 60,
+      penRate: 0.04,
+      healBonus: 0,
+      recvHealBonus: 0,
+      shieldStr: 1.0,
+      dmgBonus: 0,
+      dmgReduction: 0,
+      buffs: [],
+      debuffs: []
+    }
+  ];
 
   battleState.team.forEach(m => { m.buffs = []; m.debuffs = []; });
   battleState.bigTurn = 1;
@@ -300,7 +359,11 @@ function generateTurnOrder() {
   battleState.team.forEach((member, i) => {
     order.push({ type: 'team', index: i, spd: member.stats.spd, category: member.category });
   });
-  order.push({ type: 'enemy', spd: battleState.enemy.spd, category: '敌方' });
+  battleState.enemies.forEach((en, i) => {
+    if (en.currentHP > 0) {
+      order.push({ type: 'enemy', index: i, spd: en.spd, category: '敌方' });
+    }
+  });
 
   order.sort((a, b) => {
     if (b.spd !== a.spd) return b.spd - a.spd;
@@ -312,7 +375,7 @@ function generateTurnOrder() {
     return (prio[b.category] || 0) - (prio[a.category] || 0);
   });
 
-  return order.map(o => o.type === 'team' ? `team-${o.index}` : 'enemy');
+  return order.map(o => o.type === 'team' ? `team-${o.index}` : `enemy-${o.index}`);
 }
 
 function renderBattleUI() {
@@ -381,35 +444,37 @@ function renderBattleUI() {
     teamContainer.appendChild(div);
   });
 
-  // 敌方显示
+  // 敌方显示 (支持3个裂隙敌人)
   const enemyContainer = document.getElementById("enemyDisplay");
-  const enemy = battleState.enemy;
-  const eHpPercent = Math.max(0, Math.floor(enemy.currentHP / enemy.maxHP * 100));
-
-  const isEnemyCurrent = currentKey === 'enemy';
-  enemyContainer.innerHTML = `
-    <div class="text-center cursor-pointer transition-all ${isEnemyCurrent ? 'ring-4 ring-yellow-400 shadow-[0_0_20px_#facc15] animate-pulse' : 'hover:scale-[1.02]'}" onclick="showBattleDetail(false, 0)">
-      <img src="${enemy.image}" class="w-32 h-32 mx-auto rounded-3xl border-4 border-red-500 object-cover mb-4">
-      <div class="font-bold text-2xl text-red-400">${enemy.name}</div>
-      <div class="text-xs text-gray-400 mb-4">${enemy.attribute} · 速 ${enemy.spd}</div>
-      
-      <div class="mb-2">
-        <div class="flex justify-between text-sm mb-1 px-2">
-          <span>生命值</span>
-          <span class="font-mono">${enemy.currentHP} / ${enemy.maxHP}</span>
-        </div>
-        <div class="h-4 bg-zinc-800 rounded-full overflow-hidden border border-red-900">
-          <div class="h-4 bg-red-600 transition-all" style="width: ${eHpPercent}%"></div>
+  enemyContainer.innerHTML = `<div class="space-y-4">` + battleState.enemies.map((enemy, i) => {
+    const eHpPercent = Math.max(0, Math.floor(enemy.currentHP / enemy.maxHP * 100));
+    const isEnemyCurrent = currentKey === `enemy-${i}`;
+    return `
+      <div class="text-center cursor-pointer transition-all p-4 border-2 border-red-600 rounded-3xl ${isEnemyCurrent ? 'ring-4 ring-yellow-400 shadow-[0_0_20px_#facc15] animate-pulse' : 'hover:scale-[1.02]'}" onclick="showBattleDetail(false, ${i})">
+        <div class="flex items-center gap-4">
+          <img src="${enemy.image}" class="w-20 h-20 rounded-3xl border-4 border-red-500 object-cover flex-shrink-0">
+          <div class="flex-1 text-left">
+            <div class="font-bold text-xl text-red-400">${enemy.name}</div>
+            <div class="text-xs text-gray-400">${enemy.attribute} · 速 ${enemy.spd}</div>
+            <div class="mt-2">
+              <div class="flex justify-between text-xs mb-1">
+                <span>HP</span>
+                <span class="font-mono">${enemy.currentHP} / ${enemy.maxHP}</span>
+              </div>
+              <div class="h-3 bg-zinc-800 rounded-full overflow-hidden border border-red-900">
+                <div class="h-3 bg-red-600 transition-all" style="width: ${eHpPercent}%"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-[10px] mt-2">
+              <div class="bg-zinc-800 rounded p-1">ATK ${enemy.atk}</div>
+              <div class="bg-zinc-800 rounded p-1">DEF ${enemy.def}</div>
+              <div class="bg-zinc-800 rounded p-1">穿 ${enemy.penFixed}</div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div class="grid grid-cols-3 gap-2 text-xs mt-4">
-        <div class="bg-zinc-800 rounded-xl p-2">攻击 ${enemy.atk}</div>
-        <div class="bg-zinc-800 rounded-xl p-2">防御 ${enemy.def}</div>
-        <div class="bg-zinc-800 rounded-xl p-2">穿透 ${enemy.penFixed}</div>
-      </div>
-    </div>
-  `;
+    `;
+  }).join('') + `</div>`;
 
   document.getElementById("bigTurnDisplay").textContent = battleState.bigTurn;
 
@@ -450,7 +515,11 @@ function getCurrentActor() {
     const idx = parseInt(key.split('-')[1]);
     return { type: 'team', index: idx, member: battleState.team[idx] };
   }
-  return { type: 'enemy' };
+  if (key.startsWith('enemy-')) {
+    const idx = parseInt(key.split('-')[1]);
+    return { type: 'enemy', index: idx, enemy: battleState.enemies[idx] };
+  }
+  return null;
 }
 
 function addLog(text) {
@@ -551,17 +620,24 @@ function performAction(actionType) {
   member.SP = Math.max(0, member.SP - spCost);
   member.UE = Math.min(100, member.UE + ueGain);
 
-  // 计算伤害
-  const damage = calculateBattleDamage(member.stats, skillMult, battleState.enemy);
-  battleState.enemy.currentHP = Math.max(0, battleState.enemy.currentHP - damage);
+  // 计算伤害 (目标第一个存活敌人)
+  const aliveEnemies = battleState.enemies.filter(e => e.currentHP > 0);
+  if (aliveEnemies.length === 0) {
+    addLog("🎉 所有敌人被击败！战斗胜利！");
+    setTimeout(() => endBattle(true, true), 1200);
+    return;
+  }
+  const targetEnemy = aliveEnemies[0];
+  const damage = calculateBattleDamage(member.stats, skillMult, targetEnemy);
+  targetEnemy.currentHP = Math.max(0, targetEnemy.currentHP - damage);
 
   addLog(`💥 ${member.name} 使用 ${actionType === 'normal' ? '普攻' : actionType === 'skill1' ? '战技1' : actionType === 'skill2' ? '战技2' : '终结技'}！造成 ${damage} 点伤害`);
 
   renderBattleUI();
 
-  // 检查敌方死亡
-  if (battleState.enemy.currentHP <= 0) {
-    addLog("🎉 敌方被击败！战斗胜利！");
+  // 检查所有敌方死亡
+  if (battleState.enemies.every(e => e.currentHP <= 0)) {
+    addLog("🎉 所有敌人被击败！战斗胜利！");
     setTimeout(() => endBattle(true, true), 1200);
     return;
   }
@@ -579,8 +655,14 @@ function performAction(actionType) {
 }
 
 function enemyAction() {
-  const enemy = battleState.enemy;
-  if (enemy.currentHP <= 0) return;
+  const currentActor = getCurrentActor();
+  if (!currentActor || currentActor.type !== 'enemy') return;
+  const enemy = battleState.enemies[currentActor.index];
+  if (!enemy || enemy.currentHP <= 0) {
+    battleState.currentTurnIndex++;
+    setTimeout(() => nextTurn(), 100);
+    return;
+  }
 
   // 随机攻击我方存活角色
   const aliveTeam = battleState.team.filter(m => m.currentHP > 0);
@@ -590,7 +672,6 @@ function enemyAction() {
   }
 
   const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)];
-  const targetIdx = battleState.team.indexOf(target);
 
   // 简单伤害计算（敌方无暴击模拟）
   const dmg = Math.floor(enemy.atk * 1.2 * (1 - target.stats.def / (target.stats.def + 4000)));
@@ -598,8 +679,7 @@ function enemyAction() {
 
   addLog(`👹 ${enemy.name} 攻击 ${target.name}，造成 ${dmg} 点伤害`);
   if (Math.random() < 0.4) {
-    target.debuffs = target.debuffs || [];
-    target.debuffs.push({name: "裂隙侵蚀", duration: 2});
+    addOrRefreshEffect(target, "裂隙侵蚀", 2, true);
     addLog(`🔻 ${target.name} 受到【裂隙侵蚀】减益`);
   }
 

@@ -68,14 +68,15 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-6 max-w-md mx-auto">
-          <button onclick="drawCard(1)" class="bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-8 rounded-3xl text-2xl font-bold flex flex-col items-center gap-2 transition btn-hover">
-            单抽<br><span class="text-4xl">100 ⭐</span>
-          </button>
-          <button onclick="drawCard(10)" class="bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-8 rounded-3xl text-2xl font-bold flex flex-col items-center gap-2 transition btn-hover">
-            十连<br><span class="text-4xl">900 ⭐</span>
-          </button>
-        </div>
+    <div class="grid grid-cols-2 gap-6 max-w-md mx-auto relative">
+      <div class="particles" id="drawParticles"></div>
+      <button onclick="drawCard(1); createDrawParticles(this)" class="draw-btn bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-8 rounded-3xl text-2xl font-bold flex flex-col items-center gap-2 transition">
+        单抽<br><span class="text-4xl">100 ⭐</span>
+      </button>
+      <button onclick="drawCard(10); createDrawParticles(this)" class="draw-btn bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-8 rounded-3xl text-2xl font-bold flex flex-col items-center gap-2 transition">
+        十连<br><span class="text-4xl">900 ⭐</span>
+      </button>
+    </div>
       </div>
 
     <div class="mt-8 text-center">

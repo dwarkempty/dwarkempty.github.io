@@ -1,4 +1,4 @@
-// js/exploration.js - 探索系统、赌博、21点、扫雷
+// js/exploration.js - 探索系统、赌博、21点、扫雷（资源已全部改为耀星/强化石）
 let diamondCooldownEnd = 0;   // 改名但保持变量名清晰
 let goldCooldownEnd = 0;
 let potionCooldownEnd = 0;    // 改名但保持变量名清晰
@@ -466,7 +466,7 @@ function renderExplorationButtons() {
     <button onclick="openGambling()" class="bg-purple-600 hover:bg-purple-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
       <i class="fas fa-dice text-6xl"></i>
       <div class="text-3xl font-bold">赌博</div>
-      <div class="text-purple-200">老虎机 / 21点</div>
+      <div class="text-purple-200">老虎机 / 21点 / 硬币翻转</div>
     </button>
     <button onclick="openMinesweeper()" class="bg-red-600 hover:bg-red-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition btn-hover">
       <i class="fas fa-bomb text-6xl"></i>
@@ -497,5 +497,49 @@ window.handleMineClick = handleMineClick;
 window.floodFill = floodFill;
 window.handleMineFlag = handleMineFlag;
 window.checkWin = checkWin;
+
+// 新增：硬币翻转（带连胜倍率）
+let coinFlipStreak = 0;
+
+window.coinFlip = function(side) {
+  const betAmount = parseInt(document.getElementById("betAmount").value) || 1000;
+  const currency = currentBetCurrency;
+  
+  let maxBet = currency === 0 ? 5000 : currency === 1 ? 50000 : 100;
+  let minBet = currency === 0 ? 100 : currency === 1 ? 1000 : 5;
+  
+  if (betAmount < minBet || betAmount > maxBet) {
+    return alert(`下注金额必须在 ${minBet}~${maxBet} 之间！`);
+  }
+  
+  let costField = currency === 0 ? "yaoXing" : currency === 1 ? "gold" : "reinforceStone";
+  if (player[costField] < betAmount) return alert("余额不足！");
+  
+  player[costField] -= betAmount;
+  document.getElementById(costField === "yaoXing" ? "yaoXing" : costField === "gold" ? "gold" : "reinforceStone").textContent = player[costField];
+  
+  const result = Math.random() < 0.5 ? "heads" : "tails";
+  const isWin = result === side;
+  
+  let multiplier = 2;
+  if (isWin) {
+    coinFlipStreak++;
+    multiplier = Math.min(5, 2 + (coinFlipStreak - 1) * 0.5);
+    const winAmount = Math.floor(betAmount * multiplier);
+    player[costField] += winAmount;
+    document.getElementById(costField === "yaoXing" ? "yaoXing" : costField === "gold" ? "gold" : "reinforceStone").textContent = player[costField];
+    
+    document.getElementById("gamblingResult").innerHTML = `
+      <div class="text-green-400 text-xl">🎉 ${side === "heads" ? "正面" : "反面"}！连胜 ${coinFlipStreak} 次</div>
+      <div class="text-2xl font-bold mt-2">获得 ${winAmount} ${currency === 0 ? "耀星" : currency === 1 ? "金币" : "强化石"} (${multiplier}x)</div>
+    `;
+  } else {
+    coinFlipStreak = 0;
+    document.getElementById("gamblingResult").innerHTML = `
+      <div class="text-red-400 text-xl">💀 ${side === "heads" ? "正面" : "反面"}！连胜中断</div>
+      <div class="text-lg mt-2">损失 ${betAmount} ${currency === 0 ? "耀星" : currency === 1 ? "金币" : "强化石"}</div>
+    `;
+  }
+};
 window.stopMinesweeper = stopMinesweeper;
 window.renderExplorationButtons = renderExplorationButtons;

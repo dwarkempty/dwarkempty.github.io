@@ -563,6 +563,12 @@ function nextTurn() {
     battleState.turnOrder = generateTurnOrder();
     battleState.currentTurnIndex = 0;
     addLog(`=== 第 ${battleState.bigTurn} 大回合开始 ===`);
+    
+    // 阿特亚专属：每回合结束DoT + 崩解触发 + 持续时间刷新
+    if (window.processAtyaEndOfTurn) {
+      window.processAtyaEndOfTurn();
+    }
+    
     renderBattleUI();
   }
 
@@ -595,59 +601,69 @@ function performAction(actionType) {
   if (!actor || actor.type !== 'team' || !battleState.isPlayerTurn || actor.member.currentHP <= 0) return;
 
   const member = actor.member;
+  const isAtya = member.charId === 15;
+
+  if (isAtya && window.CharacterSkills && window.CharacterSkills.atya) {
+    // === 阿特亚完整技能组（严格按最终描述实现） ===
+    let success = false;
+    if (actionType === 'normal') {
+      window.CharacterSkills.atya.performNormal(member);
+      success = true;
+    } else if (actionType === 'skill1') {
+      success = window.CharacterSkills.atya.performSkill1(member);
+    } else if (actionType === 'skill2') {
+      success = window.CharacterSkills.atya.performSkill2(member);
+    } else if (actionType === 'ultimate') {
+      success = window.CharacterSkills.atya.performUltimate(member);
+    }
+    
+    if (!success) return; // SP/UE不足等
+    
+    renderBattleUI();
+    
+    // 检查胜利
+    if (battleState.enemies.every(e => e.currentHP <= 0)) {
+      addLog("🎉 所有敌人被击败！战斗胜利！");
+      setTimeout(() => endBattle(true, true), 1200);
+      return;
+    }
+    
+    // 结束回合（终结技例外）
+    if (actionType !== 'ultimate') {
+      battleState.currentTurnIndex++;
+      battleState.isPlayerTurn = false;
+      setTimeout(() => nextTurn(), 900);
+    } else {
+      addLog("⚡ 终结技释放完毕，可继续行动！");
+      renderBattleUI();
+    }
+    return;
+  }
+
+  // === 其他角色通用逻辑（保持原有） ===
   let skillMult = 1.0;
   let spCost = 0;
   let ueGain = 20;
   let isUltimate = false;
-  const isAtya = member.charId === 15;
 
-  if (isAtya) {
-    // 阿特亚技能组实现（按新描述：自定义倍率 + 被动【绚明印记】 + 终结神子永辉）
-    if (actionType === 'normal') {
-      skillMult = 1.1; spCost = 0; ueGain = 25;
-    } else if (actionType === 'skill1') { // 万象绚华
-      skillMult = 2.2; spCost = 2; ueGain = 35;
-    } else if (actionType === 'skill2') { // 绚律易质
-      skillMult = 3.4; spCost = 2; ueGain = 35;
-    } else if (actionType === 'ultimate') {
-      skillMult = 7.0; spCost = 0; ueGain = 0; isUltimate = true;
-      member.ultimateUsed = true;
-      member.buffs.push({name: "神子永辉", duration: 1});
-      addLog(`🌟 ${member.name} 进入【神子永辉】：攻击力+30%、无视防御、印记+1层！`);
-    }
-    // 被动触发（附加印记 + 立即结算 + 元素增伤 + UE回复）
-    if (!isUltimate || actionType === 'ultimate') {
-      const aliveEnemies = battleState.enemies.filter(e => e.currentHP > 0);
-      if (aliveEnemies.length > 0) {
-        const t = aliveEnemies[0];
-        addOrRefreshEffect(t, "绚明印记", 3, true);
-        addLog(`✨ ${member.name} 被动：目标获得【绚明印记】(层数叠加)`);
-        member.stats.dmgBonus = Math.min(0.5, (member.stats.dmgBonus || 0) + 0.1);
-        member.UE = Math.min(100, member.UE + 5);
-      }
-    }
-  } else {
-    if (actionType === 'normal') {
-      skillMult = 1.0; spCost = 0; ueGain = 20;
-    } else if (actionType === 'skill1') {
-      if (member.SP < 1) { alert("SP不足！"); return; }
-      skillMult = 1.8; spCost = 1; ueGain = 30;
-    } else if (actionType === 'skill2') {
-      if (member.SP < 1) { alert("SP不足！"); return; }
-      skillMult = 2.4; spCost = 1; ueGain = 30;
-    } else if (actionType === 'ultimate') {
-      if (member.UE < 100 || member.ultimateUsed) { alert("无法释放终结技！"); return; }
-      skillMult = 6.5; spCost = 0; ueGain = 0; isUltimate = true;
-      member.ultimateUsed = true;
-      member.buffs.push({name: "终结余辉", duration: 2});
-    }
+  if (actionType === 'normal') {
+    skillMult = 1.0; spCost = 0; ueGain = 20;
+  } else if (actionType === 'skill1') {
+    if (member.SP < 1) { alert("SP不足！"); return; }
+    skillMult = 1.8; spCost = 1; ueGain = 30;
+  } else if (actionType === 'skill2') {
+    if (member.SP < 1) { alert("SP不足！"); return; }
+    skillMult = 2.4; spCost = 1; ueGain = 30;
+  } else if (actionType === 'ultimate') {
+    if (member.UE < 100 || member.ultimateUsed) { alert("无法释放终结技！"); return; }
+    skillMult = 6.5; spCost = 0; ueGain = 0; isUltimate = true;
+    member.ultimateUsed = true;
+    member.buffs.push({name: "终结余辉", duration: 2});
   }
 
-  // 消耗
   member.SP = Math.max(0, member.SP - spCost);
   member.UE = Math.min(100, member.UE + ueGain);
 
-  // 计算伤害 (目标第一个存活敌人)
   const aliveEnemies = battleState.enemies.filter(e => e.currentHP > 0);
   if (aliveEnemies.length === 0) {
     addLog("🎉 所有敌人被击败！战斗胜利！");
@@ -662,20 +678,17 @@ function performAction(actionType) {
 
   renderBattleUI();
 
-  // 检查所有敌方死亡
   if (battleState.enemies.every(e => e.currentHP <= 0)) {
     addLog("🎉 所有敌人被击败！战斗胜利！");
     setTimeout(() => endBattle(true, true), 1200);
     return;
   }
 
-  // 结束小回合（除非终结技）
   if (!isUltimate) {
     battleState.currentTurnIndex++;
     battleState.isPlayerTurn = false;
     setTimeout(() => nextTurn(), 900);
   } else {
-    // 终结技不结束回合，允许再行动一次
     addLog("⚡ 终结技释放完毕，可继续行动！");
     renderBattleUI();
   }
@@ -853,11 +866,19 @@ function showBattleDetail(isTeam, index) {
         <div class="mt-4">
           <div class="text-sm font-bold text-emerald-400 mb-1">增益 Buffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${buffs.length ? buffs.map(b => `<span title="${getBuffDesc(b.name)}" class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded cursor-help">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${buffs.length ? buffs.map(b => {
+              const stackText = b.stacks ? `x${b.stacks}` : '';
+              const durText = b.duration !== undefined ? `(${b.duration}回合)` : '';
+              return `<span title="${getBuffDesc(b.name)}" class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded cursor-help">${b.name}${stackText}${durText}</span>`;
+            }).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
           <div class="text-sm font-bold text-red-400 mb-1 mt-3">减益 DeBuffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${debuffs.length ? debuffs.map(d => `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${debuffs.length ? debuffs.map(d => {
+              const stackText = d.stacks ? `x${d.stacks}` : '';
+              const durText = d.duration !== undefined ? `(${d.duration}回合)` : '';
+              return `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}${stackText}${durText}</span>`;
+            }).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
         </div>
         <div class="mt-4">
@@ -911,11 +932,19 @@ function showBattleDetail(isTeam, index) {
         <div class="mt-4">
           <div class="text-sm font-bold text-emerald-400 mb-1">增益 Buffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${buffs.length ? buffs.map(b => `<span title="${getBuffDesc(b.name)}" class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded cursor-help">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${buffs.length ? buffs.map(b => {
+              const stackText = b.stacks ? `x${b.stacks}` : '';
+              const durText = b.duration !== undefined ? `(${b.duration}回合)` : '';
+              return `<span title="${getBuffDesc(b.name)}" class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded cursor-help">${b.name}${stackText}${durText}</span>`;
+            }).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
           <div class="text-sm font-bold text-red-400 mb-1 mt-3">减益 DeBuffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${debuffs.length ? debuffs.map(d => `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${debuffs.length ? debuffs.map(d => {
+              const stackText = d.stacks ? `x${d.stacks}` : '';
+              const durText = d.duration !== undefined ? `(${d.duration}回合)` : '';
+              return `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}${stackText}${durText}</span>`;
+            }).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
         </div>
         <div class="mt-4">

@@ -79,7 +79,12 @@ function renderNormalDrawCards(results, poolType, container) {
     div.style.animationDelay = delay + "ms";
     const data = poolType === "char" ? window.getCharacterData(item.id) : window.getWeaponData(item.id);
     const hasShine = (data.rarity === "SSR" || data.rarity === "UR");
-    div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${window.getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
+    div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${window.getRarityColor(data.rarity)} text-center w-40 sm:w-52 inventory-card`;
+    
+    // 稀有度粒子庆祝
+    if (data.rarity === "SSR" || data.rarity === "UR") {
+      setTimeout(() => createDrawParticles(div, true), 300);
+    }
     div.innerHTML = `
       <img src="${data.image}" class="character-img w-full rounded-2xl mx-auto ${hasShine ? 'draw-shine' : ''}">
       <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div>
@@ -790,6 +795,25 @@ function hideMerchantModal() {
 // ==================== 完整暴露 ====================
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
+
+// 炫酷粒子特效（抽卡按钮点击 + 稀有度庆祝）
+function createDrawParticles(btn, isRare = false) {
+  const container = btn?.parentElement?.querySelector('.particles') || document.body;
+  const count = isRare ? 28 : 12;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * (isRare ? 80 : 60) + '%';
+    p.style.background = isRare ? 
+      ['#ec4899', '#eab308', '#22d3ee', '#8b5cf6'][Math.floor(Math.random()*4)] : 
+      ['#3b82f6', '#a855f7', '#eab308', '#ec4899'][Math.floor(Math.random()*4)];
+    p.style.animationDelay = (Math.random() * 0.5) + 's';
+    p.style.width = p.style.height = (isRare ? 5 : 3) + Math.random() * (isRare ? 5 : 4) + 'px';
+    container.appendChild(p);
+    setTimeout(() => p.remove(), isRare ? 2200 : 1600);
+  }
+}
 window.setDrawPool = setDrawPool;
 window.setRecordTab = setRecordTab;
 window.showRecordModal = showRecordModal;

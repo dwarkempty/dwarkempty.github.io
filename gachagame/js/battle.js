@@ -548,7 +548,15 @@ function nextTurn() {
       m.buffs = processDurations(m.buffs || []);
       m.debuffs = processDurations(m.debuffs || []);
     });
-    if (battleState.enemy) {
+    // 多敌人处理
+    if (battleState.enemies && battleState.enemies.length > 0) {
+      battleState.enemies.forEach(en => {
+        if (en.currentHP > 0) {
+          en.buffs = processDurations(en.buffs || []);
+          en.debuffs = processDurations(en.debuffs || []);
+        }
+      });
+    } else if (battleState.enemy) {
       battleState.enemy.buffs = processDurations(battleState.enemy.buffs || []);
       battleState.enemy.debuffs = processDurations(battleState.enemy.debuffs || []);
     }
@@ -591,29 +599,48 @@ function performAction(actionType) {
   let spCost = 0;
   let ueGain = 20;
   let isUltimate = false;
+  const isAtya = member.charId === 15;
 
-  if (actionType === 'normal') {
-    skillMult = 1.0;
-    spCost = 0;
-    ueGain = 20;
-  } else if (actionType === 'skill1') {
-    if (member.SP < 1) { alert("SP不足！"); return; }
-    skillMult = 1.8;
-    spCost = 1;
-    ueGain = 30;
-  } else if (actionType === 'skill2') {
-    if (member.SP < 1) { alert("SP不足！"); return; }
-    skillMult = 2.4;
-    spCost = 1;
-    ueGain = 30;
-  } else if (actionType === 'ultimate') {
-    if (member.UE < 100 || member.ultimateUsed) { alert("无法释放终结技！"); return; }
-    skillMult = 6.5;
-    spCost = 0;
-    ueGain = 0;
-    isUltimate = true;
-    member.ultimateUsed = true;
-    member.buffs.push({name: "终结余辉", duration: 2});
+  if (isAtya) {
+    // 阿特亚技能组实现（按新描述：自定义倍率 + 被动【绚明印记】 + 终结神子永辉）
+    if (actionType === 'normal') {
+      skillMult = 1.1; spCost = 0; ueGain = 25;
+    } else if (actionType === 'skill1') { // 万象绚华
+      skillMult = 2.2; spCost = 2; ueGain = 35;
+    } else if (actionType === 'skill2') { // 绚律易质
+      skillMult = 3.4; spCost = 2; ueGain = 35;
+    } else if (actionType === 'ultimate') {
+      skillMult = 7.0; spCost = 0; ueGain = 0; isUltimate = true;
+      member.ultimateUsed = true;
+      member.buffs.push({name: "神子永辉", duration: 1});
+      addLog(`🌟 ${member.name} 进入【神子永辉】：攻击力+30%、无视防御、印记+1层！`);
+    }
+    // 被动触发（附加印记 + 立即结算 + 元素增伤 + UE回复）
+    if (!isUltimate || actionType === 'ultimate') {
+      const aliveEnemies = battleState.enemies.filter(e => e.currentHP > 0);
+      if (aliveEnemies.length > 0) {
+        const t = aliveEnemies[0];
+        addOrRefreshEffect(t, "绚明印记", 3, true);
+        addLog(`✨ ${member.name} 被动：目标获得【绚明印记】(层数叠加)`);
+        member.stats.dmgBonus = Math.min(0.5, (member.stats.dmgBonus || 0) + 0.1);
+        member.UE = Math.min(100, member.UE + 5);
+      }
+    }
+  } else {
+    if (actionType === 'normal') {
+      skillMult = 1.0; spCost = 0; ueGain = 20;
+    } else if (actionType === 'skill1') {
+      if (member.SP < 1) { alert("SP不足！"); return; }
+      skillMult = 1.8; spCost = 1; ueGain = 30;
+    } else if (actionType === 'skill2') {
+      if (member.SP < 1) { alert("SP不足！"); return; }
+      skillMult = 2.4; spCost = 1; ueGain = 30;
+    } else if (actionType === 'ultimate') {
+      if (member.UE < 100 || member.ultimateUsed) { alert("无法释放终结技！"); return; }
+      skillMult = 6.5; spCost = 0; ueGain = 0; isUltimate = true;
+      member.ultimateUsed = true;
+      member.buffs.push({name: "终结余辉", duration: 2});
+    }
   }
 
   // 消耗
@@ -833,16 +860,37 @@ function showBattleDetail(isTeam, index) {
             ${debuffs.length ? debuffs.map(d => `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
         </div>
+        <div class="mt-4">
+          <div class="text-sm font-bold text-amber-400 mb-1">技能组描述</div>
+          ${member.charId === 15 ? 
+            `<div class="text-xs bg-zinc-800 p-3 rounded-xl whitespace-pre-line max-h-48 overflow-auto">${(window.getCharacterData(member.charId)?.skills || '阿特亚技能数据加载中...').replace(/\\n/g, '\n')}</div>` : 
+            `<div class="text-xs text-gray-500 bg-zinc-800 p-3 rounded-xl">（该角色技能描述暂未实装，仅阿特亚完整支持）</div>`
+          }
+        </div>
         <div class="text-center mt-6">
           <button onclick="this.closest('.fixed').remove()" class="px-8 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-2xl">关闭</button>
         </div>
       </div>
     `;
   } else {
-    const enemy = battleState.enemy;
+    // 支持多敌人：优先使用 index
+    let enemy = null;
+    if (typeof index === 'number' && battleState.enemies && battleState.enemies[index]) {
+      enemy = battleState.enemies[index];
+    } else if (battleState.enemies && battleState.enemies.length > 0) {
+      enemy = battleState.enemies.find(e => e.currentHP > 0) || battleState.enemies[0];
+    } else {
+      enemy = battleState.enemy; // 兼容旧逻辑
+    }
+    if (!enemy) {
+      alert("敌方数据异常，无法查看面板");
+      return;
+    }
     const buffs = enemy.buffs || [];
     const debuffs = enemy.debuffs || [];
-    const attr = enemy.attribute || "混沌——虚";
+    const attr = enemy.attribute || "裂隙";
+    // 敌人技能/描述
+    const enemySkillDesc = `裂隙系高血低攻敌人。属性克制下对我方造成1.2倍伤害，受到元素伤害时减伤15%。被【绚明印记】等DoT影响时会额外受创。点击查看实时属性与减益。`;
     contentHTML = `
       <div class="bg-zinc-900 rounded-3xl max-w-lg w-full border-4 border-red-500 p-6 max-h-[90vh] overflow-auto">
         <div class="flex justify-between mb-4">
@@ -869,6 +917,10 @@ function showBattleDetail(isTeam, index) {
           <div class="flex flex-wrap gap-1 min-h-[30px]">
             ${debuffs.length ? debuffs.map(d => `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-sm font-bold text-amber-400 mb-1">技能/描述</div>
+          <div class="text-xs bg-zinc-800 p-3 rounded-xl whitespace-pre-line">${enemySkillDesc}</div>
         </div>
         <div class="text-center mt-6">
           <button onclick="this.closest('.fixed').remove()" class="px-8 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-2xl">关闭</button>

@@ -1,4 +1,4 @@
-// js/exploration.js - 探索系统、赌博、21点、扫雷（资源已全部改为耀星/强化石）
+// js/exploration.js - 探索系统、赌博、21点、扫雷
 let diamondCooldownEnd = 0;   // 改名但保持变量名清晰
 let goldCooldownEnd = 0;
 let potionCooldownEnd = 0;    // 改名但保持变量名清晰

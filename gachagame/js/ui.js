@@ -51,11 +51,6 @@ function showDrawAnimation(results, poolType) {
           <button onclick="this.closest('.fixed').remove()" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">关闭</button>
         </div>`;
       console.error("动态立绘加载失败:", charData.animatedImage);
-      // 自动降级显示卡片（解决UR不显示问题）
-      setTimeout(() => {
-        if (videoContainer.parentNode) videoContainer.remove();
-        renderNormalDrawCards(results, poolType, container);
-      }, 500);
     };
 
     // 点击跳过
@@ -104,9 +99,6 @@ function setDrawPool(type) {
   document.getElementById("poolCharBtn").classList.toggle("active", type === "char");
   document.getElementById("poolWeaponBtn").classList.toggle("active", type === "weapon");
   document.getElementById("poolTitle").textContent = type === "char" ? "角色池抽取" : "武器池抽取";
-  // 更新称号
-  const titleEl = document.getElementById("playerTitle");
-  if (titleEl) titleEl.textContent = `当前称号：${window.getPlayerTitle()}`;
 }
 
 function setRecordTab(n) {
@@ -320,14 +312,6 @@ function executeConsoleCommand() {
       if (mat) {
         player.materials[id - 200] = (player.materials[id - 200] || 0) + amount;
         log.innerHTML += `✅ 已获得 ${amount} 个 ${mat.name}<br>`;
-      }
-    } else if (id >= 1001 && id <= 1016) {
-      const charId = id - 1000;
-      const charData = window.getCharacterData(charId);
-      if (charData) {
-        player.sourcePowers = player.sourcePowers || {};
-        player.sourcePowers[charId] = (player.sourcePowers[charId] || 0) + amount;
-        log.innerHTML += `✅ 已获得 ${amount} 个 ${charData.name}源力<br>`;
       }
     } else {
       log.innerHTML += `❌ 未知物品ID<br>`;
@@ -798,8 +782,6 @@ function hideMerchantModal() {
 // ==================== 完整暴露 ====================
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
-
-// 粒子特效已移除，保持原样
 window.setDrawPool = setDrawPool;
 window.setRecordTab = setRecordTab;
 window.showRecordModal = showRecordModal;

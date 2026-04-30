@@ -1,4 +1,4 @@
-// js/album.js - 图鉴系统
+// js/album.js - 图鉴系统（已修复长文本description问题 + 世界观详解）
 let currentAlbumTab = 0; // 0=角色 1=武器 2=世界观
 
 function setAlbumTab(n) {

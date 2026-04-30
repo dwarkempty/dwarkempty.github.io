@@ -26,7 +26,7 @@ function renderInventory() {
     if (!data) return;
 
     const div = document.createElement("div");
-    div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${window.getRarityColor(data.rarity)} hover:scale-105 transition btn-hover`;
+    div.className = `relative bg-gray-800 rounded-3xl p-3 sm:p-4 cursor-pointer border-4 ${window.getRarityColor(data.rarity)} inventory-card card-hover`;
 
     let html = '';
     if (isChar) {
@@ -137,7 +137,7 @@ function showCharacterDetail(index) {
 
   const starHTML = Array(5).fill(0).map((_, i) => `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`).join('');
 
-  document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
+  document.getElementById("modalInner").className = `modal-content modal-pop glass bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
 
   document.getElementById("modalContent").innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
@@ -300,7 +300,7 @@ function showWeaponDetail(index) {
 
   const borderClass = window.getRarityBorderClass(weapon.rarity);
 
-  document.getElementById("modalInner").className = `modal-content bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
+  document.getElementById("modalInner").className = `modal-content modal-pop glass bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
 
   document.getElementById("modalContent").innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">

@@ -1,19 +1,19 @@
 // js/constants.js - 角色/武器池 + 常量 + 经营系统数据
 const characterPool = [
-  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:380, baseATK:220, baseDEF:160, baseSPD:108, category:"强袭", image:"images/Allen_Illustration.jpg"},
-  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:320, baseATK:260, baseDEF:130, baseSPD:112, category:"辅助", image:"images/Sally_Illustration.jpg"},
-  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:420, baseATK:190, baseDEF:240, baseSPD:102, category:"近卫", image:"images/Buck_Illustration.jpg"},
-  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:340, baseATK:250, baseDEF:150, baseSPD:115, category:"辅助", image:"images/Lily_Illustration.jpg"},
-  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:480, baseATK:310, baseDEF:180, baseSPD:122, category:"强袭", image:"images/Kael_Illustration.jpg"},
-  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:410, baseATK:330, baseDEF:170, baseSPD:118, category:"辅助", image:"images/Mia_Illustration.jpg"},
-  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:500, baseATK:290, baseDEF:200, baseSPD:125, category:"强袭", image:"images/Sorey_Illustration.jpg"},
-  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:390, baseATK:360, baseDEF:160, baseSPD:128, category:"强袭", image:"images/Shadowblade_Illustration.jpg"},
-  {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:580, baseATK:270, baseDEF:260, baseSPD:130, category:"辅助", image:"images/Sylvia_Illustration.jpg"},
-  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:540, baseATK:320, baseDEF:220, baseSPD:135, category:"强袭", image:"images/Alesha_Illustration.jpg"},
-  {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:620, baseATK:290, baseDEF:290, baseSPD:128, category:"近卫", image:"images/Galan_Illustration.jpg"},
-  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:550, baseATK:350, baseDEF:240, baseSPD:132, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
-  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:720, baseATK:480, baseDEF:310, baseSPD:138, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
-  {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:680, baseATK:510, baseDEF:290, baseSPD:142, category:"辅助", image:"images/Chrono_Illustration.jpg"},
+  {id:1, name:"森林游侠·艾伦", enName:"Forest Ranger · Allen", rarity:"R", baseHP:280, baseATK:180, baseDEF:120, baseSPD:105, category:"强袭", image:"images/Allen_Illustration.jpg"},
+  {id:2, name:"火焰学徒·莎莉", enName:"Flame Apprentice · Sally", rarity:"R", baseHP:240, baseATK:210, baseDEF:95, baseSPD:110, category:"辅助", image:"images/Sally_Illustration.jpg"},
+  {id:3, name:"铁壁卫士·巴克", enName:"Ironclad Guardian · Buck", rarity:"R", baseHP:320, baseATK:150, baseDEF:180, baseSPD:98, category:"近卫", image:"images/Buck_Illustration.jpg"},
+  {id:4, name:"月影精灵·莉莉", enName:"Moonshadow Elf · Lily", rarity:"R", baseHP:260, baseATK:200, baseDEF:110, baseSPD:112, category:"辅助", image:"images/Lily_Illustration.jpg"},
+  {id:5, name:"疾风剑豪·凯尔", enName:"Gale Swordmaster · Kael", rarity:"SR", baseHP:380, baseATK:260, baseDEF:140, baseSPD:118, category:"强袭", image:"images/Kael_Illustration.jpg"},
+  {id:6, name:"自然召唤师·米娅", enName:"Natural Summoner · Mia", rarity:"SR", baseHP:340, baseATK:280, baseDEF:130, baseSPD:115, category:"辅助", image:"images/Mia_Illustration.jpg"},
+  {id:7, name:"雷鸣骑士·索雷", enName:"Thunder Knight · Sorey", rarity:"SR", baseHP:400, baseATK:245, baseDEF:155, baseSPD:120, category:"强袭", image:"images/Sorey_Illustration.jpg"},
+  {id:8, name:"暗夜刺客·影刃", enName:"Shadow Assassin · Shadowblade", rarity:"SR", baseHP:310, baseATK:300, baseDEF:125, baseSPD:125, category:"强袭", image:"images/Shadowblade_Illustration.jpg"},
+  {id:9, name:"星辰魔导师·塞尔维亚", enName:"Starlight Archmage · Sylvia", rarity:"SSR", baseHP:480, baseATK:230, baseDEF:210, baseSPD:128, category:"辅助", image:"images/Sylvia_Illustration.jpg"},
+  {id:10, name:"幻月弓神·阿蕾莎", enName:"Illusion Moon Archer Goddess · Alesha", rarity:"SSR", baseHP:450, baseATK:270, baseDEF:180, baseSPD:132, category:"强袭", image:"images/Alesha_Illustration.jpg"},
+  {id:11, name:"圣辉骑士王·加兰", enName:"Holy Radiance Knight King · Galan", rarity:"SSR", baseHP:520, baseATK:245, baseDEF:235, baseSPD:125, category:"近卫", image:"images/Galan_Illustration.jpg"},
+  {id:12, name:"凤凰圣女·菲妮克斯", enName:"Phoenix Saintess · Phoenix", rarity:"SSR", baseHP:460, baseATK:295, baseDEF:195, baseSPD:130, category:"近卫", image:"images/Phoenix_Illustration.jpg"},
+  {id:13, name:"创世光辉·露娜薇尔", enName:"Genesis Radiance · Lunaviel", rarity:"UR", baseHP:620, baseATK:420, baseDEF:260, baseSPD:135, category:"辅助", image:"images/Lunaviel_Illustration.jpg"},
+  {id:14, name:"永恒时女·克罗诺", enName:"Eternal Time Maiden · Chrono", rarity:"UR", baseHP:590, baseATK:450, baseDEF:245, baseSPD:138, category:"辅助", image:"images/Chrono_Illustration.jpg"},
   {id:15, name:"绚明者·阿特亚", enName:"Radiant Illuminator · Atya", rarity:"UR", baseHP:650, baseATK:560, baseDEF:260, baseSPD:148, category:"强袭", image:"images/Atya_Illustration.png", animatedImage:"images/Atya_Dynamic.mp4",
    lore: `【绚明者——阿特亚】
 职位：强袭
@@ -50,29 +50,31 @@ const characterPool = [
 【公元2024年7月7日，即新纪元元年1月1日，新纪元人类联合政府，正式成立。】`,
   skills: `核心机制：【绚明印记】
 一种可叠加的元素持续伤害（DoT）。
-每层每回合对目标造成「攻击力×50%」的元素伤害。
-最多叠加8层，超出上限时自动引爆超出的层数，每引爆1层造成「攻击力×80%」的元素伤害。
+每层每回合对目标造成「攻击力×120%」的元素伤害。
+最多叠加8层，超出上限时自动引爆超出的层数，每引爆1层造成「攻击力×150%」的元素伤害。
 被动技能：绚明本源
 阿特亚天生与万物属性共鸣。
 主动造成伤害时，为目标额外附加1层【绚明印记】。
-在附加【绚明印记】的瞬间，立即触发一次印记伤害，并提升自身10%元素伤害（最多叠加3层），同时回复自身5点终结能量，此效果每回合回复的终结能量最多30点。
+在附加【绚明印记】的瞬间，立即触发一次印记伤害，并提升自身10%元素伤害（最多叠加3层），同时回复自身5点终结能量，此效果每回合回复的终结能量最多20点。
+敌方每有一层【绚明印记】，受到的所有伤害+1.5%。
 将所有属性增伤转换为全元素增伤。
-普攻：绚光初绽（消耗0技能点）
+普攻：绚光初绽（消耗0技能点，冷却1回合）
 “微光乍现，万物应和。”
-对指定敌人造成110%攻击力的元素伤害，有50%的概率附加1层【绚明印记】；同时对周围两名敌人造成80%攻击力的元素伤害，有30%的概率附加1层【绚明印记】。
-战技：万象绚华（消耗2技能点）
+对指定敌人造成150%攻击力的元素伤害，有75%的概率附加1层【绚明印记】；同时对周围两名敌人造成100%攻击力的元素伤害，有40%的概率附加1层【绚明印记】。
+战技：万象绚华（消耗1技能点，冷却1回合）
 “看啊，指尖初绽，绚烂华章。”
 对敌方全体造成220%攻击力的元素伤害，为每个敌人附加3层【绚明印记】。
-若任意敌人的【绚明印记】层数≥6，则全体敌人额外获得【元素凝视】：减少目标15%的防御，持续2回合，不可叠加。
-战技：绚律易质（消耗2技能点）
+若任意敌人的【绚明印记】层数≥6，则全体敌人额外获得【元素凝视】：减少目标25%的防御，持续2回合，不可叠加。
+战技：绚律易质（消耗1技能点，无冷却）
 “吾改万物之性，唯绚明永恒。”
-对指定敌人造成340%攻击力的元素伤害，立即引爆敌人所有【绚明印记】，每引爆1层额外造成攻击力×180%的元素伤害。
-引爆后回复35点终结能量，并使自身攻击力提升25%，持续2回合（不可叠加）。
+对指定敌人造成350%攻击力的元素伤害，使其在本回合内受到的【绚明印记】伤害提升100%（不可叠加）。
+立即引爆敌人所有【绚明印记】，每引爆1层额外造成攻击力×200%的元素伤害。
+引爆后回复25点终结能量，并使自身攻击力提升25%，持续2回合（不可叠加）。
 终结技：万般绚明（消耗100点终结能量）
 “这一瞬，世间万物皆为吾之烟火。”
-对敌方全体造成700%攻击力的元素伤害 + 全场所有敌人【绚明印记】层数×80%的毁灭性元素伤害。
-使敌方全体进入【绚明崩解】状态：后续2回合，每回合自动触发一次等同于引爆前该敌人身上印记层数的伤害，此伤害无视防御，且无法被驱散（无法触发阿特亚被动）。
-终结技结束后，阿特亚进入【神子永辉】状态：攻击力增加30%（可与其他攻击力加成叠加），所有伤害均无视防御，【绚明印记】附加层数+1（持续1回合，无法叠加）。`
+对敌方全体造成800%攻击力的元素伤害 + 全场所有敌人【绚明印记】层数×150%的毁灭性元素伤害。
+使敌方全体进入【绚明崩解】状态：后续3回合，每回合自动触发一次等同于引爆前该敌人身上印记层数的伤害，此伤害无视防御，且无法被驱散。
+终结技结束后，阿特亚进入【神子永辉】状态：攻击力增加50%，所有伤害均无视防御，【绚明印记】附加层数+1（持续2回合，无法叠加）。`
   },
   {id:16, name:"希罗·玛利亚", enName:"Hiro Maria", rarity:"UR", baseHP:710, baseATK:530, baseDEF:280, baseSPD:145, category:"强袭", image:"images/Hiro_Illustration.png", animatedImage:"images/Hiro_Dynamic.mp4",
    lore: `【源之光——希罗·玛利亚】

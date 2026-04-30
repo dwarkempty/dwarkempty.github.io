@@ -90,25 +90,22 @@ function calculateStats(item, charData, equippedWeapon = null) {
   const starCoefficients = [1.00, 1.20, 1.40, 1.60, 1.80, 2.00];
   const coeff = starCoefficients[Math.min(Y, 5)] || 1.0;
 
-  // 根据职业设置初始值和成长 (基于角色面板属性设计)
-  let baseHP, hpGrowth, baseATK, atkGrowth, baseDEF, defGrowth, baseSPD, spdGrowth;
+  // 成长率按职业 (固定，来自设计图)
   const cat = charData.category || "强袭";
+  let hpGrowth, atkGrowth, defGrowth, spdGrowth;
   if (cat === "强袭") {
-    baseHP = 695; hpGrowth = 48.0;
-    baseATK = 165; atkGrowth = 24.3;
-    baseDEF = 195; defGrowth = 10.0;
-    baseSPD = 109; spdGrowth = 0.8;
+    hpGrowth = 48.0; atkGrowth = 24.3; defGrowth = 10.0; spdGrowth = 0.8;
   } else if (cat === "近卫") {
-    baseHP = 975; hpGrowth = 50.5;
-    baseATK = 115; atkGrowth = 13.9;
-    baseDEF = 340; defGrowth = 16.5;
-    baseSPD = 104; spdGrowth = 0.5;
-  } else { // 辅助
-    baseHP = 925; hpGrowth = 40.4;
-    baseATK = 135; atkGrowth = 19.9;
-    baseDEF = 255; defGrowth = 12.4;
-    baseSPD = 111; spdGrowth = 0.7;
+    hpGrowth = 50.5; atkGrowth = 13.9; defGrowth = 16.5; spdGrowth = 0.5;
+  } else {
+    hpGrowth = 40.4; atkGrowth = 19.9; defGrowth = 12.4; spdGrowth = 0.7;
   }
+
+  // 使用角色数据中的初始值 (0星1级，区间内不同角色略有差异)
+  const baseHP = charData.baseHP || 695;
+  const baseATK = charData.baseATK || 165;
+  const baseDEF = charData.baseDEF || 195;
+  const baseSPD = charData.baseSPD || 109;
 
   // 最终基础属性公式 (来自设计图)
   let hp = Math.floor( (baseHP + hpGrowth * (X - 1)) * coeff );
@@ -135,7 +132,6 @@ function calculateStats(item, charData, equippedWeapon = null) {
   let healBonus = 0;
   let recvHealBonus = 0;
   let shieldStr = 1.0;
-  // SP/UE 效率等初始0, 未来装备加成
 
   let attribute = charData.attribute || "元素";
 
@@ -144,7 +140,6 @@ function calculateStats(item, charData, equippedWeapon = null) {
     const wpData = getWeaponData(equippedWeapon.weaponId);
     const wX = equippedWeapon.level;
     const wY = equippedWeapon.stars;
-    // 武器提供额外基础 (简化)
     hp += Math.floor(wpData.baseHP * Math.pow(1.02, wX) + 200 * wY);
     atk += Math.floor(wpData.baseATK * Math.pow(1.015, wX) + 150 * wY);
     def += Math.floor(wpData.baseDEF * Math.pow(1.01, wX) + 100 * wY);
@@ -167,9 +162,8 @@ function calculateStats(item, charData, equippedWeapon = null) {
     shieldStr: Math.max(0.1, shieldStr),
     dmgBonus: Math.min(0.5, Math.max(0, dmgBonus)),
     dmgReduction: Math.min(0.5, Math.max(0, dmgReduction)),
-    // 其他
-    spRecovery: 0,  // SP恢复效率
-    ueCharge: 0     // UE充能效率
+    spRecovery: 0,
+    ueCharge: 0
   };
 }
 

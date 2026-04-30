@@ -42,20 +42,20 @@ function showDrawAnimation(results, poolType) {
     const videoEl = document.getElementById("dynamicDrawVideo");
     videoEl.volume = 0.75;
 
-    // 错误处理（关键修复：视频失败时自动降级显示卡片）
+    // 错误处理
     videoEl.onerror = () => {
       videoContainer.innerHTML += `
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md z-[100001]">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md">
           <div class="text-2xl mb-3">❌ 视频加载失败</div>
-          <div class="text-sm">动态立绘不存在，已自动显示普通卡片</div>
+          <div class="text-sm">请确认文件路径正确且使用本地服务器运行</div>
+          <button onclick="this.closest('.fixed').remove()" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">关闭</button>
         </div>`;
       console.error("动态立绘加载失败:", charData.animatedImage);
-      
-      // 强制降级显示普通卡片（解决UR卡片不显示的bug）
+      // 自动降级显示卡片（解决UR不显示问题）
       setTimeout(() => {
         if (videoContainer.parentNode) videoContainer.remove();
         renderNormalDrawCards(results, poolType, container);
-      }, 600);
+      }, 500);
     };
 
     // 点击跳过
@@ -84,16 +84,7 @@ function renderNormalDrawCards(results, poolType, container) {
     div.style.animationDelay = delay + "ms";
     const data = poolType === "char" ? window.getCharacterData(item.id) : window.getWeaponData(item.id);
     const hasShine = (data.rarity === "SSR" || data.rarity === "UR");
-    div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${window.getRarityColor(data.rarity)} text-center w-40 sm:w-52 inventory-card`;
-    
-    // 稀有度粒子庆祝 + UR 强制金色边框+彩虹光
-    if (data.rarity === "SSR" || data.rarity === "UR") {
-      setTimeout(() => createDrawParticles(div, true), 300);
-    }
-    if (data.rarity === "UR") {
-      div.style.border = "5px solid #fbbf24";
-      div.style.boxShadow = "0 0 30px #ec4899, 0 0 60px #8b5cf6, 0 0 90px #22d3ee";
-    }
+    div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${window.getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
     div.innerHTML = `
       <img src="${data.image}" class="character-img w-full rounded-2xl mx-auto ${hasShine ? 'draw-shine' : ''}">
       <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div>
@@ -805,24 +796,7 @@ function hideMerchantModal() {
 window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 
-// 炫酷粒子特效（抽卡按钮点击 + 稀有度庆祝）
-function createDrawParticles(btn, isRare = false) {
-  const container = btn?.parentElement?.querySelector('.particles') || document.body;
-  const count = isRare ? 28 : 12;
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.top = Math.random() * (isRare ? 80 : 60) + '%';
-    p.style.background = isRare ? 
-      ['#ec4899', '#eab308', '#22d3ee', '#8b5cf6'][Math.floor(Math.random()*4)] : 
-      ['#3b82f6', '#a855f7', '#eab308', '#ec4899'][Math.floor(Math.random()*4)];
-    p.style.animationDelay = (Math.random() * 0.5) + 's';
-    p.style.width = p.style.height = (isRare ? 5 : 3) + Math.random() * (isRare ? 5 : 4) + 'px';
-    container.appendChild(p);
-    setTimeout(() => p.remove(), isRare ? 2200 : 1600);
-  }
-}
+// 粒子特效已移除，保持原样
 window.setDrawPool = setDrawPool;
 window.setRecordTab = setRecordTab;
 window.showRecordModal = showRecordModal;

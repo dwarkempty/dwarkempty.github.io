@@ -10,6 +10,20 @@ let battleState = {
   selectedTeam: []    // for pre-battle selection, char indices in player.owned
 };
 
+// 增益减益详细效果描述 (可扩展)
+const buffDescMap = {
+  "终结余辉": "终结技释放后获得，攻击力临时提升50%，持续2回合，无法被驱散。",
+  "裂隙侵蚀": "受到BOSS攻击时附加，受到所有伤害增加15%，持续2回合。",
+  "神子永辉": "阿特亚终结技后，攻击力+50%且无视防御，持续2回合。",
+  "元素凝视": "防御降低25%，持续2回合。",
+  "源环加护": "全队获得随机正面效果，持续至移除。"
+  // 未来新buff/debuff在此添加描述
+};
+
+function getBuffDesc(name) {
+  return buffDescMap[name] || "该效果暂无详细描述，将在后续更新中补充。";
+}
+
 function initBattleUI() {
   const panel = document.getElementById("panel5");
   if (!panel) return;
@@ -732,11 +746,11 @@ function showBattleDetail(isTeam, index) {
         <div class="mt-4">
           <div class="text-sm font-bold text-emerald-400 mb-1">增益 Buffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${buffs.length ? buffs.map(b => `<span class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${buffs.length ? buffs.map(b => `<span title="${getBuffDesc(b.name)}" class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded cursor-help">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
           <div class="text-sm font-bold text-red-400 mb-1 mt-3">减益 DeBuffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${debuffs.length ? debuffs.map(d => `<span class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${debuffs.length ? debuffs.map(d => `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
         </div>
         <div class="text-center mt-6">
@@ -769,11 +783,11 @@ function showBattleDetail(isTeam, index) {
         <div class="mt-4">
           <div class="text-sm font-bold text-emerald-400 mb-1">增益 Buffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${buffs.length ? buffs.map(b => `<span class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${buffs.length ? buffs.map(b => `<span title="${getBuffDesc(b.name)}" class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded cursor-help">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
           <div class="text-sm font-bold text-red-400 mb-1 mt-3">减益 DeBuffs</div>
           <div class="flex flex-wrap gap-1 min-h-[30px]">
-            ${debuffs.length ? debuffs.map(d => `<span class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+            ${debuffs.length ? debuffs.map(d => `<span title="${getBuffDesc(d.name)}" class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded cursor-help">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
           </div>
         </div>
         <div class="text-center mt-6">

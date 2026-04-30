@@ -390,41 +390,97 @@ function levelUp() {
 }
 
 function starUp() {
-  if (currentModalIndex === null) return;
-  let item, list;
-  if (currentModalType === "char") {
-    item = player.owned[currentModalIndex];
-    list = player.owned;
-  } else {
-    item = player.weapons[currentModalIndex];
-    list = player.weapons;
-  }
+  if (currentModalIndex === null || currentModalType !== "char") return alert("仅角色可升星！");
+  const item = player.owned[currentModalIndex];
   if (item.stars >= 5) return alert("已经满星！");
-  const duplicateIndex = list.findIndex(o => (currentModalType === "char" ? o.charId : o.weaponId) === (currentModalType === "char" ? item.charId : item.weaponId) && o.id !== item.id && o.stars <= item.stars);
-  if (duplicateIndex === -1) return alert("没有可用的相同材料！");
+  showStarUpgradeModal(currentModalIndex);
+}
 
-  const potionCost = 10 + item.stars * 10;
-  if (player.reinforceStone < potionCost) return alert(`强化石不足！需要 ${potionCost} 个强化石`);
+function showStarUpgradeModal(ownedIndex) {
+  const item = player.owned[ownedIndex];
+  const charData = window.getCharacterData(item.charId);
+  if (!charData) return;
+  const sourceCount = (player.sourcePowers && player.sourcePowers[item.charId]) || 0;
 
-  if (!confirm(`确定消耗 ${potionCost} 个强化石 + 1个相同材料升星吗？`)) return;
+  const modal = document.createElement("div");
+  modal.className = "fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4";
+  modal.innerHTML = `
+    <div class="bg-zinc-900 rounded-3xl max-w-2xl w-full border-4 border-purple-500 p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-3xl font-bold text-purple-400">✨ ${charData.name} 命座升星</h3>
+        <button onclick="this.closest('.fixed').remove()" class="text-4xl text-gray-400 hover:text-white">×</button>
+      </div>
+      
+      <div class="flex gap-8">
+        <!-- 左侧五星 -->
+        <div class="flex flex-col items-center gap-4 w-24">
+          ${[1,2,3,4,5].map(star => {
+            const isLit = star <= item.stars;
+            const starClass = isLit ? 'text-yellow-400 drop-shadow-[0_0_8px_#facc15]' : 'text-gray-600';
+            return `<div class="text-6xl ${starClass} transition-all">★</div>`;
+          }).join('')}
+        </div>
+        
+        <!-- 右侧效果描述 (暂时留空) -->
+        <div class="flex-1">
+          <div class="text-xl font-bold text-purple-300 mb-4">当前星级：${item.stars} / 5</div>
+          <div class="space-y-3 text-sm">
+            ${[1,2,3,4,5].map(star => {
+              let desc = "效果待定";
+              if (star === 2) desc = "暴击率 +5%";
+              else if (star === 3) desc = "暴击率 +5%，暴击伤害 +10%";
+              else if (star === 4) desc = "暴击率 +5%，暴击伤害 +10%，穿透率 +8%";
+              else if (star === 5) desc = "暴击率 +10%，暴击伤害 +10%，穿透率 +8%，增伤 +10%";
+              const isLit = star <= item.stars;
+              return `<div class="flex items-start gap-3 p-3 rounded-2xl ${isLit ? 'bg-purple-900/50 border border-purple-500' : 'bg-zinc-800'}">
+                <div class="text-2xl ${isLit ? 'text-yellow-400' : 'text-gray-500'}">★</div>
+                <div><div class="font-bold text-purple-200">第${star}星</div><div class="text-gray-400">${desc}</div></div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-8 flex items-center justify-between border-t border-zinc-700 pt-6">
+        <div class="text-lg">
+          可用角色源力：<span class="font-bold text-emerald-400">${sourceCount}</span> / 1
+        </div>
+        <div class="flex gap-4">
+          <button onclick="this.closest('.fixed').remove()" class="px-8 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl">取消</button>
+          <button id="upgradeBtn" onclick="performStarUpgrade(${ownedIndex}, this)" 
+                  class="px-10 py-3 ${sourceCount >= 1 && item.stars < 5 ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-600 cursor-not-allowed'} rounded-2xl text-lg font-bold flex items-center gap-2"
+                  ${sourceCount < 1 || item.stars >= 5 ? 'disabled' : ''}>
+            <i class="fas fa-star"></i> 升星至 ★${item.stars + 1}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
 
-  player.reinforceStone -= potionCost;
-  list.splice(duplicateIndex, 1);
+function performStarUpgrade(ownedIndex, btn) {
+  const item = player.owned[ownedIndex];
+  const sourceCount = (player.sourcePowers && player.sourcePowers[item.charId]) || 0;
+  if (sourceCount < 1 || item.stars >= 5) return;
+
+  player.sourcePowers[item.charId]--;
   item.stars++;
 
-  document.getElementById("reinforceStone").textContent = player.reinforceStone;
   window.saveGame();
 
+  // 特效
   const burst = document.createElement("div");
   burst.className = "fixed inset-0 flex items-center justify-center pointer-events-none z-[99999]";
-  burst.innerHTML = `<div class="text-8xl flex gap-4 star-burst">★★★</div>`;
+  burst.innerHTML = `<div class="text-8xl flex gap-4 star-burst">✨★★★✨</div>`;
   document.body.appendChild(burst);
 
   setTimeout(() => {
     burst.remove();
-    if (currentModalType === "char") window.showCharacterDetail(currentModalIndex);
-    else window.showWeaponDetail(currentModalIndex);
-  }, 900);
+    // 关闭当前模态，重新打开详情或升级界面
+    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+    window.showCharacterDetail(ownedIndex);
+  }, 800);
 }
 
 function hideModal() {
@@ -524,6 +580,8 @@ window.showWeaponDetailById = showWeaponDetailById;
 window.equipWeapon = equipWeapon;
 window.levelUp = levelUp;
 window.starUp = starUp;
+window.showStarUpgradeModal = showStarUpgradeModal;
+window.performStarUpgrade = performStarUpgrade;
 window.hideModal = hideModal;
 window.toggleDecomposeMode = toggleDecomposeMode;
 window.toggleSelect = toggleSelect;

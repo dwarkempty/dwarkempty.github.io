@@ -1,7 +1,7 @@
 // js/battle.js - 完整战斗系统（严格遵循战斗模块设计：回合制、SP/UE、速度行动、属性克制、伤害公式等）
 let battleState = {
-  team: [],           // [{id, charId, stats, currentHP, maxHP, SP, UE, ultimateUsed: false, name, image, category}]
-  enemy: null,        // {name, maxHP, currentHP, atk, def, spd, attribute, ...}
+  team: [],           // [{..., buffs:[], debuffs:[] }]
+  enemy: null,        // {..., buffs:[], debuffs:[] }
   turnOrder: [],      // array of 'team-0', 'team-1', 'enemy'
   currentTurnIndex: 0,
   bigTurn: 1,
@@ -74,6 +74,14 @@ function initBattleUI() {
             </div>
             <div id="enemyDisplay" class="bg-zinc-900 border-4 border-red-600 rounded-3xl p-6 shadow-2xl"></div>
           </div>
+        </div>
+
+        <!-- 行动顺序显示 -->
+        <div id="actionOrderDisplay" class="mb-4 p-4 bg-zinc-800 rounded-3xl text-sm border border-amber-500">
+          <div class="font-bold text-amber-400 mb-2 flex items-center gap-2">
+            📋 本大回合行动顺序 <span class="text-xs text-gray-400">(高亮当前行动者)</span>
+          </div>
+          <div id="actionOrderList" class="flex flex-wrap gap-2 text-xs"></div>
         </div>
 
         <!-- 战斗日志 -->
@@ -228,11 +236,19 @@ function startBattle() {
     atk: 420,
     def: 380,
     spd: 118,
-    attribute: "混沌",
+    attribute: "混沌——虚",
     penFixed: 40,
-    penRate: 0.08
+    penRate: 0.08,
+    healBonus: 0,
+    recvHealBonus: 0,
+    shieldStr: 1.0,
+    dmgBonus: 0,
+    dmgReduction: 0,
+    buffs: [],
+    debuffs: []
   };
 
+  battleState.team.forEach(m => { m.buffs = []; m.debuffs = []; });
   battleState.bigTurn = 1;
   battleState.log = [];
   battleState.currentTurnIndex = 0;
@@ -279,13 +295,20 @@ function renderBattleUI() {
   const teamContainer = document.getElementById("teamDisplay");
   teamContainer.innerHTML = "";
 
+  let currentKey = null;
+  if (battleState.turnOrder && battleState.currentTurnIndex < battleState.turnOrder.length) {
+    currentKey = battleState.turnOrder[battleState.currentTurnIndex];
+  }
+
   battleState.team.forEach((member, i) => {
     const hpPercent = Math.max(0, Math.floor(member.currentHP / member.maxHP * 100));
     const spPercent = Math.floor(member.SP / 5 * 100);
     const uePercent = Math.floor(member.UE / 100 * 100);
+    const isCurrent = currentKey === `team-${i}`;
 
     const div = document.createElement("div");
-    div.className = `bg-zinc-900 rounded-3xl p-4 border-2 ${member.currentHP > 0 ? 'border-emerald-600' : 'border-red-900 opacity-60'}`;
+    div.className = `bg-zinc-900 rounded-3xl p-4 border-2 cursor-pointer transition-all ${member.currentHP > 0 ? 'border-emerald-600' : 'border-red-900 opacity-60'} ${isCurrent ? 'ring-4 ring-yellow-400 shadow-[0_0_20px_#facc15] animate-pulse' : 'hover:scale-[1.02]'}`;
+    div.onclick = () => showBattleDetail(true, i);
     div.innerHTML = `
       <div class="flex gap-4">
         <img src="${member.image}" class="w-20 h-20 rounded-2xl object-cover border border-zinc-700 flex-shrink-0">
@@ -338,8 +361,9 @@ function renderBattleUI() {
   const enemy = battleState.enemy;
   const eHpPercent = Math.max(0, Math.floor(enemy.currentHP / enemy.maxHP * 100));
 
+  const isEnemyCurrent = currentKey === 'enemy';
   enemyContainer.innerHTML = `
-    <div class="text-center">
+    <div class="text-center cursor-pointer transition-all ${isEnemyCurrent ? 'ring-4 ring-yellow-400 shadow-[0_0_20px_#facc15] animate-pulse' : 'hover:scale-[1.02]'}" onclick="showBattleDetail(false, 0)">
       <img src="${enemy.image}" class="w-32 h-32 mx-auto rounded-3xl border-4 border-red-500 object-cover mb-4">
       <div class="font-bold text-2xl text-red-400">${enemy.name}</div>
       <div class="text-xs text-gray-400 mb-4">${enemy.attribute} · 速 ${enemy.spd}</div>
@@ -366,6 +390,7 @@ function renderBattleUI() {
 
   // 更新行动栏
   updateActionBar();
+  updateActionOrder();
 }
 
 function updateActionBar() {
@@ -421,10 +446,18 @@ function nextTurn() {
   if (!battleState.turnOrder || battleState.currentTurnIndex >= battleState.turnOrder.length) {
     // 大回合结束，恢复SP +1， 重置终结技标记
     battleState.bigTurn++;
+    // 处理buff/debuff持续时间
+    const processDurations = (list) => list.filter(b => { b.duration = (b.duration || 1) - 1; return b.duration > 0; });
     battleState.team.forEach(m => {
       if (m.currentHP > 0) m.SP = Math.min(5, m.SP + 1);
       m.ultimateUsed = false;
+      m.buffs = processDurations(m.buffs || []);
+      m.debuffs = processDurations(m.debuffs || []);
     });
+    if (battleState.enemy) {
+      battleState.enemy.buffs = processDurations(battleState.enemy.buffs || []);
+      battleState.enemy.debuffs = processDurations(battleState.enemy.debuffs || []);
+    }
     battleState.turnOrder = generateTurnOrder();
     battleState.currentTurnIndex = 0;
     addLog(`=== 第 ${battleState.bigTurn} 大回合开始 ===`);
@@ -479,6 +512,7 @@ function performAction(actionType) {
     ueGain = 0;
     isUltimate = true;
     member.ultimateUsed = true;
+    member.buffs.push({name: "终结余辉", duration: 2});
   }
 
   // 消耗
@@ -531,6 +565,11 @@ function enemyAction() {
   target.currentHP = Math.max(0, target.currentHP - dmg);
 
   addLog(`👹 ${enemy.name} 攻击 ${target.name}，造成 ${dmg} 点伤害`);
+  if (Math.random() < 0.4) {
+    target.debuffs = target.debuffs || [];
+    target.debuffs.push({name: "裂隙侵蚀", duration: 2});
+    addLog(`🔻 ${target.name} 受到【裂隙侵蚀】减益`);
+  }
 
   renderBattleUI();
 
@@ -611,3 +650,120 @@ window.initBattleUI = initBattleUI;
 window.startBattle = startBattle;
 window.performAction = performAction;
 window.endBattle = endBattle;
+function updateActionOrder() {
+  const listEl = document.getElementById("actionOrderList");
+  if (!listEl || !battleState.turnOrder) return;
+  listEl.innerHTML = "";
+  const currentKey = battleState.turnOrder[battleState.currentTurnIndex] || "";
+  battleState.turnOrder.forEach((key, idx) => {
+    let name = "";
+    let cls = "bg-zinc-700 text-white";
+    if (key.startsWith("team-")) {
+      const i = parseInt(key.split("-")[1]);
+      const m = battleState.team[i];
+      name = m ? m.name.split("·").pop() || m.name : "队友";
+      if (key === currentKey) cls = "bg-yellow-500 text-black font-bold";
+    } else {
+      name = "敌方BOSS";
+      if (key === currentKey) cls = "bg-yellow-500 text-black font-bold";
+    }
+    const span = document.createElement("span");
+    span.className = `px-3 py-1 rounded-xl ${cls} ${idx === battleState.currentTurnIndex ? 'animate-pulse' : ''}`;
+    span.textContent = name;
+    listEl.appendChild(span);
+    if (idx < battleState.turnOrder.length - 1) {
+      const arr = document.createElement("span");
+      arr.className = "text-gray-500 px-1 self-center";
+      arr.textContent = "→";
+      listEl.appendChild(arr);
+    }
+  });
+}
+
+function showBattleDetail(isTeam, index) {
+  const modal = document.createElement("div");
+  modal.className = "fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4";
+  let contentHTML = "";
+  if (isTeam) {
+    const member = battleState.team[index];
+    if (!member) return;
+    const stats = member.stats || {};
+    const buffs = member.buffs || [];
+    const debuffs = member.debuffs || [];
+    const attr = stats.attribute || "元素";
+    contentHTML = `
+      <div class="bg-zinc-900 rounded-3xl max-w-lg w-full border-4 border-emerald-500 p-6 max-h-[90vh] overflow-auto">
+        <div class="flex justify-between mb-4">
+          <h3 class="text-2xl font-bold text-emerald-400">${member.name}</h3>
+          <button onclick="this.closest('.fixed').remove()" class="text-4xl text-gray-400 hover:text-white">×</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">生命值</span><br><span class="text-xl font-bold">${member.currentHP} / ${member.maxHP}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">攻击力</span><br><span class="text-xl font-bold">${stats.atk}</span> <span class="text-xs text-emerald-400">(+${Math.floor((stats.dmgBonus||0)*100)}%增伤)</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">防御力</span><br><span class="text-xl font-bold">${stats.def}</span> <span class="text-xs text-emerald-400">(-${Math.floor((stats.dmgReduction||0)*100)}%减伤)</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">暴击率/暴击伤害</span><br><span class="text-xl font-bold">${(stats.critRate*100).toFixed(0)}% / ${(stats.critDamage*100).toFixed(0)}%</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">速度</span><br><span class="text-xl font-bold">${stats.spd}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">终结能量 UE</span><br><span class="text-xl font-bold">${member.UE} / 100</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">穿透值 / 穿透率</span><br><span class="text-xl font-bold">${stats.penFixed} / ${(stats.penRate*100).toFixed(0)}%</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">属性类型</span><br><span class="text-xl font-bold text-purple-400">${attr}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">治疗加成</span><br><span class="text-xl font-bold">${(stats.healBonus*100).toFixed(0)}%</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">受治疗加成</span><br><span class="text-xl font-bold">${(stats.recvHealBonus*100).toFixed(0)}%</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">护盾强度</span><br><span class="text-xl font-bold">${(stats.shieldStr||1).toFixed(1)}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl col-span-2"><span class="text-gray-400">增伤加成 / 减伤比率</span><br><span class="text-xl font-bold">${(stats.dmgBonus*100).toFixed(0)}% / ${(stats.dmgReduction*100).toFixed(0)}%</span></div>
+        </div>
+        <div class="mt-4">
+          <div class="text-sm font-bold text-emerald-400 mb-1">增益 Buffs</div>
+          <div class="flex flex-wrap gap-1 min-h-[30px]">
+            ${buffs.length ? buffs.map(b => `<span class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+          </div>
+          <div class="text-sm font-bold text-red-400 mb-1 mt-3">减益 DeBuffs</div>
+          <div class="flex flex-wrap gap-1 min-h-[30px]">
+            ${debuffs.length ? debuffs.map(d => `<span class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+          </div>
+        </div>
+        <div class="text-center mt-6">
+          <button onclick="this.closest('.fixed').remove()" class="px-8 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-2xl">关闭</button>
+        </div>
+      </div>
+    `;
+  } else {
+    const enemy = battleState.enemy;
+    const buffs = enemy.buffs || [];
+    const debuffs = enemy.debuffs || [];
+    const attr = enemy.attribute || "混沌——虚";
+    contentHTML = `
+      <div class="bg-zinc-900 rounded-3xl max-w-lg w-full border-4 border-red-500 p-6 max-h-[90vh] overflow-auto">
+        <div class="flex justify-between mb-4">
+          <h3 class="text-2xl font-bold text-red-400">${enemy.name}</h3>
+          <button onclick="this.closest('.fixed').remove()" class="text-4xl text-gray-400 hover:text-white">×</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">生命值</span><br><span class="text-xl font-bold">${enemy.currentHP} / ${enemy.maxHP}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">攻击力</span><br><span class="text-xl font-bold">${enemy.atk}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">防御力</span><br><span class="text-xl font-bold">${enemy.def}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">速度</span><br><span class="text-xl font-bold">${enemy.spd}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">穿透值 / 穿透率</span><br><span class="text-xl font-bold">${enemy.penFixed} / ${(enemy.penRate*100).toFixed(0)}%</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">属性类型</span><br><span class="text-xl font-bold text-purple-400">${attr}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">治疗加成 / 受治疗加成</span><br><span class="text-xl font-bold">${(enemy.healBonus*100).toFixed(0)}% / ${(enemy.recvHealBonus*100).toFixed(0)}%</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl"><span class="text-gray-400">护盾强度</span><br><span class="text-xl font-bold">${(enemy.shieldStr||1).toFixed(1)}</span></div>
+          <div class="bg-zinc-800 p-3 rounded-2xl col-span-2"><span class="text-gray-400">增伤加成 / 减伤比率</span><br><span class="text-xl font-bold">${(enemy.dmgBonus*100).toFixed(0)}% / ${(enemy.dmgReduction*100).toFixed(0)}%</span></div>
+        </div>
+        <div class="mt-4">
+          <div class="text-sm font-bold text-emerald-400 mb-1">增益 Buffs</div>
+          <div class="flex flex-wrap gap-1 min-h-[30px]">
+            ${buffs.length ? buffs.map(b => `<span class="px-2 py-0.5 bg-emerald-900 text-emerald-300 text-xs rounded">${b.name}(${b.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+          </div>
+          <div class="text-sm font-bold text-red-400 mb-1 mt-3">减益 DeBuffs</div>
+          <div class="flex flex-wrap gap-1 min-h-[30px]">
+            ${debuffs.length ? debuffs.map(d => `<span class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded">${d.name}(${d.duration||1}回合)</span>`).join('') : '<span class="text-gray-500 text-xs">无</span>'}
+          </div>
+        </div>
+        <div class="text-center mt-6">
+          <button onclick="this.closest('.fixed').remove()" class="px-8 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-2xl">关闭</button>
+        </div>
+      </div>
+    `;
+  }
+  modal.innerHTML = contentHTML;
+  document.body.appendChild(modal);
+}

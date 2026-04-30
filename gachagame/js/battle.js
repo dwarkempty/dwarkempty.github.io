@@ -185,6 +185,17 @@ function toggleTeamMember(idx, element) {
       alert("最多只能选择 3 名角色出战！");
       return;
     }
+    // 检查同名角色只能上场一个
+    const newChar = player.owned[idx];
+    const newName = window.getCharacterData(newChar.charId)?.name || "";
+    const hasDuplicate = battleState.selectedTeam.some(selIdx => {
+      const selChar = player.owned[selIdx];
+      return window.getCharacterData(selChar.charId)?.name === newName;
+    });
+    if (hasDuplicate) {
+      alert("同名角色只能上场一个！");
+      return;
+    }
     battleState.selectedTeam.push(idx);
     element.classList.add("border-emerald-500", "scale-[1.02]", "shadow-xl");
     element.classList.remove("border-zinc-700");
@@ -470,6 +481,13 @@ function nextTurn() {
     return;
   }
 
+  if (actor.type === 'team' && actor.member.currentHP <= 0) {
+    // 跳过已死亡角色
+    battleState.currentTurnIndex++;
+    setTimeout(() => nextTurn(), 100);
+    return;
+  }
+
   if (actor.type === 'enemy') {
     // 敌方AI行动
     setTimeout(() => enemyAction(), 800);
@@ -483,7 +501,7 @@ function nextTurn() {
 
 function performAction(actionType) {
   const actor = getCurrentActor();
-  if (!actor || actor.type !== 'team' || !battleState.isPlayerTurn) return;
+  if (!actor || actor.type !== 'team' || !battleState.isPlayerTurn || actor.member.currentHP <= 0) return;
 
   const member = actor.member;
   let skillMult = 1.0;

@@ -1,4 +1,4 @@
-// js/player.js - 玩家数据+存档+属性计算
+// js/player.js - 玩家数据 + 存档 + 属性计算（完整版，无任何省略）
 let player = {
   yaoXing: 1000,
   gold: 0,
@@ -24,6 +24,7 @@ let player = {
   shopLevel: 1,
   operatingPoints: 0,
   materials: {},
+  sourcePowers: {},
   unlockedRecipes: [1,2,3,4]   // 1级默认解锁4种
 };
 
@@ -56,6 +57,7 @@ function loadGame() {
   if (!player.shopLevel) player.shopLevel = 1;
   if (!player.operatingPoints) player.operatingPoints = 0;
   if (!player.materials) player.materials = {};
+  if (!player.sourcePowers) player.sourcePowers = {};
   if (!player.unlockedRecipes) player.unlockedRecipes = [1,2,3,4];
 
   // 1. 初始获得各种经营材料20个（新玩家或首次加载时生效）
@@ -84,50 +86,90 @@ function calculateStats(item, charData, equippedWeapon = null) {
   const X = item.level;      // 等级
   const Y = item.stars;      // 星级
 
-  // ==================== 你指定的公式（角色） ====================
-  let hp  = Math.floor(charData.baseHP  * Math.pow(1.025, X) + 700 * Y);
-  let atk = Math.floor(charData.baseATK * Math.pow(1.02,  X) + 500 * Y);
-  let def = Math.floor(charData.baseDEF * Math.pow(1.015, X) + 400 * Y);
+  // 星级系数 (0-5星)
+  const starCoefficients = [1.00, 1.20, 1.40, 1.60, 1.80, 2.00];
+  const coeff = starCoefficients[Math.min(Y, 5)] || 1.0;
 
-  let spd = Math.floor(charData.baseSPD * (1 + 0.15 * Y));
+  // 根据职业设置初始值和成长 (基于角色面板属性设计)
+  let baseHP, hpGrowth, baseATK, atkGrowth, baseDEF, defGrowth, baseSPD, spdGrowth;
+  const cat = charData.category || "强袭";
+  if (cat === "强袭") {
+    baseHP = 695; hpGrowth = 48.0;
+    baseATK = 165; atkGrowth = 24.3;
+    baseDEF = 195; defGrowth = 10.0;
+    baseSPD = 109; spdGrowth = 0.8;
+  } else if (cat === "近卫") {
+    baseHP = 975; hpGrowth = 50.5;
+    baseATK = 115; atkGrowth = 13.9;
+    baseDEF = 340; defGrowth = 16.5;
+    baseSPD = 104; spdGrowth = 0.5;
+  } else { // 辅助
+    baseHP = 925; hpGrowth = 40.4;
+    baseATK = 135; atkGrowth = 19.9;
+    baseDEF = 255; defGrowth = 12.4;
+    baseSPD = 111; spdGrowth = 0.7;
+  }
 
-  let critRate = 0.05;
-  let critDamage = 0.5;
+  // 最终基础属性公式 (来自设计图)
+  let hp = Math.floor( (baseHP + hpGrowth * (X - 1)) * coeff );
+  let atk = Math.floor( (baseATK + atkGrowth * (X - 1)) * coeff );
+  let def = Math.floor( (baseDEF + defGrowth * (X - 1)) * coeff );
 
+  // 速度特殊公式
+  let spd = Math.floor( (baseSPD + spdGrowth * (X - 1)) * (1 + (coeff - 1) * 0.5) );
+
+  // 星级固定副属性加成 (累计)
+  let starCritRate = 0, starCritDamage = 0, starPenRate = 0, starDmgBonus = 0;
+  if (Y >= 2) starCritRate += 0.05;
+  if (Y >= 3) { starCritRate += 0.05; starCritDamage += 0.10; }
+  if (Y >= 4) { starCritRate += 0.05; starCritDamage += 0.10; starPenRate += 0.08; }
+  if (Y >= 5) { starCritRate += 0.10; starCritDamage += 0.10; starPenRate += 0.08; starDmgBonus += 0.10; }
+
+  // 基础 + 星级加成 + (未来装备/技能, 当前0)
+  let critRate = 0.05 + starCritRate;
+  let critDamage = 1.50 + starCritDamage;
+  let penRate = starPenRate;
+  let penFixed = 0;
+  let dmgBonus = starDmgBonus;
+  let dmgReduction = 0;
+  let healBonus = 0;
+  let recvHealBonus = 0;
+  let shieldStr = 1.0;
+  // SP/UE 效率等初始0, 未来装备加成
+
+  let attribute = charData.attribute || "元素";
+
+  // 武器加成 (保留原有逻辑, 但调整)
   if (equippedWeapon) {
     const wpData = getWeaponData(equippedWeapon.weaponId);
     const wX = equippedWeapon.level;
     const wY = equippedWeapon.stars;
-
-    hp  += Math.floor(wpData.baseHP  * Math.pow(1.025, wX) + 700 * wY);
-    atk += Math.floor(wpData.baseATK * Math.pow(1.02,  wX) + 500 * wY);
-    def += Math.floor(wpData.baseDEF * Math.pow(1.015, wX) + 400 * wY);
-    // 武器不影响速度
-    critRate += wpData.baseCritRate * (1 + wY * 0.38);
-    critDamage += wpData.baseCritDamage * (1 + wY * 0.38);
+    // 武器提供额外基础 (简化)
+    hp += Math.floor(wpData.baseHP * Math.pow(1.02, wX) + 200 * wY);
+    atk += Math.floor(wpData.baseATK * Math.pow(1.015, wX) + 150 * wY);
+    def += Math.floor(wpData.baseDEF * Math.pow(1.01, wX) + 100 * wY);
+    critRate += wpData.baseCritRate * (1 + wY * 0.3);
+    critDamage += wpData.baseCritDamage * (1 + wY * 0.3);
   }
 
-  // 新增战斗属性（基于战斗模块）
-  let penFixed = (charData.basePenFixed || 30) + Math.floor(X * 3 + Y * 15);
-  let penRate = Math.min(0.5, (charData.basePenRate || 0.03) + Y * 0.02 + X * 0.001);
-  let attribute = charData.attribute || "元素";
-  let healBonus = (charData.healBonus || 0.05) + Y * 0.03;
-  let recvHealBonus = (charData.recvHealBonus || 0.05) + Y * 0.03;
-  let shieldStr = (charData.shieldStr || 1.0) + Y * 0.08;
-
   return { 
-    hp, 
-    atk, 
-    def, 
-    critRate: Math.min(critRate, 1), 
-    critDamage, 
-    spd,
+    hp: Math.max(1, hp), 
+    atk: Math.max(1, atk), 
+    def: Math.max(1, def), 
+    critRate: Math.min(1, Math.max(0, critRate)), 
+    critDamage: Math.max(1, critDamage),
+    spd: Math.max(1, spd),
     penFixed: Math.floor(penFixed),
-    penRate: Math.min(1, penRate),
+    penRate: Math.min(1, Math.max(0, penRate)),
     attribute,
-    healBonus: Math.min(1, healBonus),
-    recvHealBonus: Math.min(1, recvHealBonus),
-    shieldStr: Math.min(2.5, shieldStr)
+    healBonus: Math.min(1, Math.max(0, healBonus)),
+    recvHealBonus: Math.min(1, Math.max(0, recvHealBonus)),
+    shieldStr: Math.max(0.1, shieldStr),
+    dmgBonus: Math.min(0.5, Math.max(0, dmgBonus)),
+    dmgReduction: Math.min(0.5, Math.max(0, dmgReduction)),
+    // 其他
+    spRecovery: 0,  // SP恢复效率
+    ueCharge: 0     // UE充能效率
   };
 }
 

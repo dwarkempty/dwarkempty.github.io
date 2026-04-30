@@ -335,7 +335,7 @@ function renderMinesweeperBoard() {
   for (let r = 0; r < mineRows; r++) {
     for (let c = 0; c < mineCols; c++) {
       const cell = document.createElement("div");
-      cell.className = `ms-cell ms-unrevealed border border-gray-400 hover:bg-gray-500 rounded cursor-pointer flex items-center justify-center text-xl font-bold`;
+      cell.className = `ms-cell ms-unrevealed border border-gray-400 hover:bg-gray-500 rounded cursor-pointer flex items-center justify-center text-xl font-bold explore-cell`;
       cell.dataset.r = r; cell.dataset.c = c;
       cell.addEventListener("click", window.handleMineClick);
       cell.addEventListener("contextmenu", (e) => { e.preventDefault(); window.handleMineFlag(r, c); });

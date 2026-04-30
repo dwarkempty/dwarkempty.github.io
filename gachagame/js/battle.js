@@ -307,12 +307,10 @@ function showSkillSelectionUI(unit) {
     战技1<br><span class="text-[10px] text-gray-400">消耗1 SP</span>
   </button>`;
 
-  // 战技2（仅阿特亚）
-  if (isAtya) {
-    html += `<button onclick="playerUseSkill('${unit.id}', 'skill2')" class="px-6 py-3 bg-purple-900 hover:bg-purple-800 rounded-2xl text-sm font-bold ${canSkill2 ? '' : 'opacity-40 cursor-not-allowed'}" ${canSkill2 ? '' : 'disabled'}>
-      绚律易质<br><span class="text-[10px] text-gray-400">消耗2 SP</span>
-    </button>`;
-  }
+  // 战技2（所有角色通用，效果留白）
+  html += `<button onclick="playerUseSkill('${unit.id}', 'skill2')" class="px-6 py-3 bg-purple-900 hover:bg-purple-800 rounded-2xl text-sm font-bold ${canSkill2 ? '' : 'opacity-40 cursor-not-allowed'}" ${canSkill2 ? '' : 'disabled'}>
+    战技2<br><span class="text-[10px] text-gray-400">消耗2 SP</span>
+  </button>`;
 
   // 终结技
   html += `<button onclick="playerUseSkill('${unit.id}', 'ultimate')" class="px-6 py-3 bg-gradient-to-br from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-2xl text-sm font-bold ${canUlt ? '' : 'opacity-40 cursor-not-allowed'}" ${canUlt ? '' : 'disabled'}>
@@ -554,7 +552,7 @@ function createUnitCard(unit, isPlayer) {
       <div class="flex-1 min-w-0">
         <div class="flex justify-between">
           <div class="font-bold text-sm truncate">${unit.name}</div>
-          <div class="text-xs ${unit.isAlive ? 'text-emerald-400' : 'text-red-500'}">${unit.hp}/${unit.maxHp}</div>
+          <div class="text-xs font-bold ${unit.isAlive ? (isPlayer ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}">${unit.hp}/${unit.maxHp}</div>
         </div>
         <div class="h-2 bg-zinc-800 rounded mt-1"><div class="h-2 bg-emerald-500 rounded" style="width:${hpPct}%"></div></div>
         <div class="flex justify-between text-[10px] text-gray-400 mt-1">
@@ -572,24 +570,67 @@ function createUnitCard(unit, isPlayer) {
 
 function showUnitDetailModal(unit) {
   const modal = document.createElement("div");
-  modal.className = "fixed inset-0 bg-black/80 flex items-center justify-center z-[100002]";
+  modal.className = "fixed inset-0 bg-black/80 flex items-center justify-center z-[100002] p-4";
+  
+  // Buff/Debuff 列表
+  let buffHTML = '<div class="text-xs text-gray-400">暂无特殊状态</div>';
+  const buffs = [];
+  if (unit.sparkleMarks > 0) buffs.push(`<div class="flex justify-between"><span>【绚明印记】</span><span class="text-orange-400">×${unit.sparkleMarks}</span></div>`);
+  if (unit.godModeTurns > 0) buffs.push(`<div class="flex justify-between"><span>【神子永辉】</span><span class="text-yellow-400">${unit.godModeTurns}回合</span></div>`);
+  if (unit.atkPercentBuff > 0) buffs.push(`<div class="flex justify-between"><span>【攻击强化】</span><span class="text-emerald-400">+25%</span></div>`);
+  if (buffs.length > 0) buffHTML = buffs.join('');
+  
   modal.innerHTML = `
-    <div class="bg-zinc-900 rounded-3xl max-w-sm w-full p-8 border-4 ${unit.isPlayer ? 'border-emerald-500' : 'border-red-500'}">
-      <div class="flex justify-between mb-6">
-        <div class="font-bold text-xl">${unit.name}</div>
-        <button onclick="this.closest('.fixed').remove()" class="text-3xl">×</button>
+    <div class="bg-zinc-900 rounded-3xl max-w-md w-full p-8 border-4 ${unit.isPlayer ? 'border-emerald-500' : 'border-red-500'}">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <div class="font-bold text-2xl">${unit.name}</div>
+          <div class="text-sm text-gray-400">${unit.category} · ${unit.rarity} · Lv.${unit.level || 1}</div>
+        </div>
+        <button onclick="this.closest('.fixed').remove()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
       </div>
-      <div class="grid grid-cols-2 gap-4 text-sm">
-        <div>生命: <span class="font-bold">${unit.hp}/${unit.maxHp}</span></div>
-        <div>攻击: <span class="font-bold">${unit.atk}</span></div>
-        <div>防御: <span class="font-bold">${unit.def}</span></div>
-        <div>速度: <span class="font-bold">${unit.spd}</span></div>
-        <div>暴击率: <span class="font-bold">${(unit.critRate*100).toFixed(1)}%</span></div>
-        <div>暴击伤: <span class="font-bold">${(unit.critDamage*100).toFixed(0)}%</span></div>
+      
+      <!-- 核心数值 -->
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">生命值</div>
+          <div class="text-3xl font-bold text-emerald-400">${unit.hp} <span class="text-base">/ ${unit.maxHp}</span></div>
+        </div>
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">攻击力</div>
+          <div class="text-3xl font-bold text-red-400">${unit.atk}</div>
+        </div>
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">防御力</div>
+          <div class="text-3xl font-bold text-blue-400">${unit.def}</div>
+        </div>
+        <div class="bg-zinc-800 rounded-2xl p-4">
+          <div class="text-xs text-gray-400">速度</div>
+          <div class="text-3xl font-bold text-purple-400">${unit.spd}</div>
+        </div>
       </div>
-      <div class="mt-6 text-xs text-gray-400">元素属性: ${unit.elementType}</div>
-      <div class="mt-4 text-center">
-        <button onclick="this.closest('.fixed').remove()" class="px-10 py-2 bg-zinc-700 rounded-2xl">关闭</button>
+      
+      <!-- 进阶属性 -->
+      <div class="bg-zinc-800 rounded-2xl p-5 mb-6">
+        <div class="text-sm text-gray-400 mb-3">进阶属性</div>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+          <div>暴击率：<span class="font-bold">${((unit.critRate || 0.05)*100).toFixed(1)}%</span></div>
+          <div>暴击伤害：<span class="font-bold">${((unit.critDamage || 0.5)*100).toFixed(0)}%</span></div>
+          <div>能量点：<span class="font-bold">${unit.energy || 3}/5</span></div>
+          <div>终结能量：<span class="font-bold">${unit.ultimateEnergy || 0}/100</span></div>
+          <div>元素属性：<span class="font-bold">${unit.elementType || '混沌'}</span></div>
+          <div>穿透率：<span class="font-bold">${((unit.penRate || 0)*100).toFixed(0)}%</span></div>
+        </div>
+      </div>
+      
+      <!-- Buff & Debuff -->
+      <div class="bg-zinc-800 rounded-2xl p-5 mb-6">
+        <div class="text-sm text-gray-400 mb-3">当前状态 (Buff / Debuff)</div>
+        <div class="text-sm space-y-1">${buffHTML}</div>
+      </div>
+      
+      <div class="text-center">
+        <button onclick="this.closest('.fixed').remove()" class="px-12 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl text-lg font-bold">关闭</button>
       </div>
     </div>
   `;
@@ -648,7 +689,13 @@ function restartBattle() {
 
 function closeBattleModal() {
   battleState.isRunning = false;
-  document.getElementById("battleModal")?.remove();
+  battleState.pendingSkillUnit = null;
+  
+  // 强制清理所有技能栏（防止残留）
+  document.querySelectorAll("#skillSelectionBar").forEach(el => el.remove());
+  
+  const modal = document.getElementById("battleModal");
+  if (modal) modal.remove();
   battleState.battleModal = null;
 }
 

@@ -73,11 +73,11 @@ body {
     transition: all 0.5s cubic-bezier(0.23, 1.0, 0.32, 1);
     filter: drop-shadow(25px 30px 40px rgba(0,0,0,0.75));
     /* 立绘更大 + 完整显示头部到大腿（上半身中景） */
-    width: 58% !important;
-    height: 98% !important;
-    right: -8% !important;
-    bottom: -12% !important;
-    background-position: center 12% !important;
+    width: 38% !important;
+    height: 70% !important;
+    right: -2% !important;
+    bottom: -5% !important;
+    background-position: center 10% !important;
     background-size: cover !important;
 }
 

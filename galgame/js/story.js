@@ -1,0 +1,66 @@
+// story.js - 所有对话文本（Day 1 + Day 2）
+const day1Story = [
+    { id: 1, bg: 'arrival', char: null, speaker: '姬莫', text: '终于……到了。' },
+    { id: 2, bg: 'arrival', char: null, speaker: '姬莫', text: '从城市到这里，坐了整整八个小时的车……空气真不一样。母亲说，叔叔的房子就在村子最里面……希望不要太破吧。' },
+    { id: 3, bg: 'house', char: null, speaker: '姬莫', text: '就是这里了……叔叔的房子。看起来……比想象中要好一些。虽然有点老，但打扫得挺干净的。' },
+    { id: 4, bg: 'house', char: null, speaker: '姬莫', text: '（这里就是我之后要生活的地方了吗……）（从每天挤地铁、加班到深夜的城市……突然来到这种地方，总觉得有点不真实。）' },
+    { id: 5, bg: 'house', char: 'standard', speaker: '樱花', text: '哇——！新邻居！你 是城里来的吧？好厉害哦～我叫樱花，就住在隔壁！' },
+    { id: 6, bg: 'house', char: 'standard', speaker: '姬莫', text: '啊……你好。我叫姬莫。我是来继承我叔叔的房子的……' },
+    { id: 7, bg: 'house', char: 'standard', speaker: '樱花', text: '继承？！哇，那你以后就要住在这里了？太好了！村里好久没有新面孔了～' },
+    { id: 8, bg: 'house', char: 'one_hand', speaker: '樱花', text: '城里是什么样子的呀？真的像电视里演的那样，高楼大厦到处都是吗？我从来没去过城里呢……' },
+    { id: 9, bg: 'house', char: 'one_hand', speaker: '姬莫', text: '嗯……高楼是很多，但其实挺累的。每天挤地铁、加班到很晚。反而这里……空气很好，花也漂亮。' },
+    { id: 10, bg: 'house', char: 'one_hand', speaker: '樱花', text: '对吧对吧！我们村的樱花超有名的！春天的时候整条街都是粉色的！' },
+    { id: 11, bg: 'house', char: 'both_hands', speaker: '樱花', text: '不过你看起来好没精神哦～城里人都是这样吗？要不要我带你去村里转转？保证让你精神起来！' },
+    { id: 12, bg: 'house', char: 'both_hands', speaker: '姬莫', text: '啊……不用了，我先把行李收拾一下吧。不过……谢谢你。' },
+    { id: 13, bg: 'house', char: 'both_hands', speaker: '樱花', text: '那好吧～不过你可不能一直闷在家里哦！村长爷爷说，新来的邻居要好好欢迎一下呢！' },
+    { id: 14, bg: 'house', char: 'arms_cross', speaker: '樱花', text: '其实……我一个人住在这里，有时候也会觉得有点寂寞。奶奶去城里看病了，要过阵子才回来。你来了之后……感觉村子一下子热闹起来了。' },
+    { id: 15, bg: 'house', char: 'arms_cross', speaker: '姬莫', text: '是吗……那我以后会多出来走走的。' },
+    { id: 16, bg: 'house', char: 'arms_cross', speaker: '樱花', text: '真的吗？太好了！' },
+    { id: 17, bg: 'house', char: 'standard', speaker: '樱花', text: '那今天就先这样吧！你刚来，肯定累了。明天我再来找你玩哦～记得把房子好好收拾一下，叔叔以前很爱干净的！' },
+    { id: 18, bg: 'house', char: 'standard', speaker: '姬莫', text: '好的……谢谢你，樱花。' },
+    { id: 19, bg: 'interior', char: null, speaker: '姬莫', text: '（拖着行李走进木屋，简单收拾了一下。坐在旧沙发上，拿出手机，屏幕上显示「日记」App）' }
+];
+
+const day2Story = [
+    { id: 1, bg: 'farm', char: null, speaker: '姬莫', text: '这里是......西红柿区？那边是黄瓜......叔叔的笔记写得真详细......『西红柿要搭架子』、『黄瓜要勤浇水』......我以前连花都没种过......这能行吗？' },
+    { id: 2, bg: 'farm', char: 'one_hand', speaker: '樱花', text: '呀------！姬莫！你在干嘛呀？哇，你居然在除草！好认真哦～' },
+    { id: 3, bg: 'farm', char: 'one_hand', speaker: '姬莫', text: '啊......樱花。早上好。我......在试试看能不能把这些菜救活。' },
+    { id: 4, bg: 'farm', char: 'both_hands', speaker: '樱花', text: '救活？哈哈，你这个说法好可爱！不过你看起来好笨手笨脚的～来来，我教你！首先呢，西红柿的杂草要这样拔～不能连根一起拔，会伤到主根的！' },
+    { id: 5, bg: 'farm', char: 'both_hands', speaker: '姬莫', text: '哦......原来是这样。你好厉害啊，樱花。年纪轻轻就这么懂农活。' },
+    { id: 6, bg: 'farm', char: 'standard', speaker: '樱花', text: '因为我从小就跟奶奶一起种的啊！不过说起来......姬莫你为什么突然来这里呀？我听村长爷爷说，你是城里来的大学生，对吧？' },
+    { id: 7, bg: 'farm', char: 'standard', speaker: '姬莫', text: '嗯......其实......我毕业快一年了，一直找不到合适的工作。投了几百份简历，要么石沉大海，要么面试完就被刷。后来母亲告诉我叔叔去世了，把房子留给我......我就想，反正也没别的地方可去，就来试试看。' },
+    { id: 8, bg: 'farm', char: 'standard', speaker: '樱花', text: '哇......听起来好辛苦。城里找工作真的那么难吗？' },
+    { id: 9, bg: 'farm', char: 'arms_cross', speaker: '姬莫', text: '比你想象的难多了。每天刷招聘软件到深夜，面试的时候还要装成很自信的样子，其实心里紧张得要死。有时候看到别人轻松拿到offer，就觉得......是不是我不够好。' },
+    { id: 10, bg: 'farm', char: 'arms_cross', speaker: '樱花', text: '才不是呢！姬莫看起来就很可靠啊！而且你人又温柔......（突然意识到自己说得太直接，脸微微红了红）啊，那个......我是说，你看起来不像坏人啦！' },
+    { id: 11, bg: 'farm', char: 'both_hands', speaker: '樱花', text: '对了！既然你刚来，不会种地的话......我可以教你啊！从现在开始，每天早上我都来帮你！' },
+    { id: 12, bg: 'farm', char: 'both_hands', speaker: '姬莫', text: '诶？真的可以吗？会不会太麻烦你了......' },
+    { id: 13, bg: 'farm', char: 'standard', speaker: '樱花', text: '一点都不麻烦！而且......我一个人种地也挺无聊的。有个人一起的话，会开心很多！' },
+    { id: 14, bg: 'farm', char: 'standard', speaker: '姬莫', text: '那......谢谢你了，樱花。我真的很需要帮助。' },
+    { id: 15, bg: 'farm', char: 'standard', speaker: '樱花', text: '不用谢～我们是邻居嘛！来来，我们先把这些黄瓜苗的架子搭起来！' },
+    { id: 16, bg: 'farm', char: 'one_hand', speaker: '樱花', text: '姬莫，你以前在城里是做什么工作的呀？' },
+    { id: 17, bg: 'farm', char: 'one_hand', speaker: '姬莫', text: '我学的是市场营销......毕业后进了一家互联网公司做运营。每天要写各种文案、做数据分析、开会到很晚。有时候做到凌晨两点，第二天早上八点还要继续。' },
+    { id: 18, bg: 'farm', char: 'both_hands', speaker: '樱花', text: '哇......听起来好可怕。那你喜欢那份工作吗？' },
+    { id: 19, bg: 'farm', char: 'arms_cross', speaker: '姬莫', text: '说实话......不太喜欢。但是大家都说这是『好工作』，工资也算不错，我就一直坚持着。直到有一天，我突然在公司厕所里哭了出来......我才发现，我根本不喜欢这样的生活。' },
+    { id: 20, bg: 'farm', char: 'standard', speaker: '樱花', text: '然后你就辞职了？' },
+    { id: 21, bg: 'farm', char: 'standard', speaker: '姬莫', text: '没有......我被裁员了。公司说『业务调整』，其实就是裁掉我们这些新人。那一刻我反而觉得......松了一口气。' },
+    { id: 22, bg: 'farm', char: 'both_hands', speaker: '樱花', text: '那现在呢？你喜欢这里吗？' },
+    { id: 23, bg: 'farm', char: 'both_hands', speaker: '姬莫', text: '虽然很累......但是第一次觉得，自己的劳动是有意义的。种下的菜苗，过几天真的会长大。不像以前写那些文案，做了也感觉不到任何改变。' },
+    { id: 24, bg: 'farm', char: 'standard', speaker: '樱花', text: '我懂我懂！种地就是这样！今天种下去，明天就能看到一点变化！再过一个月，就能吃到自己种的西红柿了！' },
+    { id: 25, bg: 'forest', char: 'standard', speaker: '樱花', text: '姬莫！劳动结束啦～我们去后山玩吧！那里有超美的樱花林！' },
+    { id: 26, bg: 'forest', char: 'standard', speaker: '姬莫', text: '现在去吗？会不会太晚了......' },
+    { id: 27, bg: 'forest', char: 'standard', speaker: '樱花', text: '不会不会！走路只要十五分钟！而且你今天第一次来村里，我要带你去最美的地方！' },
+    { id: 28, bg: 'forest', char: 'standard', speaker: '樱花', text: '你看！这边就是我们村的樱花大道！每年四月的时候，全村都会办樱花祭呢！到时候有很多摊位、表演、还有烟花！' },
+    { id: 29, bg: 'forest', char: 'standard', speaker: '姬莫', text: '听起来很热闹。' },
+    { id: 30, bg: 'forest', char: 'standard', speaker: '樱花', text: '对啊！你一定要留到那个时候哦！我可以带你一起去玩～' },
+    { id: 31, bg: 'forest', char: 'standard', speaker: '姬莫', text: '哇......真的好美。樱花树像粉色的云一样......远处还有绿色的山和田野......' },
+    { id: 32, bg: 'forest', char: 'standard', speaker: '樱花', text: '对吧对吧！我最喜欢这里了！有时候心情不好，我就来这里坐一会儿。看着这些花，烦恼好像都变小了。' },
+    { id: 33, bg: 'forest', char: 'standard', speaker: '姬莫', text: '我能理解。在城里的时候，我从来没有这种感觉。每天都被各种事情追着跑......从来没有停下来好好看看风景。' },
+    { id: 34, bg: 'forest', char: 'standard', speaker: '樱花', text: '那现在呢？你喜欢这里吗？' },
+    { id: 35, bg: 'forest', char: 'standard', speaker: '姬莫', text: '喜欢。虽然才来一天......但是我第一次觉得，『这里可以成为我的家』。' },
+    { id: 36, bg: 'forest', char: 'standard', speaker: '樱花', text: '真的吗？太好了！那我们以后要一起把这个村子变得更好哦！' },
+    { id: 37, bg: 'forest', char: 'standard', speaker: '姬莫', text: '嗯......一起。' }
+];
+
+function getStory(chapter = 1) {
+    return chapter === 1 ? day1Story : day2Story;
+}

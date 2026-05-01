@@ -285,6 +285,9 @@
             <i class="fas fa-book text-[#f9a8d4]"></i>
             <span id="progress-text" class="font-mono text-zinc-400">01 / 12</span>
         </div>
+
+        <!-- BGM Audio -->
+        <audio id="bgm-audio" src="galgame_assets/audio/the_meadow_path.mp3" loop preload="auto"></audio>
     </div>
 
     <!-- BACKLOG MODAL -->
@@ -436,11 +439,13 @@
         let dialogueHistory = [];
         let isAutoPlaying = false;
         let isSkipping = false;
+        let isCtrlPressed = false;
         let textSpeed = 45;
         let autoDelay = 1600;
         let currentTypewriter = null;
         let autoTimer = null;
         let skipTimer = null;
+        let bgm = null;
 
         // Image paths (relative to HTML)
         const ASSETS = {
@@ -466,7 +471,7 @@
                 id: 1,
                 bg: 'arrival',
                 char: null,
-                speaker: '旁白',
+                speaker: '姬莫',
                 text: '终于……到了。',
                 note: '画面淡入，春日樱花大道'
             },
@@ -483,7 +488,7 @@
                 id: 3,
                 bg: 'house',
                 char: null,
-                speaker: '旁白',
+                speaker: '姬莫',
                 text: '就是这里了……叔叔的房子。看起来……比想象中要好一些。虽然有点老，但打扫得挺干净的。',
                 note: '溶解转场到木屋外景'
             },
@@ -617,8 +622,8 @@
                 id: 19,
                 bg: 'interior',
                 char: null,
-                speaker: '旁白',
-                text: '（姬莫拖着行李走进木屋，简单收拾了一下。坐在旧沙发上，拿出手机，屏幕上显示「日记」App）',
+                speaker: '姬莫',
+                text: '（拖着行李走进木屋，简单收拾了一下。坐在旧沙发上，拿出手机，屏幕上显示「日记」App）',
                 note: '傍晚转室内，渐暗'
             }
         ];
@@ -705,6 +710,7 @@
             
             showScreen('game');
             loadDialogue(0);
+            initBGM();
             showToast('第一章开始！点击对话框或按空格推进');
         }
 
@@ -720,6 +726,7 @@
                 dialogueHistory = data.history || [];
                 showScreen('game');
                 loadDialogue(dialogueIndex);
+                initBGM();
                 showToast('已读取存档');
             } catch(e) {
                 showToast('存档损坏');
@@ -732,6 +739,7 @@
                 clearInterval(skipTimer);
                 isAutoPlaying = false;
                 isSkipping = false;
+                if (bgm) bgm.pause();
                 showScreen('title');
                 document.getElementById('character-layer').style.backgroundImage = '';
                 document.getElementById('character-layer').classList.add('hidden');
@@ -872,7 +880,7 @@
         }
 
         function endGame() {
-            // For demo: show completion and option to replay or gallery
+            // Nice completion screen with proper return to title
             const diary = document.getElementById('diary-screen');
             diary.innerHTML = `
                 <div class="max-w-md mx-auto text-center p-8">
@@ -881,13 +889,54 @@
                     <p class="text-zinc-300 mb-8">感谢体验「与邻居的乡间生活日记」第一章。<br>好感度 +10，已解锁新立绘。</p>
                     
                     <div class="flex flex-col gap-3">
-                        <button onclick="location.reload()" class="px-8 py-3.5 bg-[#f9a8d4] hover:bg-[#e879f9] text-black font-medium rounded-2xl">返回标题</button>
-                        <button onclick="showGallery(); document.getElementById('diary-screen').classList.add('hidden')" class="px-8 py-3.5 border border-white/30 hover:bg-white/10 rounded-2xl">查看画廊</button>
+                        <button onclick="returnToTitleFromEnd()" class="px-8 py-3.5 bg-[#f9a8d4] hover:bg-[#e879f9] text-black font-medium rounded-2xl">返回标题</button>
+                        <button onclick="restartFromEnd()" class="px-8 py-3.5 border border-white/30 hover:bg-white/10 rounded-2xl">重新开始</button>
+                        <button onclick="showGalleryFromEnd()" class="px-8 py-3.5 border border-white/30 hover:bg-white/10 rounded-2xl">查看画廊</button>
                     </div>
                     
                     <div class="mt-8 text-xs text-zinc-500">后续章节开发中……</div>
                 </div>
             `;
+        }
+
+        function returnToTitleFromEnd() {
+            const diary = document.getElementById('diary-screen');
+            diary.classList.add('hidden');
+            if (bgm) bgm.pause();
+            showScreen('title');
+        }
+
+        function restartFromEnd() {
+            const diary = document.getElementById('diary-screen');
+            diary.classList.add('hidden');
+            startNewGame();
+        }
+
+        function showGalleryFromEnd() {
+            const diary = document.getElementById('diary-screen');
+            diary.classList.add('hidden');
+            showGallery();
+        }
+
+        // ==================== BGM ====================
+        function initBGM() {
+            const audio = document.getElementById('bgm-audio');
+            if (!audio) return;
+            bgm = audio;
+            bgm.volume = 0.65; // default
+            bgm.play().catch(() => {
+                // Autoplay blocked, user can click to play
+                console.log('[BGM] Autoplay blocked by browser, will play on first interaction');
+            });
+            
+            // Update volume from settings if changed
+            const volSlider = document.getElementById('volume');
+            if (volSlider) {
+                volSlider.oninput = function() {
+                    if (bgm) bgm.volume = parseInt(this.value) / 100;
+                    document.getElementById('volume-value').textContent = this.value + '%';
+                };
+            }
         }
 
         // ==================== AUTO / SKIP ====================
@@ -967,22 +1016,40 @@
                     loadGame();
                 }
                 
-                if (e.ctrlKey && !isSkipping) {
+                if (e.ctrlKey && !isSkipping && currentScreen === 'game') {
                     isSkipping = true;
+                    isCtrlPressed = true;
                     document.getElementById('btn-skip').classList.add('!text-[#f9a8d4]', 'bg-white/10');
                     const textEl = document.getElementById('dialogue-text');
                     if (textEl && currentTypewriter) {
                         clearTimeout(currentTypewriter);
                         textEl.innerHTML = story[dialogueIndex].text;
                     }
+                    // Start fast forward interval
+                    if (!skipTimer) {
+                        skipTimer = setInterval(() => {
+                            if (!isSkipping || !isCtrlPressed) {
+                                clearInterval(skipTimer);
+                                skipTimer = null;
+                                return;
+                            }
+                            advanceDialogue();
+                        }, 180);
+                    }
                 }
             });
             
             document.addEventListener('keyup', e => {
-                if (e.key === 'Control' && isSkipping) {
-                    isSkipping = false;
-                    document.getElementById('btn-skip').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
-                    clearInterval(skipTimer);
+                if (e.key === 'Control') {
+                    isCtrlPressed = false;
+                    if (isSkipping) {
+                        isSkipping = false;
+                        document.getElementById('btn-skip').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+                        if (skipTimer) {
+                            clearInterval(skipTimer);
+                            skipTimer = null;
+                        }
+                    }
                 }
             });
             
@@ -1088,8 +1155,9 @@
             document.getElementById('text-speed-value').textContent = textSpeed + 'ms';
             document.getElementById('auto-delay').value = autoDelay;
             document.getElementById('auto-delay-value').textContent = autoDelay + 'ms';
-            document.getElementById('volume').value = 65;
-            document.getElementById('volume-value').textContent = '65%';
+            const currentVol = bgm ? Math.round(bgm.volume * 100) : 65;
+            document.getElementById('volume').value = currentVol;
+            document.getElementById('volume-value').textContent = currentVol + '%';
             m.style.display = 'flex';
             m.classList.remove('hidden');
         }

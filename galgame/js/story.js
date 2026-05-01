@@ -64,3 +64,5 @@ const day2Story = [
 function getStory(chapter = 1) {
     return chapter === 1 ? day1Story : day2Story;
 }
+
+window.getStory = getStory;

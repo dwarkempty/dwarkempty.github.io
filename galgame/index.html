@@ -37,6 +37,9 @@
                         <i class="fas fa-images text-[#f9a8d4]"></i><span>画廊</span>
                     </button>
                 </div>
+                <button onclick="showSettings()" class="menu-btn w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-6 py-3.5 rounded-3xl text-lg font-medium backdrop-blur-xl">
+                    <i class="fas fa-cog text-[#f9a8d4]"></i><span>设置</span>
+                </button>
             </div>
         </div>
         <div id="sakura-container" class="absolute inset-0 pointer-events-none z-20"></div>
@@ -119,8 +122,59 @@
 
     <div id="diary-screen" onclick="if (event.target.id === 'diary-screen') returnToTitleFromEnd()" class="hidden fixed inset-0 z-[55] bg-black/95 flex items-center justify-center p-6"></div>
 
+    <!-- CG Viewer Modal -->
+    <div id="cg-viewer" onclick="if (event.target.id === 'cg-viewer') hideCGViewer()" class="hidden fixed inset-0 z-[70] bg-black/95 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="modal bg-zinc-900 border border-zinc-700 rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden">
+            <div class="relative">
+                <img id="cg-image" class="w-full max-h-[70vh] object-contain bg-black" alt="CG">
+                <button onclick="hideCGViewer()" class="absolute top-4 right-4 text-4xl text-white/80 hover:text-white">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="cg-title" class="text-2xl font-semibold mb-2"></div>
+                <div id="cg-desc" class="text-zinc-400"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-[80] bg-zinc-800 border border-[#f9a8d4]/50 px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm">
         <i class="fas fa-check-circle text-[#f9a8d4]"></i><span id="toast-text"></span>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" onclick="if (event.target.id === 'settings-modal') hideSettings()" class="hidden fixed inset-0 z-[65] bg-black/90 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="modal bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-md shadow-2xl">
+            <div class="px-6 py-4 border-b border-zinc-700 flex items-center justify-between">
+                <h3 class="text-2xl font-semibold flex items-center gap-3"><i class="fas fa-cog text-[#f9a8d4]"></i> <span>游戏设置</span></h3>
+                <button onclick="hideSettings()" class="text-3xl text-zinc-400 hover:text-white">&times;</button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <div class="flex justify-between text-sm mb-1.5">
+                        <span>文字显示速度</span>
+                        <span id="speed-value" class="font-mono text-[#f9a8d4]">45ms</span>
+                    </div>
+                    <input type="range" id="speed-slider" min="10" max="120" step="5" class="w-full accent-[#f9a8d4]">
+                </div>
+                <div>
+                    <div class="flex justify-between text-sm mb-1.5">
+                        <span>自动播放间隔</span>
+                        <span id="auto-value" class="font-mono text-[#f9a8d4]">1.6s</span>
+                    </div>
+                    <input type="range" id="auto-slider" min="600" max="4000" step="200" class="w-full accent-[#f9a8d4]">
+                </div>
+                <div>
+                    <div class="flex justify-between text-sm mb-1.5">
+                        <span>BGM 音量</span>
+                        <span id="volume-value" class="font-mono text-[#f9a8d4]">65%</span>
+                    </div>
+                    <input type="range" id="volume-slider" min="0" max="100" step="5" class="w-full accent-[#f9a8d4]" oninput="updateVolume(this.value)">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-zinc-700 flex gap-3">
+                <button onclick="resetSettings()" class="flex-1 py-2.5 rounded-2xl border border-zinc-600 hover:bg-zinc-800 text-sm">恢复默认</button>
+                <button onclick="saveSettings()" class="flex-1 py-2.5 rounded-2xl bg-[#f9a8d4] text-black font-medium text-sm">保存设置</button>
+            </div>
+        </div>
     </div>
 
     <!-- SCRIPTS -->

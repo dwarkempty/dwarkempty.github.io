@@ -1,4 +1,4 @@
-// engine.js - 核心游戏引擎（屏幕、对话、存档、BGM、控制等）
+// engine.js - 完整游戏引擎（从原单文件版完整迁移 + 模块化适配）
 let currentScreen = 'title';
 let dialogueIndex = 0;
 let dialogueHistory = [];
@@ -13,13 +13,56 @@ let skipTimer = null;
 let bgm = null;
 let currentChapter = 1;
 
-// 从 config 和 story 读取（config.js 已挂载到 window）
-const ASSETS = window.ASSETS;
-const galleryItems = window.galleryItems;
-const MAX_SLOTS = window.MAX_SLOTS;
-const SAVE_PREFIX = window.SAVE_PREFIX;
-// getStory 来自 story.js，已全局可用
+// 全局变量（来自 config.js 和 story.js）
+const ASSETS = window.ASSETS || {};
+const galleryItems = window.galleryItems || [];
+const MAX_SLOTS = window.MAX_SLOTS || 3;
+const SAVE_PREFIX = window.SAVE_PREFIX || 'galgame_save_slot_';
+const getStory = window.getStory || (() => []);
 
+// ==================== 工具函数 ====================
+function showToast(msg, duration = 2100) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    document.getElementById('toast-text').textContent = msg;
+    toast.style.transition = 'none';
+    toast.style.opacity = '1';
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.4s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.classList.add('hidden'), 400);
+    }, duration);
+}
+
+function updateProgress() {
+    const el = document.getElementById('progress-text');
+    if (el) {
+        const total = getStory(currentChapter).length;
+        el.textContent = `${String(dialogueIndex + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+    }
+}
+
+function spawnSakura(count = 12) {
+    const container = document.getElementById('sakura-container');
+    if (!container) return;
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const p = document.createElement('div');
+            p.className = 'sakura-petal';
+            p.innerHTML = Math.random() > 0.5 ? '❀' : '🌸';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.top = '-10px';
+            p.style.animationDuration = (Math.random() * 9 + 6) + 's';
+            p.style.opacity = Math.random() * 0.5 + 0.45;
+            p.style.fontSize = (Math.random() * 9 + 11) + 'px';
+            container.appendChild(p);
+            setTimeout(() => p.remove(), 16000);
+        }, i * 28);
+    }
+}
+
+// ==================== 屏幕控制 ====================
 function showScreen(screen) {
     document.getElementById('title-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.add('hidden');
@@ -46,8 +89,10 @@ function startNewGame(chapter = 1) {
     clearInterval(autoTimer);
     clearInterval(skipTimer);
     
-    document.getElementById('btn-auto').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
-    document.getElementById('btn-skip').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+    const btnAuto = document.getElementById('btn-auto');
+    const btnSkip = document.getElementById('btn-skip');
+    if (btnAuto) btnAuto.classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+    if (btnSkip) btnSkip.classList.remove('!text-[#f9a8d4]', 'bg-white/10');
     
     showScreen('game');
     loadDialogue(0);
@@ -56,7 +101,6 @@ function startNewGame(chapter = 1) {
 }
 
 function continueGame() {
-    // 简单实现：读取槽位1
     const data = getSlotData(1);
     if (!data) { showToast('没有存档'); return; }
     dialogueIndex = data.index || 0;
@@ -67,6 +111,23 @@ function continueGame() {
     showToast('已读取存档');
 }
 
+function returnToTitle() {
+    if (confirm('返回标题画面？当前进度将丢失（除非已保存）')) {
+        clearInterval(autoTimer);
+        clearInterval(skipTimer);
+        isAutoPlaying = false;
+        isSkipping = false;
+        if (bgm) bgm.pause();
+        showScreen('title');
+        const charLayer = document.getElementById('character-layer');
+        if (charLayer) {
+            charLayer.style.backgroundImage = '';
+            charLayer.classList.add('hidden');
+        }
+    }
+}
+
+// ==================== 对话系统 ====================
 function loadDialogue(idx) {
     const story = getStory(currentChapter);
     if (idx >= story.length) {
@@ -77,30 +138,31 @@ function loadDialogue(idx) {
     const step = story[idx];
     dialogueIndex = idx;
     
-    // 背景切换
     const bgLayer = document.getElementById('bg-layer');
     const newBg = ASSETS.bg[step.bg] || ASSETS.bg.house;
-    bgLayer.style.backgroundImage = `url('${newBg}')`;
+    if (bgLayer) bgLayer.style.backgroundImage = `url('${newBg}')`;
     
-    // 立绘
     const charLayer = document.getElementById('character-layer');
-    if (step.char && ASSETS.sakura[step.char]) {
-        charLayer.style.backgroundImage = `url('${ASSETS.sakura[step.char]}')`;
-        charLayer.classList.remove('hidden');
-    } else {
-        charLayer.classList.add('hidden');
+    if (charLayer) {
+        if (step.char && ASSETS.sakura[step.char]) {
+            charLayer.style.backgroundImage = `url('${ASSETS.sakura[step.char]}')`;
+            charLayer.classList.remove('hidden');
+        } else {
+            charLayer.classList.add('hidden');
+        }
     }
     
-    // 说话人
     const speakerEl = document.getElementById('speaker-name');
-    if (step.speaker === '樱花') {
-        speakerEl.innerHTML = `<span class="speaker-sakura px-1">${step.speaker}</span>`;
-    } else {
-        speakerEl.innerHTML = `<span class="speaker-jimo px-1">${step.speaker}</span>`;
+    if (speakerEl) {
+        if (step.speaker === '樱花') {
+            speakerEl.innerHTML = `<span class="speaker-sakura px-1">${step.speaker}</span>`;
+        } else {
+            speakerEl.innerHTML = `<span class="speaker-jimo px-1">${step.speaker}</span>`;
+        }
     }
     
-    // 打字机
     const textEl = document.getElementById('dialogue-text');
+    if (!textEl) return;
     textEl.innerHTML = '';
     if (currentTypewriter) clearTimeout(currentTypewriter);
     
@@ -114,17 +176,18 @@ function loadDialogue(idx) {
             currentTypewriter = setTimeout(typeChar, speed);
         } else {
             currentTypewriter = null;
-            document.getElementById('next-indicator').style.opacity = '0.75';
+            const indicator = document.getElementById('next-indicator');
+            if (indicator) indicator.style.opacity = '0.75';
             dialogueHistory.push({ speaker: step.speaker, text: step.text, time: new Date() });
             updateProgress();
-            
             if (isAutoPlaying && !isSkipping) {
                 autoTimer = setTimeout(() => advanceDialogue(), autoDelay);
             }
         }
     }
     typeChar();
-    document.getElementById('next-indicator').style.opacity = '0.25';
+    const indicator = document.getElementById('next-indicator');
+    if (indicator) indicator.style.opacity = '0.25';
 }
 
 function advanceDialogue() {
@@ -132,7 +195,10 @@ function advanceDialogue() {
         clearTimeout(currentTypewriter);
         currentTypewriter = null;
         const story = getStory(currentChapter);
-        document.getElementById('dialogue-text').innerHTML = story[dialogueIndex].text;
+        const textEl = document.getElementById('dialogue-text');
+        if (textEl) textEl.innerHTML = story[dialogueIndex].text;
+        const indicator = document.getElementById('next-indicator');
+        if (indicator) indicator.style.opacity = '0.75';
         return;
     }
     clearInterval(autoTimer);
@@ -142,12 +208,15 @@ function advanceDialogue() {
 
 function showChapterEnd() {
     const diary = document.getElementById('diary-screen');
+    if (!diary) return;
     const chapterName = currentChapter === 1 ? '第一章' : '第二章';
+    const favor = currentChapter === 1 ? 10 : 25;
+    
     diary.innerHTML = `
         <div class="diary-page max-w-md mx-auto text-center p-8 rounded-3xl">
             <i class="fas fa-heart text-6xl text-[#f9a8d4] mb-6"></i>
             <h2 class="text-4xl font-bold mb-4">${chapterName} 完</h2>
-            <p class="text-zinc-300 mb-8">感谢体验「与邻居的乡间生活日记」${chapterName}。<br>好感度 +${currentChapter === 1 ? 10 : 25}</p>
+            <p class="text-zinc-300 mb-8">感谢体验「与邻居的乡间生活日记」${chapterName}。<br>好感度 +${favor}</p>
             
             <div class="flex flex-col gap-3">
                 <button onclick="returnToTitleFromEnd()" class="px-8 py-3.5 bg-[#f9a8d4] hover:bg-[#e879f9] text-black font-medium rounded-2xl">回到标题</button>
@@ -163,22 +232,25 @@ function showChapterEnd() {
 }
 
 function returnToTitleFromEnd() {
-    document.getElementById('diary-screen').classList.add('hidden');
+    const diary = document.getElementById('diary-screen');
+    if (diary) diary.classList.add('hidden');
     if (bgm) bgm.pause();
     showScreen('title');
 }
 
 function showSaveLoadFromEnd() {
-    document.getElementById('diary-screen').classList.add('hidden');
+    const diary = document.getElementById('diary-screen');
+    if (diary) diary.classList.add('hidden');
     showSaveLoad();
 }
 
 function restartFromEnd() {
-    document.getElementById('diary-screen').classList.add('hidden');
+    const diary = document.getElementById('diary-screen');
+    if (diary) diary.classList.add('hidden');
     startNewGame(1);
 }
 
-// 存档槽位函数（简化版）
+// ==================== 存档系统 ====================
 function getSlotData(slot) {
     try {
         const raw = localStorage.getItem(SAVE_PREFIX + slot);
@@ -189,12 +261,14 @@ function getSlotData(slot) {
 function showSaveLoad() {
     const modal = document.getElementById('saveload-modal');
     const container = document.getElementById('saveload-slots');
+    if (!modal || !container) return;
     container.innerHTML = '';
     
     for (let i = 1; i <= MAX_SLOTS; i++) {
         const data = getSlotData(i);
         const hasSave = !!data;
         const timeStr = hasSave ? new Date(data.timestamp).toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : '空';
+        const prog = hasSave ? (data.progress || `${(data.index||0)+1}/19`) : '-';
         
         const slotDiv = document.createElement('div');
         slotDiv.className = `p-4 rounded-2xl border ${hasSave ? 'border-[#f9a8d4]/50 bg-zinc-950/80' : 'border-zinc-700 bg-zinc-950/50'}`;
@@ -204,7 +278,7 @@ function showSaveLoad() {
                 <div class="text-xs px-2 py-0.5 rounded ${hasSave ? 'bg-emerald-500/70 text-white' : 'bg-zinc-700 text-zinc-400'}">${hasSave ? '已存档' : '空'}</div>
             </div>
             <div class="text-sm text-zinc-400 mb-3">
-                ${hasSave ? `时间：${timeStr}<br>进度：${data.progress || '未知'}` : '点击下方按钮存档'}
+                ${hasSave ? `时间：${timeStr}<br>进度：${prog}` : '点击下方按钮存档'}
             </div>
             <div class="flex gap-2">
                 <button onclick="saveToSlot(${i})" class="flex-1 px-3 py-1.5 text-sm rounded-xl ${hasSave ? 'border border-[#f9a8d4] text-[#f9a8d4] hover:bg-[#f9a8d4]/10' : 'bg-[#f9a8d4] text-black'}">
@@ -222,8 +296,7 @@ function showSaveLoad() {
 
 function hideSaveLoad() {
     const modal = document.getElementById('saveload-modal');
-    modal.style.display = 'none';
-    modal.classList.add('hidden');
+    if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); }
 }
 
 function saveToSlot(slot) {
@@ -254,7 +327,7 @@ function deleteSlot(slot) {
     }
 }
 
-// BGM
+// ==================== BGM ====================
 function initBGM() {
     const audio = document.getElementById('bgm-audio');
     if (!audio) return;
@@ -265,20 +338,151 @@ function initBGM() {
 
 function updateVolume(v) {
     if (bgm) bgm.volume = parseInt(v) / 100;
-    document.getElementById('volume-value').textContent = v + '%';
+    const valEl = document.getElementById('volume-value');
+    if (valEl) valEl.textContent = v + '%';
 }
 
-// 控制
+// ==================== 画廊 ====================
+function showGallery() {
+    const modal = document.getElementById('gallery-modal');
+    const grid = document.getElementById('gallery-grid');
+    if (!modal || !grid) return;
+    grid.innerHTML = '';
+    
+    galleryItems.forEach(item => {
+        const card = document.createElement('div');
+        const isCharacter = item.type === '立绘';
+        card.className = `group relative overflow-hidden rounded-2xl border border-zinc-700 ${isCharacter ? 'aspect-[9/16]' : 'aspect-[16/10]'} cursor-pointer bg-zinc-950`;
+        card.innerHTML = `
+            <img src="${item.img}" class="w-full h-full ${isCharacter ? 'object-contain' : 'object-cover'} transition-transform group-hover:scale-[1.08] duration-500" alt="${item.title}">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black/90"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="font-semibold text-lg">${item.title}</div>
+                    <div class="px-2 py-px text-[10px] rounded ${isCharacter ? 'bg-purple-500/80' : 'bg-emerald-500/80'}">${item.type}</div>
+                </div>
+                <div class="text-xs text-zinc-400 line-clamp-2">${item.desc}</div>
+            </div>
+        `;
+        card.onclick = () => showCGViewer(item);
+        grid.appendChild(card);
+    });
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+}
+
+function hideGallery() {
+    const modal = document.getElementById('gallery-modal');
+    if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); }
+}
+
+function showCGViewer(item) {
+    const viewer = document.getElementById('cg-viewer');
+    if (!viewer) return;
+    const img = document.getElementById('cg-image');
+    const title = document.getElementById('cg-title');
+    const desc = document.getElementById('cg-desc');
+    if (img) img.src = item.img;
+    if (title) title.textContent = item.title;
+    if (desc) desc.textContent = item.desc + '（模块化版本）';
+    viewer.style.display = 'flex';
+}
+
+function hideCGViewer() {
+    const viewer = document.getElementById('cg-viewer');
+    if (viewer) viewer.style.display = 'none';
+}
+
+// ==================== 自动 / 快进 ====================
+function toggleAuto() {
+    isAutoPlaying = !isAutoPlaying;
+    const btn = document.getElementById('btn-auto');
+    if (!btn) return;
+    
+    if (isAutoPlaying) {
+        btn.classList.add('!text-[#f9a8d4]', 'bg-white/10');
+        showToast('自动播放已开启');
+        const textEl = document.getElementById('dialogue-text');
+        if (textEl && textEl.innerHTML.length >= (getStory(currentChapter)[dialogueIndex]?.text.length || 0)) {
+            setTimeout(() => { if (isAutoPlaying) advanceDialogue(); }, 650);
+        }
+    } else {
+        btn.classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+        clearInterval(autoTimer);
+        showToast('自动播放已关闭');
+    }
+}
+
+function toggleSkip() {
+    isSkipping = !isSkipping;
+    const btn = document.getElementById('btn-skip');
+    if (!btn) return;
+    
+    if (isSkipping) {
+        btn.classList.add('!text-[#f9a8d4]', 'bg-white/10');
+        showToast('快进模式开启（按住 Ctrl 也可）');
+        
+        const textEl = document.getElementById('dialogue-text');
+        if (textEl && currentTypewriter) {
+            clearTimeout(currentTypewriter);
+            const story = getStory(currentChapter);
+            textEl.innerHTML = story[dialogueIndex].text;
+            const indicator = document.getElementById('next-indicator');
+            if (indicator) indicator.style.opacity = '0.75';
+        }
+        
+        if (!skipTimer) {
+            skipTimer = setInterval(() => {
+                if (!isSkipping) { clearInterval(skipTimer); skipTimer = null; return; }
+                advanceDialogue();
+            }, 260);
+        }
+    } else {
+        btn.classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+        clearInterval(skipTimer);
+        skipTimer = null;
+        showToast('快进模式关闭');
+    }
+}
+
+// ==================== 键盘 & 鼠标控制 ====================
 function initControls() {
     document.addEventListener('keydown', e => {
         if (currentScreen !== 'game') return;
-        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); advanceDialogue(); }
-        if (e.key === 'Escape') { /* close modals */ }
-        if ((e.key === 's' || e.key === 'S') && e.ctrlKey) { e.preventDefault(); showSaveLoad(); }
+        
+        if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            advanceDialogue();
+        }
+        if (e.key === 'Escape') {
+            const modals = ['saveload-modal', 'gallery-modal', 'cg-viewer'];
+            for (let id of modals) {
+                const m = document.getElementById(id);
+                if (m && m.style.display === 'flex') {
+                    m.style.display = 'none';
+                    m.classList.add('hidden');
+                    return;
+                }
+            }
+            returnToTitle();
+        }
+        if ((e.key === 's' || e.key === 'S') && e.ctrlKey) {
+            e.preventDefault();
+            showSaveLoad();
+        }
         if (e.ctrlKey && !isSkipping) {
             isSkipping = true;
             isCtrlPressed = true;
-            document.getElementById('btn-skip').classList.add('!text-[#f9a8d4]', 'bg-white/10');
+            const btn = document.getElementById('btn-skip');
+            if (btn) btn.classList.add('!text-[#f9a8d4]', 'bg-white/10');
+            
+            const textEl = document.getElementById('dialogue-text');
+            if (textEl && currentTypewriter) {
+                clearTimeout(currentTypewriter);
+                const story = getStory(currentChapter);
+                textEl.innerHTML = story[dialogueIndex].text;
+            }
+            
             if (!skipTimer) {
                 skipTimer = setInterval(() => {
                     if (!isSkipping || !isCtrlPressed) { clearInterval(skipTimer); skipTimer = null; return; }
@@ -293,42 +497,65 @@ function initControls() {
             isCtrlPressed = false;
             if (isSkipping) {
                 isSkipping = false;
-                document.getElementById('btn-skip').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+                const btn = document.getElementById('btn-skip');
+                if (btn) btn.classList.remove('!text-[#f9a8d4]', 'bg-white/10');
                 if (skipTimer) { clearInterval(skipTimer); skipTimer = null; }
             }
         }
     });
     
-    // 其他事件监听（滚轮、点击等）省略，完整版已实现
+    const gameScreen = document.getElementById('game-screen');
+    if (gameScreen) {
+        gameScreen.addEventListener('wheel', e => {
+            if (currentScreen === 'game' && e.deltaY < 0) {
+                e.preventDefault();
+                showSaveLoad();
+            }
+        }, { passive: false });
+        
+        gameScreen.addEventListener('click', e => {
+            if (currentScreen !== 'game') return;
+            if (e.target.closest('#dialogue-container') || e.target.closest('.quick-btn') || e.target.closest('[id$="-modal"]')) return;
+            advanceDialogue();
+        });
+    }
 }
 
-// 初始化
+// ==================== 初始化 ====================
 function initGame() {
-    // 加载设置
-    const saved = localStorage.getItem('galgame_settings_v2');
-    if (saved) {
-        try { const s = JSON.parse(saved); textSpeed = s.textSpeed || 45; autoDelay = s.autoDelay || 1600; } catch(e){}
+    const savedSettings = localStorage.getItem('galgame_settings_v2');
+    if (savedSettings) {
+        try {
+            const s = JSON.parse(savedSettings);
+            textSpeed = s.textSpeed || 45;
+            autoDelay = s.autoDelay || 1600;
+        } catch(e){}
     }
     
-    // 樱花粒子（标题）
     setInterval(() => {
         if (!document.getElementById('title-screen').classList.contains('hidden')) {
-            // spawnSakura(5); // 简化
+            spawnSakura(5);
         }
     }, 420);
     
+    const titleArea = document.getElementById('title-screen');
+    if (titleArea) {
+        titleArea.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            spawnSakura(22);
+        });
+    }
+    
     initControls();
     
-    // 隐藏所有模态
     ['saveload-modal', 'gallery-modal', 'cg-viewer'].forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.style.display = 'none'; el.classList.add('hidden'); }
     });
     
-    console.log('%c[GalGame] 与邻居的乡间生活日记 - 模块化版本已就绪', 'color:#f9a8d4');
+    console.log('%c[GalGame] 与邻居的乡间生活日记 - 模块化完整版已就绪', 'color:#f9a8d4');
 }
 
 window.onload = initGame;
 
-// 暴露常用函数
 window.GALGAME = { start: () => startNewGame(1), startDay2: () => startNewGame(2) };

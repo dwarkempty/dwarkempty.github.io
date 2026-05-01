@@ -75,8 +75,8 @@ body {
     width: 40% !important;
     height: 90% !important;
     right: -2% !important;
-    bottom: -10% !important;
-    background-position: center 20% !important;
+    bottom: 0% !important;
+    background-position: center 35% !important;
     background-size: cover !important;
 }
 

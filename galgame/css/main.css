@@ -77,7 +77,7 @@ body {
     height: 95% !important;
     right: -2% !important;
     bottom: -10% !important;
-    background-position: center 6% !important;   /* 头部完整显示，只裁剪小腿 */
+    background-position: center 15% !important;  /* 完整显示头部 + 大腿中部（3/4身） */
     background-size: cover !important;
 }
 

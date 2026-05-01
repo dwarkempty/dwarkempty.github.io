@@ -521,6 +521,64 @@ function initControls() {
     }
 }
 
+// ==================== 设置系统 ====================
+function showSettings() {
+    const modal = document.getElementById('settings-modal');
+    if (!modal) return;
+    
+    const speedSlider = document.getElementById('speed-slider');
+    const autoSlider = document.getElementById('auto-slider');
+    const speedValue = document.getElementById('speed-value');
+    const autoValue = document.getElementById('auto-value');
+    
+    if (speedSlider) {
+        speedSlider.value = textSpeed;
+        speedSlider.oninput = () => {
+            textSpeed = parseInt(speedSlider.value);
+            if (speedValue) speedValue.textContent = textSpeed + 'ms';
+        };
+        if (speedValue) speedValue.textContent = textSpeed + 'ms';
+    }
+    
+    if (autoSlider) {
+        autoSlider.value = autoDelay;
+        autoSlider.oninput = () => {
+            autoDelay = parseInt(autoSlider.value);
+            if (autoValue) autoValue.textContent = (autoDelay / 1000).toFixed(1) + 's';
+        };
+        if (autoValue) autoValue.textContent = (autoDelay / 1000).toFixed(1) + 's';
+    }
+    
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+}
+
+function hideSettings() {
+    const modal = document.getElementById('settings-modal');
+    if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); }
+}
+
+function saveSettings() {
+    const settings = { textSpeed, autoDelay, volume: bgm ? bgm.volume : 0.65 };
+    localStorage.setItem('galgame_settings_v2', JSON.stringify(settings));
+    showToast('设置已保存');
+    hideSettings();
+}
+
+function resetSettings() {
+    textSpeed = 45;
+    autoDelay = 1600;
+    if (bgm) bgm.volume = 0.65;
+    const volSlider = document.getElementById('volume-slider');
+    const volValue = document.getElementById('volume-value');
+    if (volSlider) volSlider.value = 65;
+    if (volValue) volValue.textContent = '65%';
+    showToast('已恢复默认设置');
+    // 重新打开设置面板刷新滑块
+    hideSettings();
+    setTimeout(showSettings, 300);
+}
+
 // ==================== 初始化 ====================
 function initGame() {
     const savedSettings = localStorage.getItem('galgame_settings_v2');
@@ -529,6 +587,7 @@ function initGame() {
             const s = JSON.parse(savedSettings);
             textSpeed = s.textSpeed || 45;
             autoDelay = s.autoDelay || 1600;
+            if (s.volume !== undefined && bgm) bgm.volume = s.volume;
         } catch(e){}
     }
     
@@ -548,7 +607,7 @@ function initGame() {
     
     initControls();
     
-    ['saveload-modal', 'gallery-modal', 'cg-viewer'].forEach(id => {
+    ['saveload-modal', 'gallery-modal', 'cg-viewer', 'settings-modal'].forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.style.display = 'none'; el.classList.add('hidden'); }
     });
@@ -570,5 +629,7 @@ window.toggleSkip = toggleSkip;
 window.returnToTitleFromEnd = returnToTitleFromEnd;
 window.showSaveLoadFromEnd = showSaveLoadFromEnd;
 window.restartFromEnd = restartFromEnd;
+window.showSettings = showSettings;
+window.hideSettings = hideSettings;
 
 window.GALGAME = { start: () => startNewGame(1), startDay2: () => startNewGame(2) };

@@ -18,7 +18,7 @@ const ASSETS = window.ASSETS;
 const galleryItems = window.galleryItems;
 const MAX_SLOTS = window.MAX_SLOTS;
 const SAVE_PREFIX = window.SAVE_PREFIX;
-const getStory = window.getStory;
+// getStory 来自 story.js，已全局可用
 
 function showScreen(screen) {
     document.getElementById('title-screen').classList.add('hidden');

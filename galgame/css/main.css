@@ -72,12 +72,11 @@ body {
 .character-layer {
     transition: all 0.5s cubic-bezier(0.23, 1.0, 0.32, 1);
     filter: drop-shadow(25px 30px 40px rgba(0,0,0,0.75));
-    /* 立绘更大 + 完整显示头部到大腿（上半身中景） */
-    width: 42% !important;
-    height: 95% !important;
+    width: 38% !important;
+    height: 80% !important;
     right: -2% !important;
     bottom: -10% !important;
-    background-position: center 15% !important;  /* 完整显示头部 + 大腿中部（3/4身） */
+    background-position: center 5% !important;
     background-size: cover !important;
 }
 

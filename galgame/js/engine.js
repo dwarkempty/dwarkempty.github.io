@@ -558,4 +558,17 @@ function initGame() {
 
 window.onload = initGame;
 
+// 确保所有 onclick 函数挂载到 window（防止作用域问题）
+window.startNewGame = startNewGame;
+window.continueGame = continueGame;
+window.showSaveLoad = showSaveLoad;
+window.showGallery = showGallery;
+window.returnToTitle = returnToTitle;
+window.advanceDialogue = advanceDialogue;
+window.toggleAuto = toggleAuto;
+window.toggleSkip = toggleSkip;
+window.returnToTitleFromEnd = returnToTitleFromEnd;
+window.showSaveLoadFromEnd = showSaveLoadFromEnd;
+window.restartFromEnd = restartFromEnd;
+
 window.GALGAME = { start: () => startNewGame(1), startDay2: () => startNewGame(2) };

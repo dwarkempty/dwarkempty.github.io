@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>与邻居的乡间生活日记！ - GalGame Prologue</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&amp;family=Noto+Serif+SC:wght@700&amp;display=swap');
+        
+        body { font-family: 'Noto Sans SC', system-ui, sans-serif; }
+        .title-font { font-family: 'Noto Serif SC', 'Noto Sans SC', serif; letter-spacing: 3px; }
+        
+        .game-container {
+            box-shadow: 0 0 80px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        .dialogue-box {
+            background: linear-gradient(to bottom, rgba(30, 25, 45, 0.96), rgba(15, 12, 30, 0.98));
+            border: 3px solid #f9a8d4;
+            box-shadow: 0 0 40px rgba(249, 168, 212, 0.35),
+                        inset 0 0 25px rgba(249, 168, 212, 0.15);
+            backdrop-filter: blur(16px);
+        }
+
+        .speaker-sakura {
+            background: linear-gradient(90deg, #f9a8d4, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            text-shadow: 0 0 12px rgba(249, 168, 212, 0.6);
+        }
+        
+        .speaker-jimo {
+            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .vn-text { 
+            line-height: 1.75; 
+            font-size: 1.08rem; 
+            text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+        }
+
+        .menu-btn {
+            transition: all 0.3s cubic-bezier(0.23, 1.0, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 40%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+        .menu-btn:hover::before { left: 300%; }
+        .menu-btn:hover { transform: translateY(-4px) scale(1.03); }
+
+        .quick-btn {
+            transition: all 0.2s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+        }
+        .quick-btn:hover { color: #f9a8d4; transform: translateY(-2px); }
+        .quick-btn i { font-size: 1.25rem; transition: transform 0.2s ease; }
+        .quick-btn:hover i { transform: scale(1.2); }
+
+        .character-layer {
+            transition: all 0.5s cubic-bezier(0.23, 1.0, 0.32, 1);
+            filter: drop-shadow(20px 25px 30px rgba(0,0,0,0.65));
+        }
+
+        .scene-transition {
+            animation: sceneFade 0.9s ease forwards;
+        }
+
+        @keyframes sceneFade {
+            from { opacity: 0.3; filter: brightness(0.6); }
+            to { opacity: 1; filter: brightness(1); }
+        }
+
+        .sakura-petal {
+            position: absolute;
+            color: #f9a8d4;
+            font-size: 13px;
+            animation: petalFall linear forwards;
+            pointer-events: none;
+            z-index: 20;
+            text-shadow: 0 0 6px #f9a8d4;
+        }
+
+        .diary-page {
+            background: #f8f1e3;
+            color: #3f2a1d;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4),
+                        inset 0 0 60px rgba(139, 90, 43, 0.15);
+            border: 8px solid #d4b48c;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .modal { animation: modalPop 0.4s cubic-bezier(0.23, 1.0, 0.32, 1); }
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.9) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .gal-title {
+            text-shadow: 0 0 25px #f9a8d4, 0 0 50px #c084fc, 3px 3px 0 #000;
+            animation: titlePulse 4s ease-in-out infinite alternate;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute; bottom: -6px; left: 0;
+            width: 55%; height: 3px;
+            background: linear-gradient(to right, #f9a8d4, transparent);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white overflow-hidden">
+    <!-- ==================== TITLE SCREEN ==================== -->
+    <div id="title-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center"
+         style="background-image: url('galgame_assets/images/title/title.png'); background-size: cover; background-position: center;">
+        
+        <!-- Dark overlay for readability -->
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/75"></div>
+        
+        <!-- Decorative sakura overlay -->
+        <div class="absolute inset-0 bg-[radial-gradient(#f9a8d4_0.6px,transparent_1px)] bg-[length:5px_5px] opacity-10"></div>
+        
+        <div class="relative z-10 text-center px-6 max-w-3xl">
+            <!-- Logo -->
+            <div class="mb-6">
+                <i class="fas fa-leaf text-6xl text-[#f9a8d4] mb-2 drop-shadow-[0_0_20px_#f9a8d4]"></i>
+            </div>
+            
+            <h1 class="title-font text-6xl md:text-7xl font-bold tracking-[4px] gal-title mb-1">
+                与邻居的<br>乡间生活日记！
+            </h1>
+            <p class="text-xl text-[#f9a8d4]/90 tracking-[2.5px] font-light mb-8">Countryside Diary with Sakura</p>
+            
+            <div class="flex items-center justify-center gap-2 mb-10">
+                <div class="h-px w-10 bg-gradient-to-r from-transparent to-[#f9a8d4]"></div>
+                <span class="text-xs tracking-[2px] text-zinc-400">治愈系单女主视觉小说</span>
+                <div class="h-px w-10 bg-gradient-to-l from-transparent to-[#f9a8d4]"></div>
+            </div>
+
+            <!-- Menu -->
+            <div class="flex flex-col gap-3.5 items-center w-full max-w-[280px] mx-auto">
+                <button onclick="startNewGame()" 
+                        class="menu-btn w-full flex items-center justify-center gap-4 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-9 py-4 rounded-3xl text-xl font-medium backdrop-blur-xl">
+                    <i class="fas fa-play text-[#f9a8d4]"></i>
+                    <span>开始第一章</span>
+                </button>
+                
+                <button onclick="continueGame()" 
+                        class="menu-btn w-full flex items-center justify-center gap-4 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-9 py-4 rounded-3xl text-xl font-medium backdrop-blur-xl">
+                    <i class="fas fa-redo text-[#f9a8d4]"></i>
+                    <span>继续游戏</span>
+                </button>
+                
+                <div class="flex gap-3 w-full">
+                    <button onclick="showSettings()" 
+                            class="menu-btn flex-1 flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-6 py-3.5 rounded-3xl text-lg font-medium backdrop-blur-xl">
+                        <i class="fas fa-cog text-[#f9a8d4]"></i>
+                        <span>设置</span>
+                    </button>
+                    
+                    <button onclick="showGallery()" 
+                            class="menu-btn flex-1 flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-6 py-3.5 rounded-3xl text-lg font-medium backdrop-blur-xl">
+                        <i class="fas fa-images text-[#f9a8d4]"></i>
+                        <span>画廊</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-8 text-center z-10">
+            <div class="flex items-center justify-center gap-2 text-xs text-zinc-400">
+                <i class="fas fa-info-circle"></i>
+                <span>使用真实素材 · 第一章 Prologue（约15分钟）</span>
+            </div>
+        </div>
+        
+        <div id="sakura-container" class="absolute inset-0 pointer-events-none z-20"></div>
+    </div>
+
+    <!-- ==================== GAME SCREEN ==================== -->
+    <div id="game-screen" class="hidden fixed inset-0 z-40 flex flex-col bg-black">
+        <!-- Background Layer -->
+        <div id="bg-layer" 
+             class="absolute inset-0 bg-cover bg-center transition-all duration-1000 scene-transition"
+             style="background-image: url('galgame_assets/images/background/村子主街道-樱花大道.jpg')">
+            <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70"></div>
+        </div>
+
+        <!-- Character Layer (Right side) -->
+        <div id="character-layer" 
+             class="character-layer absolute bottom-0 right-[6%] w-[26%] h-[78%] z-30 hidden"
+             style="background-size: contain; background-repeat: no-repeat; background-position: bottom center;">
+        </div>
+
+        <!-- Left character placeholder (future) -->
+        <div id="character-left" class="hidden absolute bottom-0 left-[5%] w-[20%] h-[65%] z-20"></div>
+
+        <!-- Dialogue Container -->
+        <div id="dialogue-container" 
+             class="absolute bottom-0 left-0 right-0 z-40 px-5 pb-5 pointer-events-auto">
+            <div onclick="advanceDialogue()" 
+                 class="dialogue-box mx-auto max-w-[960px] rounded-3xl p-6 cursor-pointer select-none shadow-2xl">
+                
+                <div class="flex items-center gap-3 mb-2.5">
+                    <div id="speaker-name" 
+                         class="px-4 py-1 text-xl font-bold tracking-wide rounded-2xl border border-white/20 bg-black/50 inline-block min-w-[92px] text-center">
+                    </div>
+                    <div class="flex-1 h-px bg-gradient-to-r from-white/30 to-transparent"></div>
+                </div>
+                
+                <div id="dialogue-text" 
+                     class="vn-text min-h-[88px] text-[17px] leading-relaxed text-zinc-100 pr-2">
+                </div>
+                
+                <div class="flex justify-end mt-1">
+                    <div id="next-indicator" 
+                         class="text-[#f9a8d4] text-xs flex items-center gap-1.5 opacity-60">
+                        <span>点击继续</span> 
+                        <i class="fas fa-chevron-down text-xs animate-bounce"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Menu -->
+        <div class="absolute bottom-4 right-4 z-50 flex items-center gap-1.5 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-3xl px-1.5 py-1.5 shadow-xl">
+            <button onclick="toggleAuto()" id="btn-auto"
+                    class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-play-circle"></i>
+                <span class="text-[9px] font-medium mt-px">自动</span>
+            </button>
+            
+            <button onclick="toggleSkip()" id="btn-skip"
+                    class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-forward"></i>
+                <span class="text-[9px] font-medium mt-px">快进</span>
+            </button>
+            
+            <div class="w-px h-7 bg-white/20 mx-0.5"></div>
+            
+            <button onclick="saveGame()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-save"></i>
+                <span class="text-[9px] font-medium mt-px">保存</span>
+            </button>
+            
+            <button onclick="loadGame()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-folder-open"></i>
+                <span class="text-[9px] font-medium mt-px">读取</span>
+            </button>
+            
+            <div class="w-px h-7 bg-white/20 mx-0.5"></div>
+            
+            <button onclick="showBacklog()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-history"></i>
+                <span class="text-[9px] font-medium mt-px">历史</span>
+            </button>
+            
+            <button onclick="showSettings()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-sliders-h"></i>
+                <span class="text-[9px] font-medium mt-px">设置</span>
+            </button>
+            
+            <button onclick="returnToTitle()" class="quick-btn px-3 py-2 text-zinc-400 hover:text-red-400 rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="text-[9px] font-medium mt-px">标题</span>
+            </button>
+        </div>
+
+        <!-- Progress -->
+        <div class="absolute top-4 left-4 z-50 flex items-center gap-2 text-xs bg-black/70 px-3 py-1 rounded-full border border-white/10">
+            <i class="fas fa-book text-[#f9a8d4]"></i>
+            <span id="progress-text" class="font-mono text-zinc-400">01 / 12</span>
+        </div>
+    </div>
+
+    <!-- BACKLOG MODAL -->
+    <div id="backlog-modal" onclick="if (event.target.id === 'backlog-modal') hideBacklog()" 
+         class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-[820px] max-h-[82vh] flex flex-col shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-700">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-history text-2xl text-[#f9a8d4]"></i>
+                    <h3 class="text-2xl font-semibold">对话历史</h3>
+                </div>
+                <button onclick="hideBacklog()" class="text-3xl leading-none text-zinc-400 hover:text-white">&times;</button>
+            </div>
+            <div id="backlog-content" class="flex-1 overflow-y-auto p-6 space-y-3 custom-scroll text-sm"></div>
+            <div class="px-6 py-3 border-t border-zinc-700 text-xs text-zinc-500 flex justify-between items-center">
+                <span>滚轮向上打开 • ESC关闭</span>
+                <button onclick="clearBacklog()" class="px-3 py-1 hover:bg-zinc-800 rounded text-xs flex items-center gap-1">
+                    <i class="fas fa-trash text-xs"></i> 清空
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" onclick="if (event.target.id === 'settings-modal') hideSettings()" 
+         class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-md p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-3xl font-semibold flex items-center gap-3">
+                    <i class="fas fa-sliders-h text-[#f9a8d4]"></i> 
+                    <span>游戏设置</span>
+                </h3>
+                <button onclick="hideSettings()" class="text-3xl text-zinc-400 hover:text-white">&times;</button>
+            </div>
+            
+            <div class="space-y-8">
+                <div>
+                    <div class="flex justify-between mb-2 text-sm">
+                        <label class="font-medium flex items-center gap-2"><i class="fas fa-tachometer-alt w-4"></i> 文字速度</label>
+                        <span id="text-speed-value" class="font-mono text-zinc-400">45ms</span>
+                    </div>
+                    <input type="range" id="text-speed" class="w-full accent-[#f9a8d4]" min="10" max="110" step="5" value="45"
+                           oninput="updateTextSpeed(this.value)">
+                    <div class="flex justify-between text-[10px] text-zinc-500 mt-1"><div>快</div><div>慢</div></div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between mb-2 text-sm">
+                        <label class="font-medium flex items-center gap-2"><i class="fas fa-clock w-4"></i> 自动间隔</label>
+                        <span id="auto-delay-value" class="font-mono text-zinc-400">1600ms</span>
+                    </div>
+                    <input type="range" id="auto-delay" class="w-full accent-[#f9a8d4]" min="500" max="3200" step="100" value="1600"
+                           oninput="updateAutoDelay(this.value)">
+                </div>
+                
+                <div>
+                    <div class="flex justify-between mb-2 text-sm">
+                        <label class="font-medium flex items-center gap-2"><i class="fas fa-volume-up w-4"></i> BGM音量</label>
+                        <span id="volume-value" class="font-mono text-zinc-400">65%</span>
+                    </div>
+                    <input type="range" id="volume" class="w-full accent-[#f9a8d4]" min="0" max="100" value="65"
+                           oninput="updateVolume(this.value)">
+                    <div class="text-[10px] text-zinc-500 mt-1">（当前Demo无音频文件）</div>
+                </div>
+            </div>
+            
+            <div class="mt-8 flex gap-3">
+                <button onclick="resetSettings()" class="flex-1 px-5 py-3 border border-zinc-700 hover:bg-zinc-800 rounded-2xl text-sm">恢复默认</button>
+                <button onclick="hideSettings()" class="flex-1 px-5 py-3 bg-[#f9a8d4] hover:bg-[#e879f9] text-black font-medium rounded-2xl text-sm">保存返回</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GALLERY MODAL -->
+    <div id="gallery-modal" onclick="if (event.target.id === 'gallery-modal') hideGallery()" 
+         class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-5xl max-h-[88vh] flex flex-col shadow-2xl">
+            <div class="px-8 py-5 border-b border-zinc-700 flex items-center justify-between">
+                <div>
+                    <h3 class="text-3xl font-semibold">画廊 / CG Gallery</h3>
+                    <p class="text-sm text-zinc-400">第一章已解锁立绘与背景</p>
+                </div>
+                <button onclick="hideGallery()" class="text-4xl leading-none text-zinc-400 hover:text-white">&times;</button>
+            </div>
+            <div class="flex-1 overflow-auto p-8">
+                <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CG VIEWER -->
+    <div id="cg-viewer" onclick="hideCGViewer()" 
+         class="hidden fixed inset-0 z-[70] bg-black/95 flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="max-w-[880px] w-full relative">
+            <button onclick="hideCGViewer()" class="absolute -top-4 -right-4 z-10 w-11 h-11 bg-zinc-800 hover:bg-red-600 transition-colors rounded-full flex items-center justify-center text-2xl">&times;</button>
+            <img id="cg-image" class="w-full rounded-3xl shadow-2xl border border-zinc-700" alt="">
+            <div class="mt-5 px-2">
+                <div id="cg-title" class="text-3xl font-semibold mb-1.5"></div>
+                <div id="cg-desc" class="text-zinc-300 text-[15px] leading-relaxed"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIARY ENDING SCREEN -->
+    <div id="diary-screen" onclick="if (event.target.id === 'diary-screen') endGame()" 
+         class="hidden fixed inset-0 z-[55] bg-black/95 flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="diary-page max-w-[620px] w-full rounded-3xl p-8 md:p-10 relative">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <div class="text-[#8b5a2b] text-sm tracking-[1px]">布罗斯村 · 2026年春</div>
+                    <div class="text-4xl font-bold text-[#3f2a1d]">第一天日记</div>
+                </div>
+                <i class="fas fa-book text-5xl text-[#d4b48c]"></i>
+            </div>
+            
+            <div class="prose prose-stone text-[#3f2a1d] leading-relaxed text-[15.5px]">
+                <p id="diary-text" class="mb-6"></p>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-[#d4b48c]/50 flex items-center justify-between text-sm">
+                <div>
+                    <div class="text-[#8b5a2b]">好感度</div>
+                    <div class="flex items-center gap-1 text-[#e879f9]">
+                        <i class="fas fa-heart"></i>
+                        <span class="font-semibold">+10</span>
+                    </div>
+                </div>
+                <button onclick="endGame()" 
+                        class="px-8 py-2.5 bg-[#3f2a1d] hover:bg-black text-white rounded-2xl text-sm flex items-center gap-2 transition-colors">
+                    <span>进入第二天</span> <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-[80] bg-zinc-800 border border-[#f9a8d4]/50 px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm">
+        <i class="fas fa-check-circle text-[#f9a8d4]"></i>
+        <span id="toast-text"></span>
+    </div>
+
+    <script>
+        // ==================== CONFIG & STATE ====================
+        let currentScreen = 'title';
+        let dialogueIndex = 0;
+        let dialogueHistory = [];
+        let isAutoPlaying = false;
+        let isSkipping = false;
+        let textSpeed = 45;
+        let autoDelay = 1600;
+        let currentTypewriter = null;
+        let autoTimer = null;
+        let skipTimer = null;
+
+        // Image paths (relative to HTML)
+        const ASSETS = {
+            bg: {
+                arrival: 'galgame_assets/images/background/村子主街道-樱花大道.jpg',
+                house: 'galgame_assets/images/background/木屋外景-春日樱花.jpg',
+                interior: 'galgame_assets/images/background/木屋室内-客厅厨房.jpg',
+                forest: 'galgame_assets/images/background/樱花树林-后山观景台.jpg'
+            },
+            sakura: {
+                standard: 'galgame_assets/images/character/乡村便服-标准站姿.png',
+                one_hand: 'galgame_assets/images/character/乡村便服-单手叉腰.png',
+                both_hands: 'galgame_assets/images/character/乡村便服-双手叉腰.png',
+                arms_cross: 'galgame_assets/images/character/乡村便服-双臂交叉.png'
+            },
+            title: 'galgame_assets/images/title/title.png'
+        };
+
+        // Full Chapter 1 Script (based on uploaded document)
+        const story = [
+            // Scene 1: Arrival
+            {
+                id: 1,
+                bg: 'arrival',
+                char: null,
+                speaker: '旁白',
+                text: '终于……到了。',
+                note: '画面淡入，春日樱花大道'
+            },
+            {
+                id: 2,
+                bg: 'arrival',
+                char: null,
+                speaker: '姬莫',
+                text: '从城市到这里，坐了整整八个小时的车……空气真不一样。母亲说，叔叔的房子就在村子最里面……希望不要太破吧。',
+                note: '姬莫拖着行李箱站在村口'
+            },
+            // Scene 2: At the house
+            {
+                id: 3,
+                bg: 'house',
+                char: null,
+                speaker: '旁白',
+                text: '就是这里了……叔叔的房子。看起来……比想象中要好一些。虽然有点老，但打扫得挺干净的。',
+                note: '溶解转场到木屋外景'
+            },
+            {
+                id: 4,
+                bg: 'house',
+                char: null,
+                speaker: '姬莫',
+                text: '（这里就是我之后要生活的地方了吗……）（从每天挤地铁、加班到深夜的城市……突然来到这种地方，总觉得有点不真实。）',
+                note: '内心独白'
+            },
+            // Scene 3: First meet Sakura
+            {
+                id: 5,
+                bg: 'house',
+                char: 'standard',
+                speaker: '樱花',
+                text: '哇——！新邻居！你 是城里来的吧？好厉害哦～我叫樱花，就住在隔壁！',
+                note: '窗户打开，樱花探头（标准站姿 + 惊讶好奇）'
+            },
+            {
+                id: 6,
+                bg: 'house',
+                char: 'standard',
+                speaker: '姬莫',
+                text: '啊……你好。我叫姬莫。我是来继承我叔叔的房子的……',
+                note: ''
+            },
+            {
+                id: 7,
+                bg: 'house',
+                char: 'standard',
+                speaker: '樱花',
+                text: '继承？！哇，那你以后就要住在这里了？太好了！村里好久没有新面孔了～',
+                note: ''
+            },
+            // Scene 4: Dialogues - Round 1 (curious)
+            {
+                id: 8,
+                bg: 'house',
+                char: 'one_hand',
+                speaker: '樱花',
+                text: '城里是什么样子的呀？真的像电视里演的那样，高楼大厦到处都是吗？我从来没去过城里呢……',
+                note: '单手叉腰，眼睛发亮（兴奋好奇）'
+            },
+            {
+                id: 9,
+                bg: 'house',
+                char: 'one_hand',
+                speaker: '姬莫',
+                text: '嗯……高楼是很多，但其实挺累的。每天挤地铁、加班到很晚。反而这里……空气很好，花也漂亮。',
+                note: ''
+            },
+            {
+                id: 10,
+                bg: 'house',
+                char: 'one_hand',
+                speaker: '樱花',
+                text: '对吧对吧！我们村的樱花超有名的！春天的时候整条街都是粉色的！',
+                note: ''
+            },
+            // Round 2 (playful)
+            {
+                id: 11,
+                bg: 'house',
+                char: 'both_hands',
+                speaker: '樱花',
+                text: '不过你看起来好没精神哦～城里人都是这样吗？要不要我带你去村里转转？保证让你精神起来！',
+                note: '双手叉腰，调皮自信'
+            },
+            {
+                id: 12,
+                bg: 'house',
+                char: 'both_hands',
+                speaker: '姬莫',
+                text: '啊……不用了，我先把行李收拾一下吧。不过……谢谢你。',
+                note: ''
+            },
+            {
+                id: 13,
+                bg: 'house',
+                char: 'both_hands',
+                speaker: '樱花',
+                text: '那好吧～不过你可不能一直闷在家里哦！村长爷爷说，新来的邻居要好好欢迎一下呢！',
+                note: ''
+            },
+            // Round 3 (gentle/shy)
+            {
+                id: 14,
+                bg: 'house',
+                char: 'arms_cross',
+                speaker: '樱花',
+                text: '其实……我一个人住在这里，有时候也会觉得有点寂寞。奶奶去城里看病了，要过阵子才回来。你来了之后……感觉村子一下子热闹起来了。',
+                note: '双臂交叉，轻微害羞温柔'
+            },
+            {
+                id: 15,
+                bg: 'house',
+                char: 'arms_cross',
+                speaker: '姬莫',
+                text: '是吗……那我以后会多出来走走的。',
+                note: ''
+            },
+            {
+                id: 16,
+                bg: 'house',
+                char: 'arms_cross',
+                speaker: '樱花',
+                text: '真的吗？太好了！',
+                note: ''
+            },
+            // Round 4 (goodbye)
+            {
+                id: 17,
+                bg: 'house',
+                char: 'standard',
+                speaker: '樱花',
+                text: '那今天就先这样吧！你刚来，肯定累了。明天我再来找你玩哦～记得把房子好好收拾一下，叔叔以前很爱干净的！',
+                note: '标准站姿，温柔微笑'
+            },
+            {
+                id: 18,
+                bg: 'house',
+                char: 'standard',
+                speaker: '姬莫',
+                text: '好的……谢谢你，樱花。',
+                note: ''
+            },
+            // Ending - Diary
+            {
+                id: 19,
+                bg: 'interior',
+                char: null,
+                speaker: '旁白',
+                text: '（姬莫拖着行李走进木屋，简单收拾了一下。坐在旧沙发上，拿出手机，屏幕上显示「日记」App）',
+                note: '傍晚转室内，渐暗'
+            }
+        ];
+
+        // Gallery data (using actual assets)
+        const galleryItems = [
+            { id: 1, title: "春日樱花大道", desc: "村子主街道，樱花盛开时的浪漫景象。第一章开场背景。", img: ASSETS.bg.arrival, unlocked: true, type: "背景" },
+            { id: 2, title: "木屋外景", desc: "姬莫继承的叔叔老宅，爬满绿藤，樱花树环绕。", img: ASSETS.bg.house, unlocked: true, type: "背景" },
+            { id: 3, title: "木屋室内", desc: "温馨的客厅与厨房，适合傍晚写日记的场景。", img: ASSETS.bg.interior, unlocked: true, type: "背景" },
+            { id: 4, title: "樱花树林观景台", desc: "后山观景台，可远眺整个布罗斯村。", img: ASSETS.bg.forest, unlocked: true, type: "背景" },
+            { id: 5, title: "樱花·标准站姿", desc: "初遇与告别时的姿态，温柔而充满期待。", img: ASSETS.sakura.standard, unlocked: true, type: "立绘" },
+            { id: 6, title: "樱花·单手叉腰", desc: "好奇询问城市时的兴奋表情。", img: ASSETS.sakura.one_hand, unlocked: true, type: "立绘" },
+            { id: 7, title: "樱花·双手叉腰", desc: "调皮打趣时的自信模样。", img: ASSETS.sakura.both_hands, unlocked: true, type: "立绘" },
+            { id: 8, title: "樱花·双臂交叉", desc: "谈到寂寞时的害羞温柔。", img: ASSETS.sakura.arms_cross, unlocked: true, type: "立绘" }
+        ];
+
+        // ==================== UTILS ====================
+        function showToast(msg, duration = 2100) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').textContent = msg;
+            toast.style.transition = 'none';
+            toast.style.opacity = '1';
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.4s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.classList.add('hidden'), 400);
+            }, duration);
+        }
+
+        function updateProgress() {
+            const el = document.getElementById('progress-text');
+            if (el) el.textContent = `${String(dialogueIndex + 1).padStart(2, '0')} / ${String(story.length).padStart(2, '0')}`;
+        }
+
+        // ==================== SAKURA PETALS ====================
+        function spawnSakura(count = 12) {
+            const container = document.getElementById('sakura-container');
+            if (!container) return;
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const p = document.createElement('div');
+                    p.className = 'sakura-petal';
+                    p.innerHTML = Math.random() > 0.5 ? '❀' : '🌸';
+                    p.style.left = Math.random() * 100 + 'vw';
+                    p.style.top = '-10px';
+                    p.style.animationDuration = (Math.random() * 9 + 6) + 's';
+                    p.style.opacity = Math.random() * 0.5 + 0.45;
+                    p.style.fontSize = (Math.random() * 9 + 11) + 'px';
+                    container.appendChild(p);
+                    setTimeout(() => p.remove(), 16000);
+                }, i * 28);
+            }
+        }
+
+        // ==================== SCREEN CONTROL ====================
+        function showScreen(screen) {
+            document.getElementById('title-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('diary-screen').classList.add('hidden');
+            
+            if (screen === 'title') {
+                document.getElementById('title-screen').classList.remove('hidden');
+                currentScreen = 'title';
+            } else if (screen === 'game') {
+                document.getElementById('game-screen').classList.remove('hidden');
+                currentScreen = 'game';
+            } else if (screen === 'diary') {
+                document.getElementById('diary-screen').classList.remove('hidden');
+                currentScreen = 'diary';
+            }
+        }
+
+        function startNewGame() {
+            dialogueIndex = 0;
+            dialogueHistory = [];
+            isAutoPlaying = false;
+            isSkipping = false;
+            clearInterval(autoTimer);
+            clearInterval(skipTimer);
+            
+            document.getElementById('btn-auto').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+            document.getElementById('btn-skip').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+            
+            showScreen('game');
+            loadDialogue(0);
+            showToast('第一章开始！点击对话框或按空格推进');
+        }
+
+        function continueGame() {
+            const saved = localStorage.getItem('galgame_save_v2');
+            if (!saved) {
+                showToast('没有找到存档，请开始新游戏');
+                return;
+            }
+            try {
+                const data = JSON.parse(saved);
+                dialogueIndex = data.index || 0;
+                dialogueHistory = data.history || [];
+                showScreen('game');
+                loadDialogue(dialogueIndex);
+                showToast('已读取存档');
+            } catch(e) {
+                showToast('存档损坏');
+            }
+        }
+
+        function returnToTitle() {
+            if (confirm('返回标题画面？当前进度将丢失（除非已保存）')) {
+                clearInterval(autoTimer);
+                clearInterval(skipTimer);
+                isAutoPlaying = false;
+                isSkipping = false;
+                showScreen('title');
+                document.getElementById('character-layer').style.backgroundImage = '';
+                document.getElementById('character-layer').classList.add('hidden');
+            }
+        }
+
+        // ==================== CORE DIALOGUE ====================
+        function loadDialogue(idx) {
+            if (idx >= story.length) {
+                showDiaryEnding();
+                return;
+            }
+            
+            const step = story[idx];
+            dialogueIndex = idx;
+            
+            // Background change with transition
+            const bgLayer = document.getElementById('bg-layer');
+            const newBg = ASSETS.bg[step.bg] || ASSETS.bg.house;
+            if (bgLayer.style.backgroundImage !== `url("${newBg}")`) {
+                bgLayer.style.transition = 'opacity 0.35s ease';
+                bgLayer.style.opacity = '0.25';
+                setTimeout(() => {
+                    bgLayer.style.backgroundImage = `url('${newBg}')`;
+                    bgLayer.style.opacity = '1';
+                    setTimeout(() => bgLayer.style.transition = 'all 1s ease', 600);
+                }, 320);
+            }
+            
+            // Character
+            const charLayer = document.getElementById('character-layer');
+            if (step.char && ASSETS.sakura[step.char]) {
+                charLayer.style.backgroundImage = `url('${ASSETS.sakura[step.char]}')`;
+                charLayer.classList.remove('hidden');
+                charLayer.style.right = '6%';
+            } else {
+                charLayer.classList.add('hidden');
+                charLayer.style.backgroundImage = '';
+            }
+            
+            // Speaker
+            const speakerEl = document.getElementById('speaker-name');
+            if (step.speaker === '樱花') {
+                speakerEl.innerHTML = `<span class="speaker-sakura px-1">${step.speaker}</span>`;
+                speakerEl.style.borderColor = '#f9a8d4';
+            } else if (step.speaker === '姬莫') {
+                speakerEl.innerHTML = `<span class="speaker-jimo px-1">${step.speaker}</span>`;
+                speakerEl.style.borderColor = '#60a5fa';
+            } else {
+                speakerEl.innerHTML = `<span class="text-zinc-300 px-1">${step.speaker}</span>`;
+                speakerEl.style.borderColor = 'rgba(255,255,255,0.2)';
+            }
+            
+            // Typewriter text
+            const textEl = document.getElementById('dialogue-text');
+            textEl.innerHTML = '';
+            textEl.classList.add('typewriter');
+            
+            if (currentTypewriter) clearTimeout(currentTypewriter);
+            
+            let i = 0;
+            const speed = isSkipping ? 6 : textSpeed;
+            const fullText = step.text;
+            
+            function typeChar() {
+                if (i < fullText.length) {
+                    textEl.innerHTML += fullText.charAt(i);
+                    i++;
+                    currentTypewriter = setTimeout(typeChar, speed);
+                } else {
+                    currentTypewriter = null;
+                    document.getElementById('next-indicator').style.opacity = '0.75';
+                    
+                    // Add to history
+                    dialogueHistory.push({
+                        speaker: step.speaker,
+                        text: fullText,
+                        time: new Date()
+                    });
+                    
+                    updateProgress();
+                    
+                    if (isAutoPlaying && !isSkipping) {
+                        autoTimer = setTimeout(() => {
+                            if (isAutoPlaying) advanceDialogue();
+                        }, autoDelay);
+                    }
+                }
+            }
+            typeChar();
+            
+            document.getElementById('next-indicator').style.opacity = '0.25';
+        }
+
+        function advanceDialogue() {
+            if (currentTypewriter) {
+                clearTimeout(currentTypewriter);
+                currentTypewriter = null;
+                const step = story[dialogueIndex];
+                document.getElementById('dialogue-text').innerHTML = step.text;
+                document.getElementById('next-indicator').style.opacity = '0.75';
+                return;
+            }
+            
+            clearInterval(autoTimer);
+            dialogueIndex++;
+            
+            if (dialogueIndex >= story.length) {
+                showDiaryEnding();
+            } else {
+                loadDialogue(dialogueIndex);
+            }
+        }
+
+        function showDiaryEnding() {
+            clearInterval(autoTimer);
+            clearInterval(skipTimer);
+            isAutoPlaying = false;
+            isSkipping = false;
+            
+            const diaryScreen = document.getElementById('diary-screen');
+            const diaryText = document.getElementById('diary-text');
+            
+            diaryText.innerHTML = `
+                今天是来到布罗斯村的第一天。<br><br>
+                房子比想象中要好，邻居……是个很活泼的女孩，叫樱花。<br>
+                她好像对城里的一切都很好奇……而我，却对这里的一切都觉得新鲜。<br><br>
+                或许……换个环境，真的能让我重新开始。
+            `;
+            
+            showScreen('diary');
+            
+            // Auto save at end
+            setTimeout(() => {
+                const saveData = { index: story.length, history: dialogueHistory, timestamp: new Date().toISOString() };
+                localStorage.setItem('galgame_save_v2', JSON.stringify(saveData));
+            }, 800);
+        }
+
+        function endGame() {
+            // For demo: show completion and option to replay or gallery
+            const diary = document.getElementById('diary-screen');
+            diary.innerHTML = `
+                <div class="max-w-md mx-auto text-center p-8">
+                    <i class="fas fa-heart text-6xl text-[#f9a8d4] mb-6"></i>
+                    <h2 class="text-4xl font-bold mb-4">第一章 完</h2>
+                    <p class="text-zinc-300 mb-8">感谢体验「与邻居的乡间生活日记」第一章。<br>好感度 +10，已解锁新立绘。</p>
+                    
+                    <div class="flex flex-col gap-3">
+                        <button onclick="location.reload()" class="px-8 py-3.5 bg-[#f9a8d4] hover:bg-[#e879f9] text-black font-medium rounded-2xl">返回标题</button>
+                        <button onclick="showGallery(); document.getElementById('diary-screen').classList.add('hidden')" class="px-8 py-3.5 border border-white/30 hover:bg-white/10 rounded-2xl">查看画廊</button>
+                    </div>
+                    
+                    <div class="mt-8 text-xs text-zinc-500">后续章节开发中……</div>
+                </div>
+            `;
+        }
+
+        // ==================== AUTO / SKIP ====================
+        function toggleAuto() {
+            isAutoPlaying = !isAutoPlaying;
+            const btn = document.getElementById('btn-auto');
+            
+            if (isAutoPlaying) {
+                btn.classList.add('!text-[#f9a8d4]', 'bg-white/10');
+                showToast('自动播放已开启');
+                const textEl = document.getElementById('dialogue-text');
+                if (textEl && textEl.innerHTML.length >= (story[dialogueIndex]?.text.length || 0)) {
+                    setTimeout(() => { if (isAutoPlaying) advanceDialogue(); }, 650);
+                }
+            } else {
+                btn.classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+                clearInterval(autoTimer);
+                showToast('自动播放已关闭');
+            }
+        }
+
+        function toggleSkip() {
+            isSkipping = !isSkipping;
+            const btn = document.getElementById('btn-skip');
+            
+            if (isSkipping) {
+                btn.classList.add('!text-[#f9a8d4]', 'bg-white/10');
+                showToast('快进模式开启（按住 Ctrl 也可）');
+                
+                const textEl = document.getElementById('dialogue-text');
+                if (textEl && currentTypewriter) {
+                    clearTimeout(currentTypewriter);
+                    textEl.innerHTML = story[dialogueIndex].text;
+                    document.getElementById('next-indicator').style.opacity = '0.75';
+                }
+                
+                skipTimer = setInterval(() => {
+                    if (!isSkipping) { clearInterval(skipTimer); return; }
+                    advanceDialogue();
+                }, 260);
+            } else {
+                btn.classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+                clearInterval(skipTimer);
+                showToast('快进模式关闭');
+            }
+        }
+
+        // ==================== KEYBOARD & WHEEL ====================
+        function initControls() {
+            document.addEventListener('keydown', e => {
+                if (currentScreen !== 'game') return;
+                
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    advanceDialogue();
+                }
+                
+                if (e.key === 'Escape') {
+                    const modals = ['backlog-modal', 'settings-modal', 'gallery-modal'];
+                    for (let id of modals) {
+                        const m = document.getElementById(id);
+                        if (!m.classList.contains('hidden') && m.style.display !== 'none') {
+                            m.style.display = 'none';
+                            m.classList.add('hidden');
+                            return;
+                        }
+                    }
+                    returnToTitle();
+                }
+                
+                if ((e.key === 's' || e.key === 'S') && e.ctrlKey) {
+                    e.preventDefault();
+                    saveGame();
+                }
+                if ((e.key === 'l' || e.key === 'L') && e.ctrlKey) {
+                    e.preventDefault();
+                    loadGame();
+                }
+                
+                if (e.ctrlKey && !isSkipping) {
+                    isSkipping = true;
+                    document.getElementById('btn-skip').classList.add('!text-[#f9a8d4]', 'bg-white/10');
+                    const textEl = document.getElementById('dialogue-text');
+                    if (textEl && currentTypewriter) {
+                        clearTimeout(currentTypewriter);
+                        textEl.innerHTML = story[dialogueIndex].text;
+                    }
+                }
+            });
+            
+            document.addEventListener('keyup', e => {
+                if (e.key === 'Control' && isSkipping) {
+                    isSkipping = false;
+                    document.getElementById('btn-skip').classList.remove('!text-[#f9a8d4]', 'bg-white/10');
+                    clearInterval(skipTimer);
+                }
+            });
+            
+            // Wheel up → backlog
+            const game = document.getElementById('game-screen');
+            game.addEventListener('wheel', e => {
+                if (currentScreen === 'game' && e.deltaY < 0) {
+                    e.preventDefault();
+                    showBacklog();
+                }
+            }, { passive: false });
+            
+            // Click anywhere on game (except buttons) advances
+            game.addEventListener('click', e => {
+                if (currentScreen !== 'game') return;
+                if (e.target.closest('#dialogue-container') || e.target.closest('.quick-btn') || e.target.closest('[id$="-modal"]')) return;
+                advanceDialogue();
+            });
+        }
+
+        // ==================== BACKLOG ====================
+        function showBacklog() {
+            const modal = document.getElementById('backlog-modal');
+            const content = document.getElementById('backlog-content');
+            content.innerHTML = '';
+            
+            if (dialogueHistory.length === 0) {
+                content.innerHTML = `<div class="text-center py-10 text-zinc-400"><i class="fas fa-comments text-5xl mb-4 opacity-40"></i><p>暂无对话记录</p></div>`;
+            } else {
+                dialogueHistory.forEach((entry, i) => {
+                    const t = entry.time ? new Date(entry.time).toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'}) : '';
+                    const div = document.createElement('div');
+                    div.className = `p-4 rounded-2xl border border-zinc-700 bg-zinc-950/70 flex gap-4 backlog-entry hover:bg-zinc-800/60 cursor-pointer`;
+                    div.innerHTML = `
+                        <div class="w-14 flex-shrink-0">
+                            <div class="text-xs text-zinc-500 font-mono">${t}</div>
+                            <div class="mt-1 text-xs px-2 py-px rounded ${entry.speaker === '樱花' ? 'bg-pink-500/20 text-pink-300' : entry.speaker === '姬莫' ? 'bg-blue-500/20 text-blue-300' : 'bg-zinc-700 text-zinc-300'}">${entry.speaker}</div>
+                        </div>
+                        <div class="flex-1 text-sm leading-snug text-zinc-200">${entry.text}</div>
+                    `;
+                    div.onclick = () => {
+                        hideBacklog();
+                        dialogueIndex = i;
+                        loadDialogue(i);
+                        showToast(`已跳转到第 ${i+1} 句`);
+                    };
+                    content.appendChild(div);
+                });
+            }
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+
+        function hideBacklog() {
+            const m = document.getElementById('backlog-modal');
+            m.style.display = 'none';
+            m.classList.add('hidden');
+        }
+
+        function clearBacklog() {
+            if (confirm('清空所有历史记录？')) {
+                dialogueHistory = [];
+                document.getElementById('backlog-content').innerHTML = `<div class="text-center py-10 text-zinc-400"><p>历史已清空</p></div>`;
+            }
+        }
+
+        // ==================== SAVE / LOAD ====================
+        function saveGame() {
+            const data = { index: dialogueIndex, history: dialogueHistory, timestamp: new Date().toISOString() };
+            localStorage.setItem('galgame_save_v2', JSON.stringify(data));
+            showToast('游戏已保存 ✓');
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('galgame_save_v2');
+            if (!saved) { showToast('没有存档'); return; }
+            try {
+                const data = JSON.parse(saved);
+                dialogueIndex = data.index || 0;
+                dialogueHistory = data.history || [];
+                showScreen('game');
+                loadDialogue(dialogueIndex);
+                showToast('存档已加载');
+            } catch(e) { showToast('存档错误'); }
+        }
+
+        // ==================== SETTINGS ====================
+        function updateTextSpeed(v) {
+            textSpeed = parseInt(v);
+            document.getElementById('text-speed-value').textContent = v + 'ms';
+        }
+        function updateAutoDelay(v) {
+            autoDelay = parseInt(v);
+            document.getElementById('auto-delay-value').textContent = v + 'ms';
+        }
+        function updateVolume(v) {
+            document.getElementById('volume-value').textContent = v + '%';
+        }
+        
+        function showSettings() {
+            const m = document.getElementById('settings-modal');
+            document.getElementById('text-speed').value = textSpeed;
+            document.getElementById('text-speed-value').textContent = textSpeed + 'ms';
+            document.getElementById('auto-delay').value = autoDelay;
+            document.getElementById('auto-delay-value').textContent = autoDelay + 'ms';
+            document.getElementById('volume').value = 65;
+            document.getElementById('volume-value').textContent = '65%';
+            m.style.display = 'flex';
+            m.classList.remove('hidden');
+        }
+        
+        function hideSettings() {
+            const m = document.getElementById('settings-modal');
+            m.style.display = 'none';
+            m.classList.add('hidden');
+            localStorage.setItem('galgame_settings_v2', JSON.stringify({textSpeed, autoDelay}));
+        }
+        
+        function resetSettings() {
+            textSpeed = 45; autoDelay = 1600;
+            document.getElementById('text-speed').value = 45;
+            document.getElementById('text-speed-value').textContent = '45ms';
+            document.getElementById('auto-delay').value = 1600;
+            document.getElementById('auto-delay-value').textContent = '1600ms';
+            showToast('已恢复默认设置');
+        }
+
+        // ==================== GALLERY ====================
+        function showGallery() {
+            const modal = document.getElementById('gallery-modal');
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            
+            galleryItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `group relative overflow-hidden rounded-2xl border border-zinc-700 aspect-[16/10] cursor-pointer bg-zinc-950`;
+                card.innerHTML = `
+                    <img src="${item.img}" class="w-full h-full object-cover transition-transform group-hover:scale-[1.08] duration-500" alt="${item.title}">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black/90"></div>
+                    <div class="absolute bottom-0 left-0 right-0 p-4">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="font-semibold text-lg">${item.title}</div>
+                            <div class="px-2 py-px text-[10px] rounded ${item.type === '立绘' ? 'bg-purple-500/80' : 'bg-emerald-500/80'}">${item.type}</div>
+                        </div>
+                        <div class="text-xs text-zinc-400 line-clamp-2">${item.desc}</div>
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                        <div class="px-4 py-1 text-xs bg-black/70 border border-white/30 rounded-full">点击查看大图</div>
+                    </div>
+                `;
+                card.onclick = () => showCGViewer(item);
+                grid.appendChild(card);
+            });
+            
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+
+        function hideGallery() {
+            const m = document.getElementById('gallery-modal');
+            m.style.display = 'none';
+            m.classList.add('hidden');
+        }
+
+        function showCGViewer(item) {
+            const viewer = document.getElementById('cg-viewer');
+            document.getElementById('cg-image').src = item.img;
+            document.getElementById('cg-title').textContent = item.title;
+            document.getElementById('cg-desc').textContent = item.desc + '（第一章素材）';
+            viewer.style.display = 'flex';
+        }
+
+        function hideCGViewer() {
+            document.getElementById('cg-viewer').style.display = 'none';
+        }
+
+        // ==================== INIT ====================
+        function initGame() {
+            // Tailwind accent
+            document.documentElement.style.setProperty('--accent', '#f9a8d4');
+            
+            // Load settings
+            const savedSettings = localStorage.getItem('galgame_settings_v2');
+            if (savedSettings) {
+                try {
+                    const s = JSON.parse(savedSettings);
+                    textSpeed = s.textSpeed || 45;
+                    autoDelay = s.autoDelay || 1600;
+                } catch(e){}
+            }
+            
+            // Sakura petals on title
+            setInterval(() => {
+                if (!document.getElementById('title-screen').classList.contains('hidden')) {
+                    spawnSakura(5);
+                }
+            }, 420);
+            
+            // Click title for extra petals
+            const titleArea = document.getElementById('title-screen');
+            titleArea.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') return;
+                spawnSakura(22);
+            });
+            
+            // Keyboard & mouse
+            initControls();
+            
+            // Update continue button if save exists
+            if (localStorage.getItem('galgame_save_v2')) {
+                const btns = document.querySelectorAll('#title-screen button');
+                if (btns[1]) btns[1].innerHTML = `<i class="fas fa-redo text-[#f9a8d4]"></i> <span>继续游戏 <span class="text-xs opacity-60">(有存档)</span></span>`;
+            }
+            
+            // Hide all modals initially
+            ['backlog-modal','settings-modal','gallery-modal','cg-viewer','diary-screen'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.style.display = 'none'; el.classList.add('hidden'); }
+            });
+            
+            // Easter egg: press "s" on title for secret sakura burst
+            document.addEventListener('keypress', e => {
+                if (e.key.toLowerCase() === 's' && currentScreen === 'title') {
+                    spawnSakura(35);
+                }
+            });
+            
+            console.log('%c[GalGame] 与邻居的乡间生活日记 - 第一章 Demo 已就绪', 'color:#f9a8d4');
+            console.log('%c[Controls] 空格/点击推进 | 滚轮上滑历史 | Ctrl快进 | S保存 L读取', 'color:#666');
+        }
+
+        window.onload = initGame;
+        
+        // Debug helpers
+        window.GAL = { 
+            jump: (n) => { showScreen('game'); loadDialogue(n); },
+            end: () => showDiaryEnding()
+        };
+    </script>
+</body>
+</html>

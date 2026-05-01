@@ -252,14 +252,9 @@
             
             <div class="w-px h-7 bg-white/20 mx-0.5"></div>
             
-            <button onclick="saveGame()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+            <button onclick="showSaveLoad()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[70px]">
                 <i class="fas fa-save"></i>
-                <span class="text-[9px] font-medium mt-px">保存</span>
-            </button>
-            
-            <button onclick="loadGame()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
-                <i class="fas fa-folder-open"></i>
-                <span class="text-[9px] font-medium mt-px">读取</span>
+                <span class="text-[9px] font-medium mt-px">存档管理</span>
             </button>
             
             <div class="w-px h-7 bg-white/20 mx-0.5"></div>
@@ -359,6 +354,27 @@
             <div class="mt-8 flex gap-3">
                 <button onclick="resetSettings()" class="flex-1 px-5 py-3 border border-zinc-700 hover:bg-zinc-800 rounded-2xl text-sm">恢复默认</button>
                 <button onclick="hideSettings()" class="flex-1 px-5 py-3 bg-[#f9a8d4] hover:bg-[#e879f9] text-black font-medium rounded-2xl text-sm">保存返回</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAVE/LOAD MODAL -->
+    <div id="saveload-modal" onclick="if (event.target.id === 'saveload-modal') hideSaveLoad()" 
+         class="hidden fixed inset-0 z-[65] bg-black/90 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-md shadow-2xl">
+            <div class="px-6 py-4 border-b border-zinc-700 flex items-center justify-between">
+                <h3 class="text-2xl font-semibold flex items-center gap-3">
+                    <i class="fas fa-save text-[#f9a8d4]"></i> 
+                    <span>存档管理</span>
+                </h3>
+                <button onclick="hideSaveLoad()" class="text-3xl text-zinc-400 hover:text-white">&times;</button>
+            </div>
+            <div class="p-6 space-y-4" id="saveload-slots">
+                <!-- JS populated slots -->
+            </div>
+            <div class="px-6 py-4 border-t border-zinc-700 text-xs text-zinc-500 text-center">
+                共 3 个存档槽位 • 数据保存在浏览器本地
             </div>
         </div>
     </div>
@@ -883,7 +899,7 @@
             // Nice completion screen with proper return to title
             const diary = document.getElementById('diary-screen');
             diary.innerHTML = `
-                <div class="max-w-md mx-auto text-center p-8">
+                <div class="diary-page max-w-md mx-auto text-center p-8 rounded-3xl">
                     <i class="fas fa-heart text-6xl text-[#f9a8d4] mb-6"></i>
                     <h2 class="text-4xl font-bold mb-4">第一章 完</h2>
                     <p class="text-zinc-300 mb-8">感谢体验「与邻居的乡间生活日记」第一章。<br>好感度 +10，已解锁新立绘。</p>
@@ -1136,6 +1152,102 @@
             } catch(e) { showToast('存档错误'); }
         }
 
+        // ==================== SAVE/LOAD SLOTS (3 slots) ====================
+        const SAVE_PREFIX = 'galgame_save_slot_';
+        const MAX_SLOTS = 3;
+
+        function getSlotData(slot) {
+            try {
+                const raw = localStorage.getItem(SAVE_PREFIX + slot);
+                return raw ? JSON.parse(raw) : null;
+            } catch(e) { return null; }
+        }
+
+        function saveToSlot(slot) {
+            if (currentScreen !== 'game') {
+                showToast('请在游戏中存档');
+                return;
+            }
+            const data = {
+                index: dialogueIndex,
+                history: dialogueHistory,
+                timestamp: new Date().toISOString(),
+                progress: `${dialogueIndex + 1}/${story.length}`
+            };
+            localStorage.setItem(SAVE_PREFIX + slot, JSON.stringify(data));
+            showToast(`已保存到槽位 ${slot}`);
+            showSaveLoad(); // refresh modal
+        }
+
+        function loadFromSlot(slot) {
+            const data = getSlotData(slot);
+            if (!data) {
+                showToast(`槽位 ${slot} 为空`);
+                return;
+            }
+            dialogueIndex = data.index || 0;
+            dialogueHistory = data.history || [];
+            showScreen('game');
+            loadDialogue(dialogueIndex);
+            initBGM();
+            hideSaveLoad();
+            showToast(`已读取槽位 ${slot}`);
+        }
+
+        function deleteSlot(slot) {
+            if (confirm(`确定删除槽位 ${slot} 的存档吗？`)) {
+                localStorage.removeItem(SAVE_PREFIX + slot);
+                showToast(`槽位 ${slot} 已删除`);
+                showSaveLoad(); // refresh
+            }
+        }
+
+        function showSaveLoad() {
+            const modal = document.getElementById('saveload-modal');
+            const container = document.getElementById('saveload-slots');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= MAX_SLOTS; i++) {
+                const data = getSlotData(i);
+                const hasSave = !!data;
+                const timeStr = hasSave ? new Date(data.timestamp).toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : '空';
+                const prog = hasSave ? data.progress || `${data.index + 1 || 0}/19` : '-';
+
+                const slotDiv = document.createElement('div');
+                slotDiv.className = `p-4 rounded-2xl border ${hasSave ? 'border-[#f9a8d4]/50 bg-zinc-950/80' : 'border-zinc-700 bg-zinc-950/50'}`;
+                slotDiv.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="font-semibold text-lg">槽位 ${i}</div>
+                        <div class="text-xs px-2 py-0.5 rounded ${hasSave ? 'bg-emerald-500/70 text-white' : 'bg-zinc-700 text-zinc-400'}">${hasSave ? '已存档' : '空'}</div>
+                    </div>
+                    <div class="text-sm text-zinc-400 mb-3">
+                        ${hasSave ? `时间：${timeStr}<br>进度：${prog}` : '点击下方按钮存档'}
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="saveToSlot(${i})" class="flex-1 px-3 py-1.5 text-sm rounded-xl ${hasSave ? 'border border-[#f9a8d4] text-[#f9a8d4] hover:bg-[#f9a8d4]/10' : 'bg-[#f9a8d4] text-black'}">
+                            ${hasSave ? '覆盖保存' : '保存到此'}
+                        </button>
+                        <button onclick="loadFromSlot(${i})" class="flex-1 px-3 py-1.5 text-sm rounded-xl border border-zinc-600 hover:bg-white/5 ${hasSave ? '' : 'opacity-40 pointer-events-none'}">
+                            读取
+                        </button>
+                        <button onclick="deleteSlot(${i})" class="px-3 py-1.5 text-sm rounded-xl border border-red-500/50 text-red-400 hover:bg-red-500/10 ${hasSave ? '' : 'opacity-40 pointer-events-none'}">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(slotDiv);
+            }
+
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+
+        function hideSaveLoad() {
+            const modal = document.getElementById('saveload-modal');
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+
         // ==================== SETTINGS ====================
         function updateTextSpeed(v) {
             textSpeed = parseInt(v);
@@ -1186,9 +1298,10 @@
             
             galleryItems.forEach(item => {
                 const card = document.createElement('div');
-                card.className = `group relative overflow-hidden rounded-2xl border border-zinc-700 aspect-[16/10] cursor-pointer bg-zinc-950`;
+                const isCharacter = item.type === '立绘';
+                card.className = `group relative overflow-hidden rounded-2xl border border-zinc-700 ${isCharacter ? 'aspect-[9/16]' : 'aspect-[16/10]'} cursor-pointer bg-zinc-950`;
                 card.innerHTML = `
-                    <img src="${item.img}" class="w-full h-full object-cover transition-transform group-hover:scale-[1.08] duration-500" alt="${item.title}">
+                    <img src="${item.img}" class="w-full h-full ${isCharacter ? 'object-contain' : 'object-cover'} transition-transform group-hover:scale-[1.08] duration-500" alt="${item.title}">
                     <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black/90"></div>
                     <div class="absolute bottom-0 left-0 right-0 p-4">
                         <div class="flex items-center justify-between mb-1">

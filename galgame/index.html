@@ -17,10 +17,6 @@
             <div class="mb-6"><i class="fas fa-leaf text-6xl text-[#f9a8d4] mb-2 drop-shadow-[0_0_20px_#f9a8d4]"></i></div>
             <h1 class="title-font text-6xl md:text-7xl font-bold tracking-[4px] gal-title mb-1">与邻居的<br>乡间生活日记！</h1>
             <p class="text-xl text-[#f9a8d4]/90 tracking-[2.5px] font-light mb-8">Countryside Diary with Sakura</p>
-            <div class="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-500 rounded text-yellow-300 text-sm">
-                ⚠️ 请确保打开的是 <strong>index.html</strong>，不是旧的 galgame.html！<br>
-                按 Ctrl+Shift+R 硬刷新后再测试
-            </div>
             
             <div class="flex flex-col gap-3.5 items-center w-full max-w-[280px] mx-auto">
                 <button onclick="startNewGame(1)" class="menu-btn w-full flex items-center justify-center gap-4 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-9 py-4 rounded-3xl text-xl font-medium backdrop-blur-xl">
@@ -85,6 +81,9 @@
             <div class="w-px h-7 bg-white/20 mx-0.5"></div>
             <button onclick="showGallery()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
                 <i class="fas fa-images"></i><span class="text-[9px] font-medium mt-px">画廊</span>
+            </button>
+            <button onclick="showSettings()" class="quick-btn px-3 py-2 text-zinc-300 hover:text-white rounded-2xl hover:bg-white/10 w-[50px]">
+                <i class="fas fa-cog"></i><span class="text-[9px] font-medium mt-px">设置</span>
             </button>
             <button onclick="returnToTitle()" class="quick-btn px-3 py-2 text-zinc-400 hover:text-red-400 rounded-2xl hover:bg-white/10 w-[50px]">
                 <i class="fas fa-sign-out-alt"></i><span class="text-[9px] font-medium mt-px">标题</span>

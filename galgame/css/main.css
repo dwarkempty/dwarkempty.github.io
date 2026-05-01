@@ -72,13 +72,13 @@ body {
 .character-layer {
     transition: all 0.5s cubic-bezier(0.23, 1.0, 0.32, 1);
     filter: drop-shadow(25px 30px 40px rgba(0,0,0,0.75));
-    /* 立绘更大 + 完整显示头部到大腿（上半身中景） */
-    width: 38% !important;
-    height: 70% !important;
-    right: -2% !important;
-    bottom: -5% !important;
-    background-position: center 10% !important;
-    background-size: cover !important;
+    /* 完整显示全身立绘，只整体下移，底部超出屏幕 */
+    width: 44% !important;
+    height: 118% !important;           /* 让完整立绘能放下 */
+    right: -3% !important;
+    bottom: -22% !important;           /* 整体往下移，腿部超出屏幕 */
+    background-position: center bottom !important;  /* 不裁剪，完整显示 */
+    background-size: contain !important;            /* 保持比例，不变形 */
 }
 
 .scene-transition {

@@ -72,8 +72,8 @@ body {
 .character-layer {
     transition: all 0.5s cubic-bezier(0.23, 1.0, 0.32, 1);
     filter: drop-shadow(25px 30px 40px rgba(0,0,0,0.75));
-    width: 40% !important;
-    height: 90% !important;
+    width: 38% !important;
+    height: 80% !important;
     right: -2% !important;
     bottom: 0% !important;
     background-position: center 35% !important;

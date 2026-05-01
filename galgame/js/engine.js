@@ -13,9 +13,12 @@ let skipTimer = null;
 let bgm = null;
 let currentChapter = 1;
 
-// 从 config 和 story 读取
-const { ASSETS, galleryItems, MAX_SLOTS, SAVE_PREFIX } = window;
-const { getStory } = window;
+// 从 config 和 story 读取（config.js 已挂载到 window）
+const ASSETS = window.ASSETS;
+const galleryItems = window.galleryItems;
+const MAX_SLOTS = window.MAX_SLOTS;
+const SAVE_PREFIX = window.SAVE_PREFIX;
+const getStory = window.getStory;
 
 function showScreen(screen) {
     document.getElementById('title-screen').classList.add('hidden');

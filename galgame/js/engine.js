@@ -18,7 +18,7 @@ const ASSETS = window.ASSETS || {};
 const galleryItems = window.galleryItems || [];
 const MAX_SLOTS = window.MAX_SLOTS || 3;
 const SAVE_PREFIX = window.SAVE_PREFIX || 'galgame_save_slot_';
-const getStory = window.getStory || (() => []);
+// getStory 由 story.js 提供（全局 function）
 
 // ==================== 工具函数 ====================
 function showToast(msg, duration = 2100) {

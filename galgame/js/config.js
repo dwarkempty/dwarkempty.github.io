@@ -1,11 +1,20 @@
 // config.js - 资源路径、画廊数据、常量
 window.ASSETS = {
     bg: {
-        arrival: 'galgame_assets/images/background/村子主街道-樱花大道.jpg',
-        house: 'galgame_assets/images/background/木屋外景-春日樱花.jpg',
-        interior: 'galgame_assets/images/background/木屋室内-客厅厨房.jpg',
-        forest: 'galgame_assets/images/background/樱花树林-后山观景台.jpg',
-        farm: 'galgame_assets/images/background/农场菜园-春季.jpg'
+        // 旧键（兼容）
+        arrival: 'galgame_assets/images/background/村子主街道-樱花大道-白天.jpg',
+        house: 'galgame_assets/images/background/木屋外景-春日樱花-白天.jpg',
+        interior: 'galgame_assets/images/background/木屋室内-客厅厨房-白天.jpg',
+        forest: 'galgame_assets/images/background/樱花树林-后山观景台-白天＆傍晚.jpg',
+        farm: 'galgame_assets/images/background/农场菜园-春季-白天.jpg',
+        // 新增详细场景键
+        street_day: 'galgame_assets/images/background/村子主街道-樱花大道-白天.jpg',
+        shop: 'galgame_assets/images/background/村子商店-白天.jpg',
+        house_day: 'galgame_assets/images/background/木屋外景-春日樱花-白天.jpg',
+        house_evening: 'galgame_assets/images/background/木屋外景-春日樱花-傍晚.jpg',
+        farm_day: 'galgame_assets/images/background/农场菜园-春季-白天.jpg',
+        mountain: 'galgame_assets/images/background/樱花树林-后山观景台-白天＆傍晚.jpg',
+        bedroom_evening: 'galgame_assets/images/background/男主卧室-傍晚.jpg'
     },
     sakura: {
         standard: 'galgame_assets/images/character/乡村便服-标准站姿.png',
@@ -31,4 +40,4 @@ window.galleryItems = [
 
 window.MAX_SLOTS = 3;
 window.SAVE_PREFIX = 'galgame_save_slot_';
-window.STORY_TOTAL = 19;
+window.STORY_TOTAL = 128;

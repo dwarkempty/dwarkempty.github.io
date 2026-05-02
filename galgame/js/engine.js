@@ -242,6 +242,7 @@ function showChapterEnd() {
             </div>
         </div>
     `;
+    if (currentChapter === 1) markDay1Completed();
     showScreen('diary');
 }
 
@@ -657,5 +658,87 @@ window.showSaveLoadFromEnd = showSaveLoadFromEnd;
 window.restartFromEnd = restartFromEnd;
 window.showSettings = showSettings;
 window.hideSettings = hideSettings;
+window.showBgmAppreciation = showBgmAppreciation;
+window.hideBgmAppreciation = hideBgmAppreciation;
 
 window.GALGAME = { start: () => startNewGame(1), startDay2: () => startNewGame(2) };
+
+// ==================== BGM鉴赏 ====================
+let bgmPlayer = null;
+
+function showBgmAppreciation() {
+    const modal = document.getElementById('bgm-modal');
+    const list = document.getElementById('bgm-list');
+    if (!modal || !list) return;
+
+    const isUnlocked = localStorage.getItem('galgame_day1_completed') === 'true' || getSlotData(1) !== null;
+    
+    list.innerHTML = `
+        <div class="space-y-4">
+            ${createBgmCard('meadow', 'the_meadow_path', '乡间治愈系、轻快', '营造出午后乡间漫步的休闲氛围，适合日常场景', isUnlocked)}
+            ${createBgmCard('twilight', 'fields_at_twilight', '舒缓、略带忧伤', '适合独自思考、宁静夜晚、雨天，农场收工后的傍晚', isUnlocked)}
+            ${createBgmCard('cartoon', 'tiptoeing_past_the_barn_door', '古怪卡通', '适合搞怪时刻、轻松时刻、内心吐槽、搞笑画面', isUnlocked)}
+        </div>
+    `;
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+}
+
+function createBgmCard(key, filename, style, desc, unlocked) {
+    const isPlaying = currentBgmKey === key;
+    return `
+        <div class="bg-zinc-800/80 border border-zinc-700 rounded-2xl p-4 flex items-center gap-4 hover:border-[#f9a8d4]/50 transition-all">
+            <button onclick="playBgmTrack('${key}', this)" class="w-12 h-12 flex-shrink-0 rounded-full ${isPlaying ? 'bg-[#f9a8d4] text-black' : 'bg-zinc-700 hover:bg-[#f9a8d4] hover:text-black'} flex items-center justify-center text-xl">
+                <i class="fas ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+            </button>
+            <div class="flex-1 min-w-0">
+                <div class="font-semibold text-lg">${filename}</div>
+                <div class="text-xs text-[#f9a8d4]">${style}</div>
+                <div class="text-xs text-zinc-400 mt-1 line-clamp-2">${desc}</div>
+            </div>
+            ${!unlocked ? '<div class="text-[10px] px-2 py-0.5 bg-zinc-700 rounded text-zinc-400">未解锁</div>' : ''}
+        </div>
+    `;
+}
+
+function playBgmTrack(key, btn) {
+    const audio = document.getElementById('bgm-audio');
+    if (!audio || !ASSETS.audio || !ASSETS.audio[key]) return;
+
+    document.querySelectorAll('#bgm-list button').forEach(b => {
+        b.classList.remove('bg-[#f9a8d4]', 'text-black');
+        b.classList.add('bg-zinc-700');
+        b.innerHTML = '<i class="fas fa-play"></i>';
+    });
+
+    if (currentBgmKey === key && !audio.paused) {
+        audio.pause();
+        btn.innerHTML = '<i class="fas fa-play"></i>';
+        btn.classList.remove('bg-[#f9a8d4]', 'text-black');
+        btn.classList.add('bg-zinc-700');
+        return;
+    }
+
+    audio.src = ASSETS.audio[key];
+    audio.volume = 0.7;
+    audio.play().then(() => {
+        currentBgmKey = key;
+        btn.innerHTML = '<i class="fas fa-pause"></i>';
+        btn.classList.add('bg-[#f9a8d4]', 'text-black');
+        btn.classList.remove('bg-zinc-700');
+    }).catch(() => {});
+}
+
+function hideBgmAppreciation() {
+    const modal = document.getElementById('bgm-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+    }
+    const audio = document.getElementById('bgm-audio');
+    if (audio) audio.pause();
+}
+
+function markDay1Completed() {
+    localStorage.setItem('galgame_day1_completed', 'true');
+}

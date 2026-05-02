@@ -30,11 +30,11 @@ window.ASSETS = {
 };
 
 window.galleryItems = [
-    { id: 1, title: "春日樱花大道", desc: "村子主街道，樱花盛开时的浪漫景象。", img: window.ASSETS.bg.arrival, unlocked: true, type: "背景" },
-    { id: 2, title: "木屋外景", desc: "姬莫继承的叔叔老宅，爬满绿藤。", img: window.ASSETS.bg.house, unlocked: true, type: "背景" },
-    { id: 3, title: "木屋室内", desc: "温馨的客厅与厨房。", img: window.ASSETS.bg.interior, unlocked: true, type: "背景" },
-    { id: 4, title: "樱花树林观景台", desc: "后山观景台，可远眺整个布罗斯村。", img: window.ASSETS.bg.forest, unlocked: true, type: "背景" },
-    { id: 5, title: "农场菜园-春季", desc: "Day 2 新场景：嫩绿菜苗与果树。", img: window.ASSETS.bg.farm, unlocked: true, type: "背景" },
+    { id: 1, title: "春日樱花大道", desc: "村子主街道，樱花盛开时的浪漫景象。", img: window.ASSETS.bg.street_day, unlocked: true, type: "背景" },
+    { id: 2, title: "木屋外景", desc: "姬莫继承的叔叔老宅，爬满绿藤。", img: window.ASSETS.bg.house_day, unlocked: true, type: "背景" },
+    { id: 3, title: "木屋室内", desc: "温馨的客厅与厨房。", img: window.ASSETS.bg.livingroom_day, unlocked: true, type: "背景" },
+    { id: 4, title: "樱花树林观景台", desc: "后山观景台，可远眺整个布罗斯村。", img: window.ASSETS.bg.mountain, unlocked: true, type: "背景" },
+    { id: 5, title: "农场菜园-春季", desc: "Day 2 新场景：嫩绿菜苗与果树。", img: window.ASSETS.bg.farm_day, unlocked: true, type: "背景" },
     { id: 6, title: "樱花·标准站姿", desc: "温柔微笑，充满期待。", img: window.ASSETS.sakura.standard, unlocked: true, type: "立绘" },
     { id: 7, title: "樱花·单手叉腰", desc: "好奇与兴奋。", img: window.ASSETS.sakura.one_hand, unlocked: true, type: "立绘" },
     { id: 8, title: "樱花·双手叉腰", desc: "调皮自信，充满干劲。", img: window.ASSETS.sakura.both_hands, unlocked: true, type: "立绘" },
@@ -43,4 +43,4 @@ window.galleryItems = [
 
 window.MAX_SLOTS = 3;
 window.SAVE_PREFIX = 'galgame_save_slot_';
-window.STORY_TOTAL = 210;
+window.STORY_TOTAL = 240;

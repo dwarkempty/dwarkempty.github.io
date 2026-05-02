@@ -44,4 +44,4 @@ window.galleryItems = [
 
 window.MAX_SLOTS = 3;
 window.SAVE_PREFIX = 'galgame_save_slot_';
-window.STORY_TOTAL = 128;
+window.STORY_TOTAL = 210;

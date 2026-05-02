@@ -140,7 +140,7 @@ function loadDialogue(idx) {
     dialogueIndex = idx;
     
     const bgLayer = document.getElementById('bg-layer');
-    const newBg = ASSETS.bg[step.bg] || ASSETS.bg.house;
+    const newBg = ASSETS.bg[step.bg] || ASSETS.bg.house_day || ASSETS.bg.street_day;
     if (bgLayer) bgLayer.style.backgroundImage = `url('${newBg}')`;
     
     const charLayer = document.getElementById('character-layer');

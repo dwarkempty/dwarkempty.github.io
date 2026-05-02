@@ -32,6 +32,9 @@
                     <button onclick="showGallery()" class="menu-btn flex-1 flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-6 py-3.5 rounded-3xl text-lg font-medium backdrop-blur-xl">
                         <i class="fas fa-images text-[#f9a8d4]"></i><span>画廊</span>
                     </button>
+                    <button onclick="showBgmAppreciation()" class="menu-btn flex-1 flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-6 py-3.5 rounded-3xl text-lg font-medium backdrop-blur-xl">
+                        <i class="fas fa-music text-[#f9a8d4]"></i><span>BGM鉴赏</span>
+                    </button>
                 </div>
                 <button onclick="showSettings()" class="menu-btn w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/15 border border-white/30 hover:border-[#f9a8d4] px-6 py-3.5 rounded-3xl text-lg font-medium backdrop-blur-xl">
                     <i class="fas fa-cog text-[#f9a8d4]"></i><span>设置</span>
@@ -177,6 +180,22 @@
     </div>
 
     <!-- SCRIPTS -->
+    <!-- BGM鉴赏 Modal -->
+    <div id="bgm-modal" onclick="if (event.target.id === 'bgm-modal') hideBgmAppreciation()" class="hidden fixed inset-0 z-[80] bg-black/95 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="modal bg-zinc-900 border border-[#f9a8d4]/50 rounded-3xl w-full max-w-lg shadow-2xl">
+            <div class="px-6 py-4 border-b border-zinc-700 flex items-center justify-between">
+                <h3 class="text-2xl font-semibold flex items-center gap-3"><i class="fas fa-music text-[#f9a8d4]"></i> <span>BGM鉴赏</span></h3>
+                <button onclick="hideBgmAppreciation()" class="text-3xl text-zinc-400 hover:text-white">&times;</button>
+            </div>
+            <div class="p-6 space-y-4" id="bgm-list">
+                <!-- JS 动态填充 -->
+            </div>
+            <div class="px-6 py-3 border-t border-zinc-700 text-xs text-zinc-400 text-center">
+                完成第一章后解锁全部曲目
+            </div>
+        </div>
+    </div>
+
     <script src="js/config.js"></script>
     <script src="js/story.js"></script>
     <script src="js/engine.js"></script>

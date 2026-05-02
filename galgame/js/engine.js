@@ -11,6 +11,7 @@ let currentTypewriter = null;
 let autoTimer = null;
 let skipTimer = null;
 let bgm = null;
+let currentBgmKey = null;
 let currentChapter = 1;
 
 // 全局变量（来自 config.js 和 story.js）
@@ -154,11 +155,24 @@ function loadDialogue(idx) {
     
     const speakerEl = document.getElementById('speaker-name');
     if (speakerEl) {
-        if (step.speaker === '樱花') {
-            speakerEl.innerHTML = `<span class="speaker-sakura px-1">${step.speaker}</span>`;
+        if (!step.speaker || step.speaker === '旁白') {
+            speakerEl.style.display = 'none';
+            speakerEl.innerHTML = '';
         } else {
-            speakerEl.innerHTML = `<span class="speaker-jimo px-1">${step.speaker}</span>`;
+            speakerEl.style.display = '';
+            if (step.speaker === '樱花') {
+                speakerEl.innerHTML = `<span class="speaker-sakura px-1">${step.speaker}</span>`;
+            } else if (step.speaker === '姬莫') {
+                speakerEl.innerHTML = `<span class="speaker-jimo px-1">${step.speaker}</span>`;
+            } else {
+                speakerEl.innerHTML = `<span class="px-1 text-zinc-300">${step.speaker}</span>`;
+            }
         }
+    }
+    
+    // BGM 切换
+    if (step.bgm) {
+        switchBGM(step.bgm);
     }
     
     const textEl = document.getElementById('dialogue-text');
@@ -333,6 +347,18 @@ function initBGM() {
     if (!audio) return;
     bgm = audio;
     bgm.volume = 0.65;
+    currentBgmKey = 'meadow';
+    if (ASSETS.audio && ASSETS.audio.meadow) {
+        bgm.src = ASSETS.audio.meadow;
+    }
+    bgm.play().catch(() => {});
+}
+
+function switchBGM(bgmKey) {
+    if (!bgm || !ASSETS.audio || !ASSETS.audio[bgmKey]) return;
+    if (currentBgmKey === bgmKey) return;
+    currentBgmKey = bgmKey;
+    bgm.src = ASSETS.audio[bgmKey];
     bgm.play().catch(() => {});
 }
 

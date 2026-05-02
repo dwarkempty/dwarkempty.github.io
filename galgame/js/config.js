@@ -2,17 +2,17 @@
 window.ASSETS = {
     bg: {
         street_day: 'galgame_assets/images/background/村子主街道-樱花大道-白天.jpg',
-        street_evening: 'galgame_assets/images/background/村子主街道-樱花大道-傍晚.jpg'
+        street_evening: 'galgame_assets/images/background/村子主街道-樱花大道-傍晚.jpg',
         shop: 'galgame_assets/images/background/村子商店-白天.jpg',
-        stream: 'galgame_assets/images/background/后山小溪-白天.jpg'
+        stream: 'galgame_assets/images/background/后山小溪-白天.jpg',
         house_day: 'galgame_assets/images/background/木屋外景-春日樱花-白天.jpg',
         house_evening: 'galgame_assets/images/background/木屋外景-春日樱花-傍晚.jpg',
-        livingroom_day: 'galgame_assets/images/background/木屋室内-客厅厨房-白天.jpg'
-        livingroom_evening: 'galgame_assets/images/background/木屋室内-客厅厨房-傍晚.jpg'
+        livingroom_day: 'galgame_assets/images/background/木屋室内-客厅厨房-白天.jpg',
+        livingroom_evening: 'galgame_assets/images/background/木屋室内-客厅厨房-傍晚.jpg',
         farm_day: 'galgame_assets/images/background/农场菜园-春季-白天.jpg',
-        farm_evening: 'galgame_assets/images/background/农场菜园-春季-傍晚.jpg'
+        farm_evening: 'galgame_assets/images/background/农场菜园-春季-傍晚.jpg',
         mountain: 'galgame_assets/images/background/樱花树林-后山观景台-白天＆傍晚.jpg',
-        bedroom_day: 'galgame_assets/images/background/男主卧室-白天.jpg'
+        bedroom_day: 'galgame_assets/images/background/男主卧室-白天.jpg',
         bedroom_evening: 'galgame_assets/images/background/男主卧室-傍晚.jpg'
     },
     sakura: {

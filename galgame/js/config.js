@@ -23,7 +23,11 @@ window.ASSETS = {
         arms_cross: 'galgame_assets/images/character/乡村便服-双臂交叉.png'
     },
     title: 'galgame_assets/images/title/title.png',
-    audio: 'galgame_assets/audio/the_meadow_path.mp3'
+    audio: {
+        meadow: 'galgame_assets/audio/the_meadow_path.mp3',
+        twilight: 'galgame_assets/audio/fields_at_twilight.mp3',
+        cartoon: 'galgame_assets/audio/tiptoeing_past_the_barn_door.mp3'
+    }
 };
 
 window.galleryItems = [

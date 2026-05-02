@@ -16,10 +16,29 @@ let currentChapter = 1;
 
 // 全局变量（来自 config.js 和 story.js）
 const ASSETS = window.ASSETS || {};
-const galleryItems = window.galleryItems || [];
+// galleryItems 动态从 window 获取（支持运行时更新解锁状态）
+function getGalleryItems() {
+    return window.galleryItems || [];
+}
 const MAX_SLOTS = window.MAX_SLOTS || 3;
 const SAVE_PREFIX = window.SAVE_PREFIX || 'galgame_save_slot_';
 // getStory 由 story.js 提供（全局 function）
+
+// 游戏启动时恢复画廊解锁状态
+function restoreGalleryUnlocks() {
+    if (!window.galleryItems) return;
+    const day1Done = localStorage.getItem('galgame_day1_completed') === 'true';
+    const day2Done = localStorage.getItem('galgame_day2_completed') === 'true';
+    
+    window.galleryItems.forEach(item => {
+        if (day2Done) {
+            item.unlocked = true;
+        } else if (day1Done && item.type === '立绘') {
+            item.unlocked = true;
+        }
+        // 默认背景已解锁
+    });
+}
 
 // ==================== 工具函数 ====================
 function showToast(msg, duration = 2100) {
@@ -243,6 +262,7 @@ function showChapterEnd() {
         </div>
     `;
     if (currentChapter === 1) markDay1Completed();
+    if (currentChapter === 2) markDay2Completed();
     showScreen('diary');
 }
 
@@ -369,31 +389,64 @@ function updateVolume(v) {
     if (valEl) valEl.textContent = v + '%';
 }
 
-// ==================== 画廊 ====================
+// ==================== 画廊（增强版：支持解锁 + 锁定状态） ====================
 function showGallery() {
     const modal = document.getElementById('gallery-modal');
     const grid = document.getElementById('gallery-grid');
     if (!modal || !grid) return;
     grid.innerHTML = '';
     
-    galleryItems.forEach(item => {
+    const items = getGalleryItems();
+    let unlockedCount = 0;
+    
+    items.forEach((item, index) => {
+        const isUnlocked = item.unlocked !== false;
+        if (isUnlocked) unlockedCount++;
+        
         const card = document.createElement('div');
         const isCharacter = item.type === '立绘';
-        card.className = `group relative overflow-hidden rounded-2xl border border-zinc-700 ${isCharacter ? 'aspect-[9/16]' : 'aspect-[16/10]'} cursor-pointer bg-zinc-950`;
-        card.innerHTML = `
-            <img src="${item.img}" class="w-full h-full ${isCharacter ? 'object-contain' : 'object-cover'} transition-transform group-hover:scale-[1.08] duration-500" alt="${item.title}">
-            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black/90"></div>
-            <div class="absolute bottom-0 left-0 right-0 p-4">
-                <div class="flex items-center justify-between mb-1">
-                    <div class="font-semibold text-lg">${item.title}</div>
-                    <div class="px-2 py-px text-[10px] rounded ${isCharacter ? 'bg-purple-500/80' : 'bg-emerald-500/80'}">${item.type}</div>
+        
+        if (isUnlocked) {
+            card.className = `group relative overflow-hidden rounded-2xl border border-zinc-700 ${isCharacter ? 'aspect-[9/16]' : 'aspect-[16/10]'} cursor-pointer bg-zinc-950`;
+            card.innerHTML = `
+                <img src="${item.img}" class="w-full h-full ${isCharacter ? 'object-contain' : 'object-cover'} transition-transform group-hover:scale-[1.08] duration-500" alt="${item.title}">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black/90"></div>
+                <div class="absolute bottom-0 left-0 right-0 p-4">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="font-semibold text-lg">${item.title}</div>
+                        <div class="px-2 py-px text-[10px] rounded ${isCharacter ? 'bg-purple-500/80' : 'bg-emerald-500/80'}">${item.type}</div>
+                    </div>
+                    <div class="text-xs text-zinc-400 line-clamp-2">${item.desc}</div>
                 </div>
-                <div class="text-xs text-zinc-400 line-clamp-2">${item.desc}</div>
-            </div>
-        `;
-        card.onclick = () => showCGViewer(item);
+            `;
+            card.onclick = () => showCGViewer(item);
+        } else {
+            // 锁定状态
+            card.className = `group relative overflow-hidden rounded-2xl border border-zinc-800 ${isCharacter ? 'aspect-[9/16]' : 'aspect-[16/10]'} bg-zinc-950 opacity-60`;
+            card.innerHTML = `
+                <div class="w-full h-full flex items-center justify-center bg-zinc-900">
+                    <i class="fas fa-lock text-4xl text-zinc-600"></i>
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black/95"></div>
+                <div class="absolute bottom-0 left-0 right-0 p-4">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="font-semibold text-lg text-zinc-400">${item.title}</div>
+                        <div class="px-2 py-px text-[10px] rounded bg-zinc-700 text-zinc-400">${item.type}</div>
+                    </div>
+                    <div class="text-xs text-zinc-500">完成更多剧情解锁</div>
+                </div>
+            `;
+            card.onclick = () => showToast('完成 Day 1 解锁立绘，完成 Day 2 解锁更多背景！');
+        }
         grid.appendChild(card);
     });
+    
+    // 更新标题显示解锁进度
+    const titleEl = modal.querySelector('h3');
+    if (titleEl) {
+        titleEl.innerHTML = `画廊 / CG Gallery <span class="text-sm font-mono text-[#f9a8d4]">(${unlockedCount}/${items.length})</span>`;
+    }
+    
     modal.style.display = 'flex';
     modal.classList.remove('hidden');
 }
@@ -608,6 +661,7 @@ function resetSettings() {
 
 // ==================== 初始化 ====================
 function initGame() {
+    restoreGalleryUnlocks();
     const savedSettings = localStorage.getItem('galgame_settings_v2');
     if (savedSettings) {
         try {
@@ -741,4 +795,18 @@ function hideBgmAppreciation() {
 
 function markDay1Completed() {
     localStorage.setItem('galgame_day1_completed', 'true');
+    // 自动解锁立绘
+    if (window.galleryItems) {
+        window.galleryItems.forEach(item => {
+            if (item.type === '立绘') item.unlocked = true;
+        });
+    }
+}
+
+function markDay2Completed() {
+    localStorage.setItem('galgame_day2_completed', 'true');
+    // 自动解锁所有剩余内容
+    if (window.galleryItems) {
+        window.galleryItems.forEach(item => item.unlocked = true);
+    }
 }

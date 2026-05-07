@@ -54,38 +54,61 @@
     </div>
   </div>
 
-  <!-- Panel 0: 抽卡 -->
-  <div id="panel0" class="panel max-w-7xl mx-auto px-4">
-    <div class="flex justify-between items-center mt-8 mb-6">
-      <div class="flex gap-6">
-        <button onclick="setDrawPool('char')" id="poolCharBtn" class="active px-8 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-3xl font-bold text-lg flex items-center gap-3">🧙 角色池</button>
-        <button onclick="setDrawPool('weapon')" id="poolWeaponBtn" class="px-8 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-3xl font-bold text-lg flex items-center gap-3">⚔️ 武器池</button>
-      </div>
-      <div class="text-right">
-        <div id="poolTitle" class="text-3xl font-bold">角色池抽取</div>
-        <div id="playerTitle" class="text-sm text-amber-400 font-bold">当前称号：正常玩家</div>
-        <div class="text-sm text-emerald-400">概率：R 60% • SR 25% • SSR 14% • UR 1%</div>
-        <div class="text-xs text-amber-400 mt-1">保底：10抽必出SSR，80抽必出UR</div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-6 max-w-md mx-auto relative">
-      <div class="particles" id="drawParticles"></div>
-      <button onclick="drawCard(1); createDrawParticles(this)" class="draw-btn bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-8 rounded-3xl text-2xl font-bold flex flex-col items-center gap-2 transition">
-        单抽<br><span class="text-4xl">100 ⭐</span>
+ <!-- Panel 0: 抽卡（已优化） -->
+<div id="panel0" class="panel max-w-7xl mx-auto px-4">
+  <div class="flex justify-between items-center mt-8 mb-6">
+    <div class="flex gap-6">
+      <button onclick="setDrawPool('char')" id="poolCharBtn" 
+              class="active px-8 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-3xl font-bold text-lg flex items-center gap-3 transition-all active:scale-95">
+        🧙 角色池
       </button>
-      <button onclick="drawCard(10); createDrawParticles(this)" class="draw-btn bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-8 rounded-3xl text-2xl font-bold flex flex-col items-center gap-2 transition">
-        十连<br><span class="text-4xl">900 ⭐</span>
+      <button onclick="setDrawPool('weapon')" id="poolWeaponBtn" 
+              class="px-8 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-3xl font-bold text-lg flex items-center gap-3 transition-all active:scale-95">
+        ⚔️ 武器池
       </button>
     </div>
-      </div>
-
-    <div class="mt-8 text-center">
-      <button onclick="showRecordModal()" class="px-8 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-3xl text-lg flex items-center gap-3 mx-auto">
-        📜 记录查询
-      </button>
+    <div class="text-right">
+      <div id="poolTitle" class="text-3xl font-bold">角色池抽取</div>
+      <div id="playerTitle" class="text-sm text-amber-400 font-bold">当前称号：正常玩家</div>
+      <div class="text-sm text-emerald-400">概率：R 60% • SR 25% • SSR 14% • UR 1%</div>
+      <div class="text-xs text-amber-400 mt-1">保底：10抽必出SSR，80抽必出UR</div>
     </div>
   </div>
+
+  <!-- 全新抽卡框 -->
+  <div class="max-w-md mx-auto relative">
+    <div class="particles" id="drawParticles"></div>
+    
+    <div class="bg-zinc-900/80 border border-zinc-700 rounded-3xl p-8 text-center mb-6">
+      <div class="text-6xl mb-4">🎰</div>
+      <div class="text-2xl font-bold mb-2 text-white">命运之轮</div>
+      <div class="text-sm text-zinc-400 mb-6">每一次抽取都在改写你的传说</div>
+      
+      <div class="grid grid-cols-2 gap-4">
+        <button onclick="drawCard(1); createDrawParticles(this)" 
+                class="draw-btn group relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 py-7 rounded-3xl text-2xl font-black flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.96] shadow-xl shadow-blue-900/50">
+          <div>单抽</div>
+          <div class="text-4xl font-black tracking-tighter">100 <span class="text-yellow-400">⭐</span></div>
+          <div class="text-[10px] text-white/70 group-hover:text-white/90 transition-colors">点击召唤</div>
+        </button>
+        
+        <button onclick="drawCard(10); createDrawParticles(this)" 
+                class="draw-btn group relative overflow-hidden bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 hover:from-purple-700 hover:via-pink-700 hover:to-rose-700 py-7 rounded-3xl text-2xl font-black flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.96] shadow-xl shadow-pink-900/50">
+          <div class="text-pink-300">十连</div>
+          <div class="text-4xl font-black tracking-tighter">900 <span class="text-yellow-400">⭐</span></div>
+          <div class="text-[10px] text-white/70 group-hover:text-white/90 transition-colors">大运爆发！</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 text-center">
+    <button onclick="showRecordModal()" class="px-10 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-3xl text-lg flex items-center gap-3 mx-auto transition-all active:scale-95">
+      <i class="fas fa-scroll"></i> 
+      <span>抽卡记录 & 运气查询</span>
+    </button>
+  </div>
+</div>
 
   <!-- Panel 1: 养成 -->
   <div id="panel1" class="panel hidden max-w-7xl mx-auto px-4">

@@ -5,89 +5,176 @@ function showDrawAnimation(results, poolType) {
   const title = document.getElementById("drawTitle");
   container.innerHTML = "";
   modal.classList.remove("hidden");
-  title.textContent = poolType === "char" ? (results.length === 1 ? "🎉 单抽角色" : "🎉 十连角色") : (results.length === 1 ? "🎉 单抽武器" : "🎉 十连武器");
 
-  // ==================== 通用动态视频检测（性能+拓展性优化） ====================
-  let dynamicItem = null;
-  if (poolType === "char") {
-    dynamicItem = results.find(item => {
-      const data = window.getCharacterData(item.id);
-      return data && data.animatedImage;   // 只要有 animatedImage 字段就触发
-    });
-  }
-
-  if (dynamicItem) {
-    const charData = window.getCharacterData(dynamicItem.id);
-    const videoContainer = document.createElement("div");
-    videoContainer.className = "fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[99999] cursor-pointer";
-    videoContainer.style.zIndex = "99999";
-
-    videoContainer.innerHTML = `
-      <div class="text-center mb-6 px-4">
-        <div class="text-5xl font-bold text-orange-400 drop-shadow-lg">🎉 UR ${charData.name} 降临！</div>
-        <div class="text-xl text-gray-200 mt-3">点击屏幕任意位置跳过动画</div>
+  const isTen = results.length > 1;
+  title.innerHTML = `
+    <div class="flex items-center justify-center gap-4">
+      <span class="text-6xl">${poolType === "char" ? "🧙‍♂️" : "⚔️"}</span>
+      <div>
+        <div class="text-5xl font-black tracking-tighter">${poolType === "char" ? (isTen ? "十连角色" : "单抽角色") : (isTen ? "十连武器" : "单抽武器")}</div>
+        <div class="text-sm text-zinc-400 -mt-1">${isTen ? "运气爆棚！" : "命运之手"}</div>
       </div>
-      
-      <video id="dynamicDrawVideo" class="w-screen h-screen object-contain" 
-             autoplay loop playsinline preload="auto" muted="false">
-        <source src="${charData.animatedImage}" type="video/mp4">
-      </video>
-      
-      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-gray-400 bg-black/50 px-6 py-2 rounded-3xl">
-        点击任意处跳过 • 音量已开启
+    </div>
+  `;
+
+  // 抽卡前仪式动画
+  const ritual = document.createElement("div");
+  ritual.className = "fixed inset-0 bg-zinc-950/95 flex items-center justify-center z-[100000]";
+  ritual.innerHTML = `
+    <div class="text-center">
+      <div class="text-[120px] mb-8 animate-[spin_1.5s_linear_infinite]">🎰</div>
+      <div class="text-5xl font-bold mb-3">命运正在选择你的传说...</div>
+      <div class="flex justify-center gap-3 mt-4">
+        <div class="w-4 h-4 bg-white rounded-full animate-bounce"></div>
+        <div class="w-4 h-4 bg-white rounded-full animate-bounce" style="animation-delay:150ms"></div>
+        <div class="w-4 h-4 bg-white rounded-full animate-bounce" style="animation-delay:300ms"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ritual);
+
+  setTimeout(() => {
+    ritual.style.transition = "opacity .4s ease";
+    ritual.style.opacity = "0";
+    setTimeout(() => ritual.remove(), 400);
+
+    renderEnhancedDrawCards(results, poolType, container);
+  }, 950);
+}
+
+function renderEnhancedDrawCards(results, poolType, container) {
+  results.forEach((item, i) => {
+    const data = poolType === "char" ? window.getCharacterData(item.id) : window.getWeaponData(item.id);
+    const rarity = data.rarity;
+    const isRare = rarity === "SSR" || rarity === "UR";
+    const isUR = rarity === "UR";
+
+    const card = document.createElement("div");
+    card.className = `draw-card group relative w-44 sm:w-56 bg-zinc-900 rounded-3xl overflow-hidden border-4 cursor-pointer transition-all ${getRarityBorderClass(rarity)}`;
+    card.style.opacity = "0";
+    card.style.transform = "translateY(60px) rotateX(25deg) scale(0.7)";
+
+    card.innerHTML = `
+      <div class="relative h-full">
+        <img src="${data.image}" class="w-full aspect-[16/13] object-cover ${isRare ? 'rare-shimmer' : ''}" />
+        
+        <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 to-transparent"></div>
+        
+        <div class="absolute top-4 right-4 px-4 py-1 text-xs font-extrabold tracking-[3px] rounded-full ${getRarityBadge(rarity)}">
+          ${rarity}
+        </div>
+
+        <div class="absolute bottom-0 left-0 right-0 p-5">
+          <div class="font-black text-2xl text-white drop-shadow">${data.name}</div>
+          <div class="text-sm text-zinc-300">${data.category || data.type || ''}</div>
+        </div>
+
+        ${isRare ? `<div class="absolute inset-0 bg-[radial-gradient(#fff_0.8px,transparent_1px)] bg-[length:4px_4px] opacity-30 pointer-events-none"></div>` : ''}
       </div>
     `;
-    document.body.appendChild(videoContainer);
 
-    const videoEl = document.getElementById("dynamicDrawVideo");
-    videoEl.volume = 0.75;
+    card.onclick = () => poolType === "char" ? window.showCharacterDetailById?.(item.id) : alert(data.name + " - " + rarity);
 
-    // 错误处理
-    videoEl.onerror = () => {
-      videoContainer.innerHTML += `
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md">
-          <div class="text-2xl mb-3">❌ 视频加载失败</div>
-          <div class="text-sm">请确认文件路径正确且使用本地服务器运行</div>
-          <button onclick="this.closest('.fixed').remove()" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">关闭</button>
-        </div>`;
-      console.error("动态立绘加载失败:", charData.animatedImage);
-    };
+    container.appendChild(card);
 
-    // 点击跳过
-    videoContainer.onclick = (e) => {
-      if (e.target.tagName === "VIDEO") return;
-      videoEl.pause();
-      videoContainer.remove();
-      renderNormalDrawCards(results, poolType, container);
-    };
+    // 弹出动画
+    setTimeout(() => {
+      card.style.transition = "all .65s cubic-bezier(0.23, 1.0, 0.32, 1)";
+      card.style.opacity = "1";
+      card.style.transform = "translateY(0) rotateX(0) scale(1)";
 
-    videoEl.onended = () => {
-      videoContainer.remove();
-      renderNormalDrawCards(results, poolType, container);
-    };
-  } else {
-    // 普通抽卡
-    renderNormalDrawCards(results, poolType, container);
+      if (isRare) {
+        createEpicParticles(card, rarity);
+        if (isUR) createURLightBeam(card);
+      }
+    }, i * 95 + 80);
+  });
+
+  // 全屏史诗特效
+  const hasEpic = results.some(r => {
+    const d = poolType === "char" ? window.getCharacterData(r.id) : window.getWeaponData(r.id);
+    return d.rarity === "UR" || d.rarity === "SSR";
+  });
+
+  if (hasEpic) {
+    setTimeout(() => {
+      triggerEpicEffects(results, poolType);
+    }, 650);
   }
 }
 
-// 普通抽卡卡片渲染（复用，保持不变）
-function renderNormalDrawCards(results, poolType, container) {
-  results.forEach((item, i) => {
-    const delay = results.length === 1 ? 0 : i * 80;
-    const div = document.createElement("div");
-    div.style.animationDelay = delay + "ms";
-    const data = poolType === "char" ? window.getCharacterData(item.id) : window.getWeaponData(item.id);
-    const hasShine = (data.rarity === "SSR" || data.rarity === "UR");
-    div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${window.getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
-    div.innerHTML = `
-      <img src="${data.image}" class="character-img w-full rounded-2xl mx-auto ${hasShine ? 'draw-shine' : ''}">
-      <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div>
-      <div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div>
-      <div class="text-xs text-gray-400">${data.category || data.type}</div>
-    `;
-    container.appendChild(div);
-  });
+function getRarityBorderClass(r) {
+  return r === "UR" ? "border-orange-400 shadow-[0_0_50px_#f59e0b]" : 
+         r === "SSR" ? "border-yellow-400 shadow-[0_0_35px_#eab308]" : 
+         r === "SR" ? "border-purple-500" : "border-blue-500";
+}
+
+function getRarityBadge(r) {
+  return r === "UR" ? "bg-gradient-to-r from-orange-500 to-red-500 text-white" : 
+         r === "SSR" ? "bg-gradient-to-r from-yellow-300 to-amber-400 text-black" : 
+         r === "SR" ? "bg-purple-600 text-white" : "bg-blue-600 text-white";
+}
+
+function createEpicParticles(card, rarity) {
+  const count = rarity === "UR" ? 18 : 10;
+  const colors = rarity === "UR" ? ["#fb923c","#f59e0b","#ef4444"] : ["#fde047","#eab308","#c084fc"];
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("div");
+    p.className = "absolute w-[5px] h-[5px] rounded-full pointer-events-none";
+    p.style.background = colors[i % colors.length];
+    p.style.left = Math.random()*100 + "%";
+    p.style.top = Math.random()*100 + "%";
+    card.appendChild(p);
+
+    setTimeout(() => {
+      p.animate([
+        { transform: "scale(1) translate(0,0)", opacity: 0.9 },
+        { transform: `scale(0) translate(${(Math.random()-0.5)*180}px, ${(Math.random()-0.5)*140}px)`, opacity: 0 }
+      ], { duration: 1100 + Math.random()*600, easing: "ease-out" }).onfinish = () => p.remove();
+    }, 30);
+  }
+}
+
+function createURLightBeam(card) {
+  const beam = document.createElement("div");
+  beam.className = "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] pointer-events-none";
+  beam.style.background = "conic-gradient(transparent, #fb923c33, transparent)";
+  beam.style.animation = "spin 2.8s linear infinite";
+  card.appendChild(beam);
+  setTimeout(() => beam.remove(), 5200);
+}
+
+function triggerEpicEffects(results, poolType) {
+  // 屏幕闪光
+  const flash = document.createElement("div");
+  flash.className = "fixed inset-0 bg-white z-[99999] pointer-events-none";
+  flash.style.opacity = "0.18";
+  document.body.appendChild(flash);
+  setTimeout(() => { flash.style.transition = "opacity .9s"; flash.style.opacity = "0"; setTimeout(() => flash.remove(), 900); }, 120);
+
+  // UR 专属彩带爆裂
+  if (results.some(r => (poolType === "char" ? window.getCharacterData(r.id) : window.getWeaponData(r.id)).rarity === "UR")) {
+    createConfettiBurst();
+  }
+}
+
+function createConfettiBurst() {
+  const emojis = ["⭐", "🎉", "✨", "🔥", "🎆"];
+  for (let i = 0; i < 45; i++) {
+    const c = document.createElement("div");
+    c.className = "fixed text-3xl z-[99999] pointer-events-none";
+    c.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    c.style.left = Math.random() * window.innerWidth + "px";
+    c.style.top = "-30px";
+    document.body.appendChild(c);
+
+    const drift = (Math.random() - 0.5) * 220;
+    c.animate([
+      { transform: "translateY(0) rotate(0deg)", opacity: 1 },
+      { transform: `translateY(${window.innerHeight + 120}px) translateX(${drift}px) rotate(${Math.random()*900-450}deg)`, opacity: 0 }
+    ], { duration: 2400 + Math.random()*900, easing: "cubic-bezier(.22,1,.36,1)" }).onfinish = () => c.remove();
+  }
 }
 
 function hideDrawModal() {

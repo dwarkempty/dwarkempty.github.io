@@ -5,176 +5,94 @@ function showDrawAnimation(results, poolType) {
   const title = document.getElementById("drawTitle");
   container.innerHTML = "";
   modal.classList.remove("hidden");
+  title.textContent = poolType === "char" ? (results.length === 1 ? "🎉 单抽角色" : "🎉 十连角色") : (results.length === 1 ? "🎉 单抽武器" : "🎉 十连武器");
 
-  const isTen = results.length > 1;
-  title.innerHTML = `
-    <div class="flex items-center justify-center gap-4">
-      <span class="text-6xl">${poolType === "char" ? "🧙‍♂️" : "⚔️"}</span>
-      <div>
-        <div class="text-5xl font-black tracking-tighter">${poolType === "char" ? (isTen ? "十连角色" : "单抽角色") : (isTen ? "十连武器" : "单抽武器")}</div>
-        <div class="text-sm text-zinc-400 -mt-1">${isTen ? "运气爆棚！" : "命运之手"}</div>
+  // ==================== 通用动态视频检测（性能+拓展性优化） ====================
+  let dynamicItem = null;
+  if (poolType === "char") {
+    dynamicItem = results.find(item => {
+      const data = window.getCharacterData(item.id);
+      return data && data.animatedImage;   // 只要有 animatedImage 字段就触发
+    });
+  }
+
+  if (dynamicItem) {
+    const charData = window.getCharacterData(dynamicItem.id);
+    const videoContainer = document.createElement("div");
+    videoContainer.className = "fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[99999] cursor-pointer";
+    videoContainer.style.zIndex = "99999";
+
+    videoContainer.innerHTML = `
+      <div class="text-center mb-6 px-4">
+        <div class="text-5xl font-bold text-orange-400 drop-shadow-lg">🎉 UR ${charData.name} 降临！</div>
+        <div class="text-xl text-gray-200 mt-3">点击屏幕任意位置跳过动画</div>
       </div>
-    </div>
-  `;
-
-  // 抽卡前仪式动画
-  const ritual = document.createElement("div");
-  ritual.className = "fixed inset-0 bg-zinc-950/95 flex items-center justify-center z-[100000]";
-  ritual.innerHTML = `
-    <div class="text-center">
-      <div class="text-[120px] mb-8 animate-[spin_1.5s_linear_infinite]">🎰</div>
-      <div class="text-5xl font-bold mb-3">命运正在选择你的传说...</div>
-      <div class="flex justify-center gap-3 mt-4">
-        <div class="w-4 h-4 bg-white rounded-full animate-bounce"></div>
-        <div class="w-4 h-4 bg-white rounded-full animate-bounce" style="animation-delay:150ms"></div>
-        <div class="w-4 h-4 bg-white rounded-full animate-bounce" style="animation-delay:300ms"></div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(ritual);
-
-  setTimeout(() => {
-    ritual.style.transition = "opacity .4s ease";
-    ritual.style.opacity = "0";
-    setTimeout(() => ritual.remove(), 400);
-
-    renderEnhancedDrawCards(results, poolType, container);
-  }, 950);
-}
-
-function renderEnhancedDrawCards(results, poolType, container) {
-  results.forEach((item, i) => {
-    const data = poolType === "char" ? window.getCharacterData(item.id) : window.getWeaponData(item.id);
-    const rarity = data.rarity;
-    const isRare = rarity === "SSR" || rarity === "UR";
-    const isUR = rarity === "UR";
-
-    const card = document.createElement("div");
-    card.className = `draw-card group relative w-44 sm:w-56 bg-zinc-900 rounded-3xl overflow-hidden border-4 cursor-pointer transition-all ${getRarityBorderClass(rarity)}`;
-    card.style.opacity = "0";
-    card.style.transform = "translateY(60px) rotateX(25deg) scale(0.7)";
-
-    card.innerHTML = `
-      <div class="relative h-full">
-        <img src="${data.image}" class="w-full aspect-[16/13] object-cover ${isRare ? 'rare-shimmer' : ''}" />
-        
-        <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 to-transparent"></div>
-        
-        <div class="absolute top-4 right-4 px-4 py-1 text-xs font-extrabold tracking-[3px] rounded-full ${getRarityBadge(rarity)}">
-          ${rarity}
-        </div>
-
-        <div class="absolute bottom-0 left-0 right-0 p-5">
-          <div class="font-black text-2xl text-white drop-shadow">${data.name}</div>
-          <div class="text-sm text-zinc-300">${data.category || data.type || ''}</div>
-        </div>
-
-        ${isRare ? `<div class="absolute inset-0 bg-[radial-gradient(#fff_0.8px,transparent_1px)] bg-[length:4px_4px] opacity-30 pointer-events-none"></div>` : ''}
+      
+      <video id="dynamicDrawVideo" class="w-screen h-screen object-contain" 
+             autoplay loop playsinline preload="auto" muted="false">
+        <source src="${charData.animatedImage}" type="video/mp4">
+      </video>
+      
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-gray-400 bg-black/50 px-6 py-2 rounded-3xl">
+        点击任意处跳过 • 音量已开启
       </div>
     `;
+    document.body.appendChild(videoContainer);
 
-    card.onclick = () => poolType === "char" ? window.showCharacterDetailById?.(item.id) : alert(data.name + " - " + rarity);
+    const videoEl = document.getElementById("dynamicDrawVideo");
+    videoEl.volume = 0.75;
 
-    container.appendChild(card);
+    // 错误处理
+    videoEl.onerror = () => {
+      videoContainer.innerHTML += `
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-900 text-white px-8 py-6 rounded-3xl text-center max-w-md">
+          <div class="text-2xl mb-3">❌ 视频加载失败</div>
+          <div class="text-sm">请确认文件路径正确且使用本地服务器运行</div>
+          <button onclick="this.closest('.fixed').remove()" class="mt-6 px-8 py-3 bg-white text-red-900 rounded-2xl font-bold">关闭</button>
+        </div>`;
+      console.error("动态立绘加载失败:", charData.animatedImage);
+      // 自动降级显示卡片（解决UR不显示问题）
+      setTimeout(() => {
+        if (videoContainer.parentNode) videoContainer.remove();
+        renderNormalDrawCards(results, poolType, container);
+      }, 500);
+    };
 
-    // 弹出动画
-    setTimeout(() => {
-      card.style.transition = "all .65s cubic-bezier(0.23, 1.0, 0.32, 1)";
-      card.style.opacity = "1";
-      card.style.transform = "translateY(0) rotateX(0) scale(1)";
+    // 点击跳过
+    videoContainer.onclick = (e) => {
+      if (e.target.tagName === "VIDEO") return;
+      videoEl.pause();
+      videoContainer.remove();
+      renderNormalDrawCards(results, poolType, container);
+    };
 
-      if (isRare) {
-        createEpicParticles(card, rarity);
-        if (isUR) createURLightBeam(card);
-      }
-    }, i * 95 + 80);
+    videoEl.onended = () => {
+      videoContainer.remove();
+      renderNormalDrawCards(results, poolType, container);
+    };
+  } else {
+    // 普通抽卡
+    renderNormalDrawCards(results, poolType, container);
+  }
+}
+
+// 普通抽卡卡片渲染（复用，保持不变）
+function renderNormalDrawCards(results, poolType, container) {
+  results.forEach((item, i) => {
+    const delay = results.length === 1 ? 0 : i * 80;
+    const div = document.createElement("div");
+    div.style.animationDelay = delay + "ms";
+    const data = poolType === "char" ? window.getCharacterData(item.id) : window.getWeaponData(item.id);
+    const hasShine = (data.rarity === "SSR" || data.rarity === "UR");
+    div.className = `draw-card bg-gray-800 rounded-3xl p-4 border-4 ${window.getRarityColor(data.rarity)} text-center w-40 sm:w-52`;
+    div.innerHTML = `
+      <img src="${data.image}" class="character-img w-full rounded-2xl mx-auto ${hasShine ? 'draw-shine' : ''}">
+      <div class="rarity-${data.rarity.toLowerCase()} text-xs inline-block px-4 py-1 rounded-full text-white font-bold mt-4">${data.rarity}</div>
+      <div class="text-lg sm:text-xl font-bold mt-2">${data.name}</div>
+      <div class="text-xs text-gray-400">${data.category || data.type}</div>
+    `;
+    container.appendChild(div);
   });
-
-  // 全屏史诗特效
-  const hasEpic = results.some(r => {
-    const d = poolType === "char" ? window.getCharacterData(r.id) : window.getWeaponData(r.id);
-    return d.rarity === "UR" || d.rarity === "SSR";
-  });
-
-  if (hasEpic) {
-    setTimeout(() => {
-      triggerEpicEffects(results, poolType);
-    }, 650);
-  }
-}
-
-function getRarityBorderClass(r) {
-  return r === "UR" ? "border-orange-400 shadow-[0_0_50px_#f59e0b]" : 
-         r === "SSR" ? "border-yellow-400 shadow-[0_0_35px_#eab308]" : 
-         r === "SR" ? "border-purple-500" : "border-blue-500";
-}
-
-function getRarityBadge(r) {
-  return r === "UR" ? "bg-gradient-to-r from-orange-500 to-red-500 text-white" : 
-         r === "SSR" ? "bg-gradient-to-r from-yellow-300 to-amber-400 text-black" : 
-         r === "SR" ? "bg-purple-600 text-white" : "bg-blue-600 text-white";
-}
-
-function createEpicParticles(card, rarity) {
-  const count = rarity === "UR" ? 18 : 10;
-  const colors = rarity === "UR" ? ["#fb923c","#f59e0b","#ef4444"] : ["#fde047","#eab308","#c084fc"];
-
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement("div");
-    p.className = "absolute w-[5px] h-[5px] rounded-full pointer-events-none";
-    p.style.background = colors[i % colors.length];
-    p.style.left = Math.random()*100 + "%";
-    p.style.top = Math.random()*100 + "%";
-    card.appendChild(p);
-
-    setTimeout(() => {
-      p.animate([
-        { transform: "scale(1) translate(0,0)", opacity: 0.9 },
-        { transform: `scale(0) translate(${(Math.random()-0.5)*180}px, ${(Math.random()-0.5)*140}px)`, opacity: 0 }
-      ], { duration: 1100 + Math.random()*600, easing: "ease-out" }).onfinish = () => p.remove();
-    }, 30);
-  }
-}
-
-function createURLightBeam(card) {
-  const beam = document.createElement("div");
-  beam.className = "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] pointer-events-none";
-  beam.style.background = "conic-gradient(transparent, #fb923c33, transparent)";
-  beam.style.animation = "spin 2.8s linear infinite";
-  card.appendChild(beam);
-  setTimeout(() => beam.remove(), 5200);
-}
-
-function triggerEpicEffects(results, poolType) {
-  // 屏幕闪光
-  const flash = document.createElement("div");
-  flash.className = "fixed inset-0 bg-white z-[99999] pointer-events-none";
-  flash.style.opacity = "0.18";
-  document.body.appendChild(flash);
-  setTimeout(() => { flash.style.transition = "opacity .9s"; flash.style.opacity = "0"; setTimeout(() => flash.remove(), 900); }, 120);
-
-  // UR 专属彩带爆裂
-  if (results.some(r => (poolType === "char" ? window.getCharacterData(r.id) : window.getWeaponData(r.id)).rarity === "UR")) {
-    createConfettiBurst();
-  }
-}
-
-function createConfettiBurst() {
-  const emojis = ["⭐", "🎉", "✨", "🔥", "🎆"];
-  for (let i = 0; i < 45; i++) {
-    const c = document.createElement("div");
-    c.className = "fixed text-3xl z-[99999] pointer-events-none";
-    c.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    c.style.left = Math.random() * window.innerWidth + "px";
-    c.style.top = "-30px";
-    document.body.appendChild(c);
-
-    const drift = (Math.random() - 0.5) * 220;
-    c.animate([
-      { transform: "translateY(0) rotate(0deg)", opacity: 1 },
-      { transform: `translateY(${window.innerHeight + 120}px) translateX(${drift}px) rotate(${Math.random()*900-450}deg)`, opacity: 0 }
-    ], { duration: 2400 + Math.random()*900, easing: "cubic-bezier(.22,1,.36,1)" }).onfinish = () => c.remove();
-  }
 }
 
 function hideDrawModal() {
@@ -186,6 +104,9 @@ function setDrawPool(type) {
   document.getElementById("poolCharBtn").classList.toggle("active", type === "char");
   document.getElementById("poolWeaponBtn").classList.toggle("active", type === "weapon");
   document.getElementById("poolTitle").textContent = type === "char" ? "角色池抽取" : "武器池抽取";
+  // 更新称号
+  const titleEl = document.getElementById("playerTitle");
+  if (titleEl) titleEl.textContent = `当前称号：${window.getPlayerTitle()}`;
 }
 
 function setRecordTab(n) {
@@ -400,6 +321,14 @@ function executeConsoleCommand() {
         player.materials[id - 200] = (player.materials[id - 200] || 0) + amount;
         log.innerHTML += `✅ 已获得 ${amount} 个 ${mat.name}<br>`;
       }
+    } else if (id >= 1001 && id <= 1016) {
+      const charId = id - 1000;
+      const charData = window.getCharacterData(charId);
+      if (charData) {
+        player.sourcePowers = player.sourcePowers || {};
+        player.sourcePowers[charId] = (player.sourcePowers[charId] || 0) + amount;
+        log.innerHTML += `✅ 已获得 ${amount} 个 ${charData.name}源力<br>`;
+      }
     } else {
       log.innerHTML += `❌ 未知物品ID<br>`;
     }
@@ -414,460 +343,9 @@ function executeConsoleCommand() {
   log.scrollTop = log.scrollHeight;
 }
 
-// ==================== 经营系统完整逻辑 ====================
-let currentCustomer = null;
-let currentCrafting = [];
-let currentCraftedPotion = null;
 
-function startOperating() {
-  let pool = [];
-  if (player.shopLevel === 1) pool = window.customerDemands.filter(c => c.level === 1);
-  else if (player.shopLevel === 2) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2);
-  else if (player.shopLevel === 3) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2 || c.level === 3);
-  else if (player.shopLevel === 4) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2 || c.level === 3 || c.level === 4);
-  else if (player.shopLevel === 5) pool = window.customerDemands.filter(c => c.level === 1 || c.level === 2 || c.level === 3 || c.level === 4 || c.level === 5);
+// 经营模块已完全删除（用户要求）
 
-  currentCustomer = pool[Math.floor(Math.random() * pool.length)];
-  currentCrafting = [];
-  currentCraftedPotion = null;
-
-  const modalHTML = `
-    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
-      <div class="bg-zinc-900 rounded-3xl p-8 max-w-2xl w-full mx-4">
-        <h3 class="text-3xl font-bold mb-2">👤 顾客出现</h3>
-        <p class="text-xl mb-6">"${currentCustomer.demand}"</p>
-        
-        <div class="grid grid-cols-2 gap-6">
-          <div>
-            <div class="text-sm text-gray-400 mb-3">选择材料</div>
-            <div class="grid grid-cols-2 gap-2 max-h-80 overflow-auto" id="materialSelect"></div>
-          </div>
-          
-          <div>
-            <div class="text-sm text-gray-400 mb-2">当前配置</div>
-            <div id="currentCraft" class="bg-zinc-800 rounded-2xl p-4 min-h-[100px] flex flex-wrap gap-2 mb-4"></div>
-            
-            <button onclick="window.craftPotion()" class="w-full py-3 text-lg font-bold bg-teal-600 hover:bg-teal-700 rounded-2xl mb-3">配置药水</button>
-            
-            <div id="submitPotionArea" class="hidden bg-emerald-900 rounded-2xl p-4 mb-4">
-              <div class="text-sm text-emerald-300 mb-2">当前要提交的药水</div>
-              <div id="submitPotionCard" class="flex justify-between items-center"></div>
-            </div>
-            
-            <button onclick="window.giveToCustomer()" class="w-full py-4 text-xl font-bold bg-emerald-600 hover:bg-emerald-700 rounded-2xl">给予顾客</button>
-          </div>
-        </div>
-        
-        <button onclick="window.hideOperatingModal()" class="mt-6 w-full py-4 text-xl font-bold bg-zinc-700 rounded-2xl">取消</button>
-      </div>
-    </div>`;
-  
-  const div = document.createElement("div");
-  div.id = "operatingModal";
-  div.innerHTML = modalHTML;
-  document.body.appendChild(div);
-  
-  renderMaterialSelect();
-}
-
-function renderMaterialSelect() {
-  const container = document.getElementById("materialSelect");
-  container.innerHTML = "";
-  window.materialsPool.forEach(mat => {
-    const count = player.materials[mat.id] || 0;
-    const btn = document.createElement("button");
-    btn.className = `p-3 rounded-2xl text-left ${count > 0 ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 opacity-50 cursor-not-allowed'}`;
-    btn.innerHTML = `
-      <div class="font-medium">${mat.name}</div>
-      <div class="text-xs text-gray-400">${mat.desc}</div>
-      <div class="text-emerald-400 text-xl font-bold">${count}</div>
-    `;
-    if (count > 0) {
-      btn.onclick = () => {
-        const existing = currentCrafting.find(item => item.id === mat.id);
-        if (existing) existing.qty++;
-        else currentCrafting.push({id: mat.id, qty: 1});
-        renderCurrentCraft();
-      };
-    }
-    container.appendChild(btn);
-  });
-}
-
-function renderCurrentCraft() {
-  const container = document.getElementById("currentCraft");
-  container.innerHTML = currentCrafting.map(item => {
-    const mat = window.materialsPool.find(m => m.id === item.id);
-    return `<div class="bg-zinc-900 px-4 py-1 rounded-xl text-sm">${mat.name} ×${item.qty}</div>`;
-  }).join('') || '<p class="text-gray-500 text-center py-8">点击左侧材料添加</p>';
-}
-
-function craftPotion() {
-  if (currentCrafting.length === 0) return alert("请先选择材料！");
-  
-  let matchedRecipe = null;
-  for (let recipe of window.recipesPool) {
-    if (recipe.level > player.shopLevel) continue;
-    if (recipe.materials.length !== currentCrafting.length) continue;
-    let match = true;
-    for (let req of recipe.materials) {
-      const selected = currentCrafting.find(s => s.id === req.id);
-      if (!selected || selected.qty !== req.qty) match = false;
-    }
-    if (match) {
-      matchedRecipe = recipe;
-      break;
-    }
-  }
-  
-  currentCrafting.forEach(item => {
-    player.materials[item.id] = (player.materials[item.id] || 0) - item.qty;
-  });
-  
-  currentCraftedPotion = matchedRecipe || { id: 0, name: "未知的药水", gold: 0, operating: 0 };
-  currentCrafting = [];
-  
-  renderCurrentCraft();
-  window.renderMaterialsWarehouse();
-  showSubmitPotion();
-}
-
-function showSubmitPotion() {
-  const area = document.getElementById("submitPotionArea");
-  const card = document.getElementById("submitPotionCard");
-  area.classList.remove("hidden");
-  
-  card.innerHTML = `
-    <div class="font-bold">${currentCraftedPotion.name}</div>
-    <button onclick="window.deleteCraftedPotion()" class="px-4 py-1 bg-red-500 hover:bg-red-600 rounded-xl text-sm">删除重新配置</button>
-  `;
-}
-
-function deleteCraftedPotion() {
-  currentCraftedPotion = null;
-  document.getElementById("submitPotionArea").classList.add("hidden");
-  alert("已删除当前药水，可以重新配置");
-}
-
-function giveToCustomer() {
-  if (!currentCraftedPotion) return alert("请先配置药水！");
-  
-  const recipe = currentCraftedPotion;
-  let isCorrect = false;
-  
-  if (currentCustomer && currentCustomer.satisfy) {
-    isCorrect = currentCustomer.satisfy.includes(recipe.id);
-  }
-  
-  if (isCorrect && recipe.id !== 0) {
-    const reward = recipe.gold;
-    player.gold += reward;
-    player.operatingPoints += recipe.operating || 5;
-    document.getElementById("gold").textContent = player.gold;
-    alert(`✅ 顾客满意！获得 ${reward} 金币`);
-  } else {
-    player.operatingPoints = Math.max(0, player.operatingPoints - 2);
-    alert(recipe.id === 0 ? "❌ 未知的药水！" : "❌ 这不是我要的药！");
-  }
-  
-  const nextLevelCost = player.shopLevel === 1 ? 50 : player.shopLevel === 2 ? 100 : player.shopLevel === 3 ? 180 : 250;
-  const upgradeGold = player.shopLevel === 1 ? 500 : player.shopLevel === 2 ? 1000 : player.shopLevel === 3 ? 1500 : 2000;
-  
-  if (player.operatingPoints >= nextLevelCost) {
-    if (player.gold >= upgradeGold) {
-      if (confirm(`商店可升级到 Lv.${player.shopLevel + 1}，需要花费 ${upgradeGold} 金币，是否升级？`)) {
-        player.gold -= upgradeGold;
-        player.operatingPoints -= nextLevelCost;
-        player.shopLevel++;
-        alert(`🎉 商店升级到 Lv.${player.shopLevel}！`);
-      }
-    } else {
-      alert(`经营值已满，但金币不足${upgradeGold}，无法升级`);
-    }
-  }
-  
-  window.saveGame();
-  window.renderShopInfo();
-  window.hideOperatingModal();
-}
-
-function hideOperatingModal() {
-  const modal = document.getElementById("operatingModal");
-  if (modal) modal.remove();
-  currentCrafting = [];
-  currentCraftedPotion = null;
-}
-
-function renderMaterialsWarehouse() {
-  const container = document.getElementById("materialsWarehouse");
-  container.innerHTML = "";
-  window.materialsPool.forEach(mat => {
-    const count = player.materials[mat.id] || 0;
-    const div = document.createElement("div");
-    div.className = "flex justify-between items-center bg-zinc-800 rounded-2xl p-3 mb-2";
-    div.innerHTML = `
-      <div>
-        <div class="font-medium">${mat.name}</div>
-        <div class="text-xs text-gray-400">${mat.desc}</div>
-      </div>
-      <div class="text-right">
-        <span class="text-2xl font-bold text-emerald-400">${count}</span>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-  if (Object.keys(player.materials).length === 0) {
-    container.innerHTML = `<p class="text-gray-500 text-center py-8">暂无材料，快去种植或冒险获取吧！</p>`;
-  }
-}
-
-function renderRecipeBook() {
-  const container = document.getElementById("recipeBook");
-  container.innerHTML = "";
-  window.recipesPool.forEach(recipe => {
-    const div = document.createElement("div");
-    div.className = `bg-zinc-800 rounded-2xl p-4 ${player.shopLevel < recipe.level ? 'opacity-50' : ''}`;
-    div.innerHTML = `
-      <div class="font-bold text-lg">${recipe.name} <span class="text-xs bg-orange-500 text-white px-2 py-0.5 rounded">Lv.${recipe.level}</span></div>
-      <div class="text-xs text-gray-400 mt-1">所需材料</div>
-      <div class="text-sm">${recipe.materials.map(m => {
-        const mat = window.materialsPool.find(x => x.id === m.id);
-        return `${mat.name}×${m.qty}`;
-      }).join(" + ")}</div>
-      <div class="text-emerald-400 text-right mt-3">${recipe.gold} 金币 + ${recipe.operating} 经营值</div>
-    `;
-    container.appendChild(div);
-  });
-}
-
-function renderShopInfo() {
-  document.getElementById("shopLevelDisplay").textContent = `Lv.${player.shopLevel}`;
-  const nextCost = player.shopLevel === 1 ? 50 : player.shopLevel === 2 ? 100 : player.shopLevel === 3 ? 180 : 250;
-  const progress = Math.min(100, Math.floor((player.operatingPoints / nextCost) * 100));
-  document.getElementById("operatingBar").style.width = `${progress}%`;
-  document.getElementById("operatingPointsDisplay").innerHTML = `${player.operatingPoints} / ${nextCost}`;
-  window.renderMaterialsWarehouse();
-  window.renderRecipeBook();
-}
-
-function openPlanting() { alert("🌱 种植系统开发中..."); }
-function openDungeon() { alert("🗡️ 地牢冒险系统开发中..."); }
-
-function resetGame() {
-  if (confirm("⚠️ 确定要初始化网页吗？\n\n所有存档、角色、材料、商店等级等数据将被永久清除！\n此操作不可撤销！")) {
-    localStorage.removeItem("gachaGame");
-    alert("✅ 网页已初始化！即将刷新页面...");
-    setTimeout(() => location.reload(), 600);
-  }
-}
-
-function showCharacterLore(index) {
-  const item = player.owned[index];
-  const char = window.getCharacterData(item.charId);
-  if (!char) return;
-
-  const storyText = char.lore || '这位冒险者有着神秘的过去，目前暂无详细记载……';
-  const skillText = char.skills || '（技能暂未实装，敬请期待）';
-
-  const loreHTML = `
-    <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4">
-      <div class="bg-zinc-900 rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col overflow-hidden border-4 border-orange-500 shadow-2xl">
-        
-        <!-- 标题栏 -->
-        <div class="flex justify-between items-center px-8 py-5 border-b border-zinc-700">
-          <div>
-            <h3 class="text-3xl font-bold text-orange-400">${char.name}</h3>
-            <p class="text-sm text-gray-400 mt-1">详细描述 · ${char.category || '未知'}</p>
-          </div>
-          <button onclick="window.closeCharacterLore()" class="text-4xl leading-none text-gray-400 hover:text-white transition-colors">×</button>
-        </div>
-        
-        <div class="flex-1 overflow-auto">
-          <!-- 人物背景 -->
-          <div class="p-8 border-b border-zinc-700">
-            <h4 class="text-orange-400 text-2xl font-bold mb-4 flex items-center gap-2">
-              <span>📜</span> 人物背景
-            </h4>
-            <div class="text-gray-200 leading-relaxed text-[17px] prose prose-invert max-w-none">
-              ${storyText.replace(/\n/g, '<br>')}
-            </div>
-          </div>
-          
-          <!-- 新增：技能描述 -->
-          <div class="p-8">
-            <h4 class="text-orange-400 text-2xl font-bold mb-4 flex items-center gap-2">
-              <span>⚔️</span> 技能描述
-            </h4>
-            <div class="text-gray-200 leading-relaxed text-[17px] prose prose-invert max-w-none bg-zinc-800 rounded-2xl p-6">
-              ${skillText.replace(/\n/g, '<br>')}
-            </div>
-          </div>
-        </div>
-        
-        <!-- 底部 -->
-        <div class="px-8 py-5 border-t border-zinc-700 text-center">
-          <button onclick="window.closeCharacterLore()" class="px-12 py-4 bg-orange-600 hover:bg-orange-700 rounded-2xl text-lg font-bold transition-all">
-            关闭
-          </button>
-        </div>
-      </div>
-    </div>`;
-
-  const oldModal = document.getElementById("characterLoreModal");
-  if (oldModal) oldModal.remove();
-
-  const div = document.createElement("div");
-  div.id = "characterLoreModal";
-  div.innerHTML = loreHTML;
-  document.body.appendChild(div);
-}
-
-window.closeCharacterLore = function() {
-  const modal = document.getElementById("characterLoreModal");
-  if (modal) modal.remove();
-};
-
-// ==================== 商人系统（已优化） ====================
-function openMerchant() {
-  const now = Date.now();
-  if (now - (player.lastMerchantRefresh || 0) > 30 * 60 * 1000 || !player.merchantInventory || player.merchantInventory.length === 0) {
-    refreshMerchantStock();
-  }
-
-  const modalHTML = `
-    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
-      <div class="bg-zinc-900 rounded-3xl p-8 max-w-5xl w-full mx-4 max-h-[90vh] overflow-auto">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-3xl font-bold">🛒 商人商店</h3>
-          <button onclick="window.hideMerchantModal()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button>
-        </div>
-        
-        <div class="mb-8">
-          <div class="text-emerald-400 text-xl font-bold mb-4">常驻商品（无限供应）</div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="permanentGoods"></div>
-        </div>
-        
-        <div>
-          <div class="flex justify-between items-center mb-4">
-            <div class="text-orange-400 text-xl font-bold">限时特供材料（${player.merchantInventory.length} 种）</div>
-            <div class="text-xs text-gray-400">下次刷新：${Math.ceil((player.lastMerchantRefresh + 30*60*1000 - now)/60000)} 分钟后</div>
-          </div>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="randomGoods"></div>
-        </div>
-        
-        <button onclick="window.hideMerchantModal()" class="mt-8 w-full py-4 text-xl font-bold bg-zinc-700 rounded-2xl">关闭商店</button>
-      </div>
-    </div>`;
-
-  const div = document.createElement("div");
-  div.id = "merchantModal";
-  div.innerHTML = modalHTML;
-  document.body.appendChild(div);
-
-  renderMerchantModal();
-}
-
-function refreshMerchantStock() {
-  const specialMaterials = window.materialsPool.filter(m => m.id !== 11 && m.id !== 12);
-  const shuffled = [...specialMaterials].sort(() => 0.5 - Math.random());
-  const selected = shuffled.slice(0, 9);
-
-  player.merchantInventory = selected.map(mat => ({
-    ...mat,
-    price: window.materialPrices[mat.id] || 50,
-    stock: getRandomStock(mat.rarity)
-  }));
-
-  player.lastMerchantRefresh = Date.now();
-  window.saveGame();
-}
-
-function getRandomStock(rarity) {
-  if (rarity === "R") return Math.floor(Math.random() * 21) + 30;
-  if (rarity === "SR") return Math.floor(Math.random() * 16) + 20;
-  if (rarity === "SSR") return Math.floor(Math.random() * 11) + 10;
-  return Math.floor(Math.random() * 6) + 10;
-}
-
-function renderMerchantModal() {
-  const permanentContainer = document.getElementById("permanentGoods");
-  permanentContainer.innerHTML = window.merchantPermanent.map((item, i) => `
-    <div class="bg-zinc-800 rounded-3xl p-5 text-center">
-      <div class="text-5xl mb-2">${item.icon}</div>
-      <div class="font-bold text-lg">${item.name}</div>
-      <div class="text-emerald-400 text-2xl font-bold mt-1">${item.costGold} 金币</div>
-      <div class="text-xs text-gray-400 mt-4">可购买数量</div>
-      <div class="flex gap-2 justify-center mt-2">
-        <button onclick="window.buyPermanent(${i},1)" class="flex-1 py-2 bg-teal-600 hover:bg-teal-700 rounded-2xl text-sm font-bold">1</button>
-        <button onclick="window.buyPermanent(${i},10)" class="flex-1 py-2 bg-teal-600 hover:bg-teal-700 rounded-2xl text-sm font-bold">10</button>
-        <button onclick="window.buyPermanent(${i},100)" class="flex-1 py-2 bg-teal-600 hover:bg-teal-700 rounded-2xl text-sm font-bold">100</button>
-      </div>
-    </div>
-  `).join('');
-
-  const randomContainer = document.getElementById("randomGoods");
-  randomContainer.innerHTML = player.merchantInventory.map((item, i) => `
-    <div class="bg-zinc-800 rounded-3xl p-5">
-      <div class="flex justify-between">
-        <div>
-          <div class="font-bold">${item.name}</div>
-          <div class="text-xs text-gray-400">${item.desc}</div>
-          <div class="text-orange-400 text-xl font-bold">${item.price} 金币</div>
-        </div>
-        <div class="text-right">
-          <div class="text-emerald-400 text-2xl font-bold">${item.stock}</div>
-          <div class="text-xs text-gray-400">库存</div>
-        </div>
-      </div>
-      <div class="flex gap-2 mt-6">
-        <button onclick="window.buyRandom(${i},1)" class="flex-1 py-3 bg-amber-600 hover:bg-amber-700 rounded-2xl text-sm font-bold">买 1</button>
-        <button onclick="window.buyRandom(${i},10)" class="flex-1 py-3 bg-amber-600 hover:bg-amber-700 rounded-2xl text-sm font-bold">买 10</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function buyPermanent(index, bulk) {
-  const item = window.merchantPermanent[index];
-  const totalCost = item.costGold * bulk;
-  if (player.gold < totalCost) return alert("金币不足！");
-
-  player.gold -= totalCost;
-  if (item.id === 'yaoXing') player.yaoXing += item.qty * bulk;
-  else if (item.id === 'reinforceStone') player.reinforceStone += item.qty * bulk;
-  else player.materials[item.id] = (player.materials[item.id] || 0) + item.qty * bulk;
-
-  document.getElementById("gold").textContent = player.gold;
-  document.getElementById("yaoXing").textContent = player.yaoXing;
-  document.getElementById("reinforceStone").textContent = player.reinforceStone;
-
-  window.saveGame();
-  window.renderMaterialsWarehouse();
-}
-
-function buyRandom(index, bulk) {
-  const item = player.merchantInventory[index];
-  if (item.stock < bulk) return alert("库存不足！");
-  const totalCost = item.price * bulk;
-  if (player.gold < totalCost) return alert("金币不足！");
-
-  player.gold -= totalCost;
-  player.materials[item.id] = (player.materials[item.id] || 0) + bulk;
-  item.stock -= bulk;
-
-  document.getElementById("gold").textContent = player.gold;
-  window.saveGame();
-  window.renderMaterialsWarehouse();
-  renderMerchantModal();
-}
-
-function hideMerchantModal() {
-  const modal = document.getElementById("merchantModal");
-  if (modal) modal.remove();
-}
-
-// ==================== 完整暴露 ====================
-window.showDrawAnimation = showDrawAnimation;
 window.hideDrawModal = hideDrawModal;
 window.setDrawPool = setDrawPool;
 window.setRecordTab = setRecordTab;
@@ -878,19 +356,7 @@ window.importSave = importSave;
 window.openConsolePrompt = openConsolePrompt;
 window.hideConsole = hideConsole;
 window.executeConsoleCommand = executeConsoleCommand;
-window.startOperating = startOperating;
-window.craftPotion = craftPotion;
-window.deleteCraftedPotion = deleteCraftedPotion;
-window.giveToCustomer = giveToCustomer;
-window.hideOperatingModal = hideOperatingModal;
-window.renderMaterialsWarehouse = renderMaterialsWarehouse;
-window.renderRecipeBook = renderRecipeBook;
-window.renderShopInfo = renderShopInfo;
 window.resetGame = resetGame;
-window.openMerchant = openMerchant;
-window.hideMerchantModal = hideMerchantModal;
-window.buyPermanent = buyPermanent;
-window.buyRandom = buyRandom;
 window.showCharacterLore = showCharacterLore;
 window.closeCharacterLore = window.closeCharacterLore;
 window.showDrawAnimation = showDrawAnimation;

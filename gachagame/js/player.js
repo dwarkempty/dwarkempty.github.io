@@ -50,22 +50,11 @@ function loadGame() {
   if (!player.weaponUrPity) player.weaponUrPity = 0;
   if (!player.unlockedChars) player.unlockedChars = [];
   if (!player.unlockedWeapons) player.unlockedWeapons = [];
-  if (!player.shopLevel) player.shopLevel = 1;
-  if (!player.operatingPoints) player.operatingPoints = 0;
-  if (!player.materials) player.materials = {};
   if (!player.sourcePowers) player.sourcePowers = {};
-  if (!player.unlockedRecipes) player.unlockedRecipes = [1,2,3,4];
 
-  // 1. 初始获得各种经营材料20个（新玩家或首次加载时生效）
-  window.materialsPool.forEach(mat => {
-    if (player.materials[mat.id] === undefined) {
-      player.materials[mat.id] = 20;
-    }
-  });
-
-  document.getElementById("yaoXing").textContent = player.yaoXing;
-  document.getElementById("gold").textContent = player.gold;
-  document.getElementById("reinforceStone").textContent = player.reinforceStone;
+  document.getElementById("yaoXing").textContent = player.yaoXing || 1000;
+  document.getElementById("gold").textContent = player.gold || 0;
+  document.getElementById("reinforceStone").textContent = player.reinforceStone || 0;
   
   saveGame();
 }

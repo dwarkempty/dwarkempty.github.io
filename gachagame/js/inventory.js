@@ -1,4 +1,4 @@
-// js/inventory.js - 仓库渲染 + 养成系统修改
+// js/inventory.js - 仓库渲染 + 养成系统
 function sortOwned(list, isChar) {
   const copy = [...list];
   copy.sort((a, b) => {
@@ -130,16 +130,12 @@ function showCharacterDetail(index) {
   const char = window.getCharacterData(item.charId);
   let equippedItem = null;
   if (item.equippedWeapon) equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
-  const stats = window.calculateStats(item, char, equippedItem);
+  const modal = document.getElementById("characterDetailModal");
+  const content = document.getElementById("characterDetailContent");
+  if (!modal || !content) return alert("详情弹窗加载失败");
 
-  const equippedName = equippedItem ? window.getWeaponData(equippedItem.weaponId).name : "无武器";
-  const borderClass = window.getRarityBorderClass(char.rarity);
-
-  const starHTML = Array(5).fill(0).map((_, i) => `<span class="${i < item.stars ? `star-${Math.min(item.stars, 5)}` : 'text-gray-500'}">★</span>`).join('');
-
-  document.getElementById("modalInner").className = `modal-content modal-pop glass bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
-
-  document.getElementById("modalContent").innerHTML = `
+  modal.classList.remove("hidden");
+  content.innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
       <div class="flex-1 flex flex-col">
         <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">
@@ -298,11 +294,12 @@ function showWeaponDetail(index) {
   const weapon = window.getWeaponData(item.weaponId);
   const wStats = window.calculateWeaponStats(item, weapon);
 
-  const borderClass = window.getRarityBorderClass(weapon.rarity);
+  const modal = document.getElementById("weaponDetailModal");
+  const content = document.getElementById("weaponDetailContent");
+  if (!modal || !content) return alert("详情弹窗加载失败");
 
-  document.getElementById("modalInner").className = `modal-content modal-pop glass bg-gray-900 rounded-3xl max-w-full sm:max-w-4xl w-full mx-4 overflow-hidden border-4 ${borderClass}`;
-
-  document.getElementById("modalContent").innerHTML = `
+  modal.classList.remove("hidden");
+  content.innerHTML = `
     <div class="flex flex-col lg:flex-row gap-6">
       <div class="flex-1 flex flex-col">
         <div class="border-4 border-orange-500 rounded-3xl p-4 bg-gray-950 flex-1 flex items-center justify-center relative">

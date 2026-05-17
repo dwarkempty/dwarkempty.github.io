@@ -130,6 +130,8 @@ function showCharacterDetail(index) {
   const char = window.getCharacterData(item.charId);
   let equippedItem = null;
   if (item.equippedWeapon) equippedItem = player.weapons.find(w => w.id === item.equippedWeapon);
+  const equippedName = equippedItem ? window.getWeaponData(equippedItem.weaponId).name : "无武器";
+
   const modal = document.getElementById("characterDetailModal");
   const content = document.getElementById("characterDetailContent");
   if (!modal || !content) return alert("详情弹窗加载失败");

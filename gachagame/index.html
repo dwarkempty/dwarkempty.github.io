@@ -200,6 +200,21 @@
     </div>
   </div>
 
+  <!-- 控制台模态 -->
+  <div id="consoleModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[999999] hidden">
+    <div class="bg-zinc-900 rounded-3xl p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-2xl font-bold text-yellow-400">🛠️ 开发者控制台</h3>
+        <button onclick="document.getElementById('consoleModal').classList.add('hidden')" class="text-3xl text-gray-400 hover:text-white">×</button>
+      </div>
+      <div id="consoleLog" class="bg-black p-4 rounded-2xl text-sm font-mono h-64 overflow-auto mb-4 border border-zinc-700"></div>
+      <div class="flex gap-2">
+        <input id="consoleInput" class="flex-1 bg-zinc-800 px-4 py-3 rounded-2xl text-white" placeholder="输入命令...">
+        <button onclick="window.executeConsoleCommand()" class="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-2xl font-bold">执行</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 赌博模态 -->
   <div id="gamblingModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] hidden">
     <div class="bg-zinc-900 rounded-3xl p-8 max-w-4xl w-full mx-4">
@@ -213,10 +228,18 @@
         <button onclick="window.switchGamblingTab(2)" class="gambling-tab flex-1 py-3 rounded-2xl font-bold">硬币翻转</button>
       </div>
       <div id="slotPanel">
-        <!-- 老虎机内容由JS动态填充 -->
+        <div class="text-center py-12 text-zinc-400">
+          <div class="text-6xl mb-4">🎰</div>
+          <div class="text-xl">老虎机功能暂时简化<br>点击下方“开始”按钮测试</div>
+          <button onclick="alert('老虎机功能开发中，敬请期待！')" class="mt-6 px-8 py-3 bg-orange-600 hover:bg-orange-700 rounded-2xl font-bold">开始转动</button>
+        </div>
       </div>
       <div id="blackjackPanel" class="hidden">
-        <!-- 21点内容由JS动态填充 -->
+        <div class="text-center py-12 text-zinc-400">
+          <div class="text-6xl mb-4">🃏</div>
+          <div class="text-xl">21点功能暂时简化</div>
+          <button onclick="alert('21点功能开发中！')" class="mt-6 px-8 py-3 bg-purple-600 hover:bg-purple-700 rounded-2xl font-bold">开始游戏</button>
+        </div>
       </div>
       <div id="coinFlipPanel" class="hidden">
         <div class="text-center py-8">

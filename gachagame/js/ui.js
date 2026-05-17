@@ -432,3 +432,8 @@ window.resetGame = resetGame;
 window.showCharacterLore = showCharacterLore;
 window.closeCharacterLore = window.closeCharacterLore;
 window.showDrawAnimation = showDrawAnimation;
+
+// 赌博/扫雷存根（防止null报错）
+window.switchGamblingTab = switchGamblingTab;
+window.selectCurrency = selectCurrency;
+window.startMinesweeper = startMinesweeper;

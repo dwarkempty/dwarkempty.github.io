@@ -312,7 +312,8 @@ function startMinesweeper(rows, cols, mines) {
   currentMinesweeperScore = 0;
   minesweeperReward = 0;
   minesweeperGameOver = false;
-  document.getElementById("mineScore").textContent = "0 钻石";
+  const scoreEl = document.getElementById("mineScore");
+  if (scoreEl) scoreEl.textContent = "0 钻石";
   minesweeperBoard = Array(rows).fill().map(() => Array(cols).fill().map(() => ({revealed: false, mine: false, flagged: false, adjacent: 0})));
   let placed = 0;
   while (placed < mines) {
